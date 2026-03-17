@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #6A6B4C;
+  --color-background-light: #f6f7f8;
+  --color-background-dark: #101922;
+  --font-display: "Manrope", sans-serif;
+}
+
+body {
+  font-family: var(--font-display);
+  background-color: var(--color-background-light);
+  min-height: max(884px, 100dvh);
+}
+
+@layer base {
+  *, ::after, ::before, ::backdrop, ::file-selector-button {
+    border-color: var(--color-gray-200, currentColor);
+  }
+}
