@@ -4,10 +4,15 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import session from "express-session";
 import passport from "passport";
-import "./config/passport"; // Import passport config
+import "./config/passport";
 import connectDB from "./config/db";
+import { loggerMiddleware } from "./middleware/loggerMiddleware";
+import { notFoundHandler, errorHandler } from "./middleware/errorMiddleware";
 import authRoutes from "./routes/auth";
-import { getFreelancers } from "./controllers/userController";
+import userRoutes from "./routes/userRoutes";
+import jobRoutes from "./routes/jobRoutes";
+import offerRoutes from "./routes/offerRoutes";
+import uploadRoutes from "./routes/uploadRoute";
 
 dotenv.config();
 
@@ -15,15 +20,13 @@ const app = express();
 
 connectDB();
 
-// Middleware
 app.use(cors({
   origin: "http://localhost:3000",
-  credentials: true, // allow cookies to be sent from frontend
+  credentials: true,
 }));
 app.use(express.json());
 app.use(cookieParser());
 
-// Session and Passport
 app.use(
   session({
     secret: process.env.SESSION_SECRET || "freecone_session_secret",
@@ -31,7 +34,7 @@ app.use(
     saveUninitialized: false,
     cookie: {
       secure: process.env.NODE_ENV === "production",
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      maxAge: 24 * 60 * 60 * 1000,
     },
   })
 );
@@ -39,36 +42,34 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Middleware for logging
-app.use((req, _res, next) => {
-  console.log(`[REQUEST] ${req.method} ${req.url}`);
-  next();
+app.use(loggerMiddleware);
+
+app.get("/api/ping", (req, res) => {
+  res.send("pong " + new Date().toISOString());
 });
 
-// Health Check
-app.get("/api/health", (req, res) => {
-  res.json({ status: "ok", time: new Date().toISOString(), version: "FINAL_FIX" });
+app.get("/api/test-users", async (req, res) => {
+  try {
+    const User = (await import("./models/User")).default;
+    const users = await User.find({});
+    res.json({ count: users.length, users });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// Routes
-app.get("/api/users/freelancers", getFreelancers);
 app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/jobs", jobRoutes);
+app.use("/api/offers", offerRoutes);
+app.use("/api/upload", uploadRoutes);
 
-// Catch-all route for 404s
-app.use((req, res) => {
-  console.log(`[ROUTE NOT FOUND] ${req.method} ${req.url}`);
-  res.status(404).json({ 
-    error: "Not Found", 
-    path: req.url,
-    message: "If you see this, the server IS RUNNING but this path is not defined." 
-  });
-});
+
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-  console.log("========================================");
-  console.log(`   SERVER ACTIVE ON PORT ${PORT}      `);
-  console.log("   DEBUG VERSION: 3                   ");
-  console.log("========================================");
+  console.log(`   SERVER ACTIVE ON PORT ${PORT}`);
 });

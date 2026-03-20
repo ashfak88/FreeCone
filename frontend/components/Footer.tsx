@@ -1,6 +1,6 @@
 export default function Footer() {
   return (
-    <footer className="bg-white border-t border-[#6A6B4C]/10 pt-16 pb-8">
+    <footer className="bg-white dark:bg-background-dark border-t border-primary/10 pt-16 pb-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-12 mb-12">
           <div className="col-span-2 lg:col-span-2">
@@ -9,7 +9,7 @@ export default function Footer() {
               <span className="text-xl font-extrabold tracking-tight">FreeCone</span>
             </div>
             <p className="text-slate-500 max-w-sm mb-6 leading-relaxed">
-              Connecting elite talent with world-class opportunities. The most secure and reliable marketplace for professional freelancing.
+              Connecting elite talent with world-class opportunities. The most secure and reliable marketplace for professional talent.
             </p>
             <div className="flex gap-4">
               <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary cursor-pointer hover:bg-primary hover:text-white transition-all">
@@ -36,7 +36,7 @@ export default function Footer() {
             <h4 className="font-bold mb-6">For Talent</h4>
             <ul className="space-y-4 text-sm text-slate-500">
               <li><a className="hover:text-primary transition-colors" href="#">Find Projects</a></li>
-              <li><a className="hover:text-primary transition-colors" href="#">Freelancer Benefits</a></li>
+              <li><a className="hover:text-primary transition-colors" href="#">Talent Benefits</a></li>
               <li><a className="hover:text-primary transition-colors" href="#">Elite Status</a></li>
               <li><a className="hover:text-primary transition-colors" href="#">Success Stories</a></li>
             </ul>

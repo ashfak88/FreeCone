@@ -1,4 +1,8 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
 
 @theme {
   --color-primary: #6A6B4C;
@@ -7,14 +11,79 @@
   --font-display: "Manrope", sans-serif;
 }
 
-body {
-  font-family: var(--font-display);
-  background-color: var(--color-background-light);
-  min-height: max(884px, 100dvh);
+:root {
+  --background: 0 0% 96.5%; /* #f6f7f8 */
+  --foreground: 210 36% 10%; /* #101922 */
+  --card: 0 0% 100%;
+  --card-foreground: 210 36% 10%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 210 36% 10%;
+  --primary: 48 18% 36%; /* #6A6B4C */
+  --primary-foreground: 0 0% 100%;
+  --secondary: 210 40% 96%;
+  --secondary-foreground: 222 47% 11%;
+  --muted: 210 40% 96%;
+  --muted-foreground: 215 16% 47%;
+  --accent: 210 40% 96%;
+  --accent-foreground: 48 18% 36%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 214 32% 91%;
+  --input: 214 32% 91%;
+  --ring: 48 18% 36%;
+  --radius: 0.5rem;
+}
+
+.dark {
+  --background: 210 36% 10%;
+  --foreground: 0 0% 96.5%;
+  --card: 217 33% 17%;
+  --card-foreground: 0 0% 96.5%;
+  --popover: 217 33% 17%;
+  --popover-foreground: 0 0% 96.5%;
+  --primary: 48 18% 36%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 217 33% 17%;
+  --secondary-foreground: 0 0% 96.5%;
+  --muted: 217 33% 17%;
+  --muted-foreground: 215 20% 65%;
+  --accent: 217 33% 17%;
+  --accent-foreground: 0 0% 96.5%;
+  --destructive: 0 62% 30%;
+  --destructive-foreground: 0 0% 96.5%;
+  --border: 217 33% 17%;
+  --input: 217 33% 17%;
+  --ring: 48 18% 36%;
 }
 
 @layer base {
-  *, ::after, ::before, ::backdrop, ::file-selector-button {
-    border-color: var(--color-gray-200, currentColor);
+  * {
+    @apply border-border outline-ring/50;
   }
+  body {
+    @apply bg-background text-foreground font-display;
+    min-height: max(100vh, 100dvh);
+  }
+}
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
 }

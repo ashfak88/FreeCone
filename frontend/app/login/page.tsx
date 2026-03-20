@@ -4,9 +4,11 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Mail, Lock, Eye, EyeOff, Briefcase, Apple } from "lucide-react";
+import { useStore } from "@/lib/store";
 
 export default function LoginPage() {
   const router = useRouter();
+  const setUser = useStore((state) => state.setUser);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
@@ -33,9 +35,10 @@ export default function LoginPage() {
 
       // Store access token and user info
       localStorage.setItem("accessToken", data.accessToken);
-      localStorage.setItem("user", JSON.stringify(data.user));
+      // setUser already handles localStorage for "user"
+      setUser(data.user);
 
-      router.push("/");
+      router.push("/dashboard");
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -54,6 +57,19 @@ export default function LoginPage() {
   return (
     <main className="relative flex min-h-screen w-full flex-col items-center justify-center p-4 bg-bg-light">
       
+      {/* Back Button */}
+      <div className="absolute top-8 left-8">
+        <Link 
+          href="/" 
+          className="flex items-center gap-2 text-slate-500 hover:text-primary font-bold transition-all group"
+        >
+          <div className="size-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all shadow-sm">
+            <span className="material-symbols-outlined text-sm">arrow_back</span>
+          </div>
+          <span className="text-sm">Back home</span>
+        </Link>
+      </div>
+
       {/* Background Abstract Decoration */}
       <div className="fixed inset-0 -z-10 overflow-hidden opacity-20 pointer-events-none">
         <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-[#6A6B4C]/30 blur-[100px]" />

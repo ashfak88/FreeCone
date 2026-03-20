@@ -36,7 +36,7 @@ passport.use(
           name: profile.displayName,
           email: profile.emails?.[0].value,
           googleId: profile.id,
-          role: "client", // default role
+          role: "user", // default role
         });
 
         await user.save();

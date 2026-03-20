@@ -1,6 +1,6 @@
 export default function Categories() {
   return (
-    <section className="py-20 bg-white">
+    <section className="py-20 bg-white dark:bg-slate-900/50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-end mb-12">
           <div>
@@ -13,7 +13,7 @@ export default function Categories() {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* Dev */}
-          <div className="group p-6 rounded-2xl bg-[#f6f7f8] border border-primary/5 hover:border-primary/30 transition-all hover:shadow-xl hover:shadow-primary/5">
+          <div className="group p-6 rounded-2xl bg-background-light dark:bg-background-dark border border-primary/5 hover:border-primary/30 transition-all hover:shadow-xl hover:shadow-primary/5">
             <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
               <span className="material-symbols-outlined">code</span>
             </div>
@@ -21,7 +21,7 @@ export default function Categories() {
             <p className="text-sm text-slate-500">Expert engineers for complex architecture and full-stack solutions.</p>
           </div>
           {/* Design */}
-          <div className="group p-6 rounded-2xl bg-[#f6f7f8] border border-primary/5 hover:border-primary/30 transition-all hover:shadow-xl hover:shadow-primary/5">
+          <div className="group p-6 rounded-2xl bg-background-light dark:bg-background-dark border border-primary/5 hover:border-primary/30 transition-all hover:shadow-xl hover:shadow-primary/5">
             <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
               <span className="material-symbols-outlined">palette</span>
             </div>
@@ -29,7 +29,7 @@ export default function Categories() {
             <p className="text-sm text-slate-500">Creative directors who shape global identities and user experiences.</p>
           </div>
           {/* Marketing */}
-          <div className="group p-6 rounded-2xl bg-[#f6f7f8] border border-primary/5 hover:border-primary/30 transition-all hover:shadow-xl hover:shadow-primary/5">
+          <div className="group p-6 rounded-2xl bg-background-light dark:bg-background-dark border border-primary/5 hover:border-primary/30 transition-all hover:shadow-xl hover:shadow-primary/5">
             <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
               <span className="material-symbols-outlined">trending_up</span>
             </div>
@@ -37,7 +37,7 @@ export default function Categories() {
             <p className="text-sm text-slate-500">Growth specialists focused on scaling conversion and ROI.</p>
           </div>
           {/* Finance */}
-          <div className="group p-6 rounded-2xl bg-[#f6f7f8] border border-primary/5 hover:border-primary/30 transition-all hover:shadow-xl hover:shadow-primary/5">
+          <div className="group p-6 rounded-2xl bg-background-light dark:bg-background-dark border border-primary/5 hover:border-primary/30 transition-all hover:shadow-xl hover:shadow-primary/5">
             <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
               <span className="material-symbols-outlined">bar_chart</span>
             </div>

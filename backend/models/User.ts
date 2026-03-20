@@ -1,16 +1,34 @@
 import mongoose, { Document, Schema } from "mongoose";
 
+export interface IPortfolioItem {
+  title: string;
+  description: string;
+  technologies: string[];
+  imageUrl: string;
+  link?: string;
+}
+
 export interface IUser extends Document {
   name: string;
   email: string;
   password?: string;
   googleId?: string;
-  role: "admin" | "client" | "freelancer";
+  role: "admin" | "user" | "client" | "talent";
+  title?: string;
+  bio?: string;
+  location?: string;
   rating?: number;
-  description?: string;
   skills?: string[];
   rate?: number;
   imageUrl?: string;
+  portfolio: IPortfolioItem[];
+  socialLinks?: {
+    linkedin?: string;
+    github?: string;
+    twitter?: string;
+    website?: string;
+  };
+  isProfileComplete: boolean;
   createdAt: Date;
 }
 
@@ -37,15 +55,24 @@ const UserSchema: Schema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["admin", "client", "freelancer"],
-      default: "client",
+      enum: ["admin", "user", "client", "talent"],
+      default: "user",
+    },
+    title: {
+      type: String,
+      default: "",
+    },
+    bio: {
+      type: String,
+      default: "",
+    },
+    location: {
+      type: String,
+      default: "",
     },
     rating: {
       type: Number,
       default: 0,
-    },
-    description: {
-      type: String,
     },
     skills: {
       type: [String],
@@ -57,6 +84,26 @@ const UserSchema: Schema = new mongoose.Schema(
     },
     imageUrl: {
       type: String,
+      default: "",
+    },
+    portfolio: [
+      {
+        title: String,
+        description: String,
+        technologies: [String],
+        imageUrl: String,
+        link: String,
+      },
+    ],
+    socialLinks: {
+      linkedin: String,
+      github: String,
+      twitter: String,
+      website: String,
+    },
+    isProfileComplete: {
+      type: Boolean,
+      default: false,
     },
     createdAt: {
       type: Date,
