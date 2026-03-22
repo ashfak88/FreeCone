@@ -1,9 +1,26 @@
 "use client";
 
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function Hero() {
   const router = useRouter();
+  const [topUsers, setTopUsers] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchTopUsers = async () => {
+      try {
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+        const response = await fetch(`${API_URL}/users/freelancers`);
+        const data = await response.json();
+        // The API sorts by rating descending, so we take the top 3
+        setTopUsers(data.slice(0, 3));
+      } catch (error) {
+        console.error("Failed to fetch top users:", error);
+      }
+    };
+    fetchTopUsers();
+  }, []);
 
   return (
     <header className="relative overflow-hidden py-16 lg:py-24 bg-background-light dark:bg-background-dark">
@@ -35,25 +52,24 @@ export default function Hero() {
               </button>
             </div>
             <div className="flex items-center gap-4 pt-4">
-              {/* --- ONLY THIS SECTION WAS MODIFIED --- */}
               <div className="flex -space-x-3">
-                <img 
-                  src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop" 
-                  alt="Talent 1" 
-                  className="w-10 h-10 rounded-full border-2 border-background-light object-cover" 
-                />
-                <img 
-                  src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop" 
-                  alt="Talent 2" 
-                  className="w-10 h-10 rounded-full border-2 border-background-light object-cover" 
-                />
-                <img 
-                  src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop" 
-                  alt="Talent 3" 
-                  className="w-10 h-10 rounded-full border-2 border-background-light object-cover" 
-                />
+                {topUsers.length > 0 ? (
+                  topUsers.map((user, index) => (
+                    <img
+                      key={user._id || index}
+                      src={user.imageUrl || user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=0ea5e9&color=fff`}
+                      alt={user.name}
+                      className="w-10 h-10 rounded-full border-2 border-background-light bg-slate-100 object-cover"
+                    />
+                  ))
+                ) : (
+                  <>
+                    <div className="w-10 h-10 rounded-full border-2 border-background-light bg-slate-100 animate-pulse"></div>
+                    <div className="w-10 h-10 rounded-full border-2 border-background-light bg-slate-100 animate-pulse"></div>
+                    <div className="w-10 h-10 rounded-full border-2 border-background-light bg-slate-100 animate-pulse"></div>
+                  </>
+                )}
               </div>
-              {/* --- END OF MODIFICATION --- */}
               <p className="text-sm font-medium text-slate-500">Trusted by 2,000+ Fortune 500 companies</p>
             </div>
           </div>

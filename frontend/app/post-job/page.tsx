@@ -26,10 +26,13 @@ export default function PostJobPage() {
     setError("");
 
     try {
-      const res = await fetch("http://localhost:5000/api/jobs", {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+      const token = localStorage.getItem("accessToken");
+      const res = await fetch(`${API_URL}/jobs`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify({
           ...formData,

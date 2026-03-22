@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter, useParams, notFound } from "next/navigation";
 import Link from "next/link";
 import { useStore } from "@/lib/store";
@@ -9,6 +9,7 @@ export default function TalentProfilePage() {
   const router = useRouter();
   const params = useParams();
   const { talent: talentList, isLoadingTalent: loading, fetchTalent } = useStore();
+  const [showImageModal, setShowImageModal] = useState(false);
 
   const profile = talentList.find((f) => f._id === params.id || f.id === params.id);
 
@@ -77,12 +78,15 @@ export default function TalentProfilePage() {
               <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-150 duration-700"></div>
               
               <div className="flex flex-col md:flex-row gap-8 items-center md:items-start text-center md:text-left relative z-10">
-                <div className="relative group/avatar">
+                <div className="relative group/avatar cursor-pointer" onClick={() => setShowImageModal(true)}>
                   <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl group-hover/avatar:bg-primary/40 transition-all"></div>
                   <div
                     className="relative bg-center bg-no-repeat aspect-square bg-cover rounded-full h-32 w-32 shrink-0 ring-4 ring-white dark:ring-slate-800 shadow-lg transition-transform group-hover/avatar:scale-[1.02] duration-500"
                     style={{ backgroundImage: `url("${profile.imageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name)}&background=6a6b4c&color=fff`}")` }}
                   ></div>
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 transition-opacity">
+                    <span className="material-symbols-outlined text-white text-2xl drop-shadow-md">zoom_in</span>
+                  </div>
                   <div className="absolute bottom-1 right-1 size-6 bg-green-500 rounded-full border-2 border-white dark:border-slate-900 shadow-md flex items-center justify-center" title="Available Now">
                     <div className="size-1.5 bg-white rounded-full animate-ping"></div>
                   </div>
@@ -262,6 +266,32 @@ export default function TalentProfilePage() {
           </div>
         </div>
       </div>
+
+      {/* Image Preview Modal */}
+      {showImageModal && (
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm animate-in fade-in duration-300"
+          onClick={() => setShowImageModal(false)}
+        >
+          <button 
+            className="absolute top-6 right-6 text-white/70 hover:text-white transition-colors p-2"
+            onClick={() => setShowImageModal(false)}
+          >
+            <span className="material-symbols-outlined text-3xl">close</span>
+          </button>
+          
+          <div 
+            className="relative max-w-4xl w-full aspect-square md:aspect-auto md:max-h-[90vh] flex items-center justify-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img 
+              src={profile.imageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name)}&background=6a6b4c&color=fff&size=512`} 
+              alt={profile.name}
+              className="max-w-full max-h-full object-contain rounded-lg shadow-2xl animate-in zoom-in-95 duration-300"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

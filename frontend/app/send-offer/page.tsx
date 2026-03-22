@@ -44,7 +44,8 @@ function SendOfferContent() {
       const token = localStorage.getItem("accessToken");
       if (!token) throw new Error("Please log in to send an offer");
 
-      const response = await fetch("http://localhost:5000/api/offers", {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+      const response = await fetch(`${API_URL}/offers`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

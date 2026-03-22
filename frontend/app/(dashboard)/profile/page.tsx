@@ -4,6 +4,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useStore } from "@/lib/store";
 import DashboardHeader from "@/components/DashboardHeader";
+import ImageCropperModal from "@/components/ImageCropperModal";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -22,6 +23,8 @@ export default function ProfilePage() {
   const [saveStatus, setSaveStatus] = useState<null | "success" | "error">(null);
   const [serverError, setServerError] = useState("");
   const skillInputRef = useRef<HTMLInputElement>(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [showCropper, setShowCropper] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -77,7 +80,8 @@ export default function ProfilePage() {
         throw new Error("You are not logged in. Please sign in again.");
       }
 
-      const response = await fetch("http://localhost:5000/api/users/profile", {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+      const response = await fetch(`${API_URL}/users/profile`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -105,6 +109,45 @@ export default function ProfilePage() {
     } catch (err: any) {
       console.error("Save error:", err);
       setServerError(err.message || "An unexpected error occurred.");
+      setSaveStatus("error");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleRemovePhoto = async () => {
+    if (!confirm("Are you sure you want to remove your profile photo?")) return;
+
+    setIsSaving(true);
+    setSaveStatus(null);
+    try {
+      const token = localStorage.getItem("accessToken");
+      if (!token) throw new Error("Not logged in");
+
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+      const response = await fetch(`${API_URL}/upload/profile-photo`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Removal failed");
+
+      if (user) {
+        updateUser({
+          ...user,
+          imageUrl: "",
+          avatar: ""
+        });
+      }
+
+      setSaveStatus("success");
+      setTimeout(() => setSaveStatus(null), 3000);
+    } catch (err: any) {
+      console.error("Remove photo error:", err);
+      setServerError(err.message || "Failed to remove photo");
       setSaveStatus("error");
     } finally {
       setIsSaving(false);
@@ -139,6 +182,7 @@ export default function ProfilePage() {
       >
         <div className="flex items-center gap-3">
           <button 
+            type="button"
             onClick={() => router.push("/notifications")}
             className="text-slate-500 hover:text-slate-800 transition-colors relative"
           >
@@ -146,21 +190,22 @@ export default function ProfilePage() {
           </button>
           
           <button
+            type="button"
             onClick={handleSave}
-          disabled={isSaving}
-          className={`hidden sm:block ${isSaving ? "opacity-50 cursor-not-allowed" : "hover:bg-primary/90"} bg-primary text-white px-6 py-2 rounded-xl font-bold transition-all shadow-sm flex items-center gap-2`}
-        >
-          {isSaving ? (
-            <>
-              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-              Saving...
-            </>
-          ) : (
-            "Save Changes"
-          )}
-        </button>
-      </div>
-    </DashboardHeader>
+            disabled={isSaving}
+            className={`hidden sm:block ${isSaving ? "opacity-50 cursor-not-allowed" : "hover:bg-primary/90"} bg-primary text-white px-6 py-2 rounded-xl font-bold transition-all shadow-sm flex items-center gap-2`}
+          >
+            {isSaving ? (
+              <>
+                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                Saving...
+              </>
+            ) : (
+              "Save Changes"
+            )}
+          </button>
+        </div>
+      </DashboardHeader>
 
       <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-8">
         {saveStatus === "success" && (
@@ -216,39 +261,15 @@ export default function ProfilePage() {
                       const file = e.target.files?.[0];
                       if (!file) return;
 
-                      setIsSaving(true);
-                      setSaveStatus(null);
-                      try {
-                        const token = localStorage.getItem("accessToken");
-                        const formData = new FormData();
-                        formData.append("image", file);
-
-                        const response = await fetch("http://localhost:5000/api/upload/profile-photo", {
-                          method: "POST",
-                          headers: {
-                            Authorization: `Bearer ${token}`
-                          },
-                          body: formData
-                        });
-
-                        const data = await response.json();
-                        if (!response.ok) throw new Error(data.message || "Upload failed");
-
-                        updateUser({
-                          ...user,
-                          imageUrl: data.imageUrl,
-                          avatar: data.imageUrl
-                        });
-
-                        setSaveStatus("success");
-                        setTimeout(() => setSaveStatus(null), 3000);
-                      } catch (err: any) {
-                        console.error("Upload error:", err);
-                        setServerError(err.message || "Failed to upload photo");
-                        setSaveStatus("error");
-                      } finally {
-                        setIsSaving(false);
-                      }
+                      // Read file and open cropper
+                      const reader = new FileReader();
+                      reader.onload = () => {
+                        setSelectedImage(reader.result as string);
+                        setShowCropper(true);
+                        // Reset input so the same file can be selected again
+                        e.target.value = "";
+                      };
+                      reader.readAsDataURL(file);
                     }}
                   />
                   <label
@@ -257,67 +278,79 @@ export default function ProfilePage() {
                   >
                     Change Photo
                   </label>
+
+                  {(user?.imageUrl || user?.avatar) && (
+                    <button
+                      type="button"
+                      onClick={handleRemovePhoto}
+                      disabled={isSaving}
+                      className="px-4 py-2 bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 text-xs font-bold rounded-lg hover:bg-red-100 dark:hover:bg-red-900/20 transition-all disabled:opacity-50 flex items-center gap-1.5"
+                    >
+                      <span className="material-symbols-outlined text-sm">delete</span>
+                      Remove
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Full Name</label>
-              <input
-                id="name"
-                className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-                type="text"
-                value={formData.name}
-                onChange={handleInputChange}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Email Address</label>
-              <input
-                id="email"
-                className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-                type="email"
-                value={formData.email}
-                onChange={handleInputChange}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Professional Title</label>
-              <input
-                id="title"
-                placeholder="e.g. Senior Full Stack Developer"
-                className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-                type="text"
-                value={formData.title}
-                onChange={handleInputChange}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Location</label>
-              <input
-                id="location"
-                placeholder="e.g. New York, USA"
-                className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-                type="text"
-                value={formData.location}
-                onChange={handleInputChange}
-              />
-            </div>
-            <div className="space-y-2 md:col-span-2">
-              <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Professional Bio</label>
-              <textarea
-                id="bio"
-                className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-                rows={4}
-                placeholder="Talk about your experience..."
-                value={formData.bio}
-                onChange={handleInputChange}
-              ></textarea>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Full Name</label>
+                <input
+                  id="name"
+                  className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                  type="text"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Email Address</label>
+                <input
+                  id="email"
+                  className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                  type="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Professional Title</label>
+                <input
+                  id="title"
+                  placeholder="e.g. Senior Full Stack Developer"
+                  className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                  type="text"
+                  value={formData.title}
+                  onChange={handleInputChange}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Location</label>
+                <input
+                  id="location"
+                  placeholder="e.g. New York, USA"
+                  className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                  type="text"
+                  value={formData.location}
+                  onChange={handleInputChange}
+                />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Professional Bio</label>
+                <textarea
+                  id="bio"
+                  className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                  rows={4}
+                  placeholder="Talk about your experience..."
+                  value={formData.bio}
+                  onChange={handleInputChange}
+                ></textarea>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Skills Section */}
@@ -409,8 +442,63 @@ export default function ProfilePage() {
             </div>
           </div>
         </div>
-
       </div>
+
+      {/* Image Cropper Modal */}
+      {showCropper && selectedImage && (
+        <ImageCropperModal
+          image={selectedImage}
+          onCancel={() => {
+            setShowCropper(false);
+            setSelectedImage(null);
+          }}
+          onCropComplete={async (croppedBlob) => {
+            setShowCropper(false);
+            setSelectedImage(null);
+            
+            setIsSaving(true);
+            setSaveStatus(null);
+            try {
+              const token = localStorage.getItem("accessToken");
+              const formData = new FormData();
+              // Create a file from the blob
+              const file = new File([croppedBlob], "profile-photo.jpg", { type: "image/jpeg" });
+              formData.append("image", file);
+
+              const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+              const response = await fetch(`${API_URL}/upload/profile-photo`, {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${token}`
+                },
+                body: formData
+              });
+
+              const data = await response.json();
+              if (!response.ok) throw new Error(data.message || "Upload failed");
+
+              if (user) {
+                updateUser({
+                  ...user,
+                  imageUrl: data.imageUrl,
+                  avatar: data.imageUrl
+                });
+              }
+
+              setSaveStatus("success");
+              setTimeout(() => setSaveStatus(null), 3000);
+            } catch (err: any) {
+              console.error("Upload error:", err);
+              setServerError(err.message || "Failed to upload photo");
+              setSaveStatus("error");
+            } finally {
+              setIsSaving(false);
+            }
+          }}
+        />
+      )}
+
+      <div className="h-10"></div>
     </div>
   );
 }

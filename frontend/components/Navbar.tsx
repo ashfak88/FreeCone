@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useStore } from "@/lib/store";
+import { motion } from "framer-motion";
 
 export default function Navbar() {
   const router = useRouter();
@@ -49,8 +50,9 @@ export default function Navbar() {
   }, []);
 
   const handleLogout = async () => {
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
     try {
-      await fetch("http://localhost:5000/api/auth/logout", {
+      await fetch(`${API_URL}/auth/logout`, {
         method: "POST",
         credentials: "include",
       });

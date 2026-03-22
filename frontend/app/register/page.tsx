@@ -22,7 +22,8 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      const res = await fetch("http://localhost:5000/api/auth/register", {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+      const res = await fetch(`${API_URL}/auth/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -50,24 +51,13 @@ export default function RegisterPage() {
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = "http://localhost:5000/api/auth/google";
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+    window.location.href = `${API_URL}/auth/google`;
   };
 
   return (
     <main className="relative flex min-h-screen w-full flex-col items-center justify-center p-4 bg-bg-light">
       
-      {/* Back Button */}
-      <div className="absolute top-8 left-8">
-        <Link 
-          href="/" 
-          className="flex items-center gap-2 text-slate-500 hover:text-primary font-bold transition-all group"
-        >
-          <div className="size-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all shadow-sm">
-            <span className="material-symbols-outlined text-sm">arrow_back</span>
-          </div>
-          <span className="text-sm">Back home</span>
-        </Link>
-      </div>
 
       {/* Background Abstract Decoration */}
       <div className="fixed inset-0 -z-10 overflow-hidden opacity-20 pointer-events-none">

@@ -42,12 +42,59 @@ export interface Job {
   id?: string;
   title: string;
   description: string;
-  category: string;
   budget: number;
-  type: string;
-  postedBy: string;
+  category: string;
+  timeline: string;
+  skills: string[];
+  client: {
+    name: string;
+    role: string;
+    avatar?: string;
+    location: string;
+    rating: number;
+    reviewsCount: number;
+    verified: boolean;
+  };
   createdAt: string;
-  tags: string[];
+}
+
+export interface Offer {
+  _id: string;
+  client: any;
+  freelancer: any;
+  jobTitle: string;
+  description: string;
+  budget: number;
+  status: "pending" | "viewed" | "accepted" | "rejected";
+  createdAt: string;
+}
+
+export interface Notification {
+  _id: string;
+  recipient: string;
+  sender: {
+    _id: string;
+    name: string;
+    imageUrl?: string;
+  };
+  type: "proposal" | "offer" | "message" | "payment" | "other";
+  relatedId?: string;
+  title: string;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
+export interface Proposal {
+  _id: string;
+  job: Job;
+  talent: any;
+  coverLetter: string;
+  proposedRate: number;
+  timeline: string;
+  figmaLink?: string;
+  status: "pending" | "viewed" | "accepted" | "rejected";
+  createdAt: string;
 }
 
 interface AppState {
@@ -65,9 +112,34 @@ interface AppState {
   isLoadingTalent: boolean;
   setTalent: (talent: User[]) => void;
   fetchTalent: (filters?: { search?: string; rateRange?: string; rating?: string | number }) => Promise<void>;
+
+  // Offer State
+  offers: Offer[];
+  isLoadingOffers: boolean;
+  setOffers: (offers: Offer[]) => void;
+  fetchOffers: () => Promise<void>;
+
+  // Notification State
+  notifications: any[];
+  sentNotifications: any[];
+  isLoadingNotifications: boolean;
+  fetchNotifications: (dir?: 'received' | 'sent') => Promise<void>;
+  markNotificationAsRead: (id: string) => Promise<void>;
+  markAllNotificationsAsRead: () => Promise<void>;
+
+  // User-specific Job/Proposal State
+  myJobs: Job[];
+  myProposals: Proposal[];
+  receivedProposals: Proposal[];
+  isLoadingMyData: boolean;
+  fetchMyJobs: () => Promise<void>;
+  fetchMyProposals: () => Promise<void>;
+  fetchReceivedProposals: () => Promise<void>;
+  updateProposalStatus: (id: string, status: 'accepted' | 'rejected') => Promise<void>;
+  markProposalAsViewed: (id: string) => Promise<void>;
 }
 
-const API_URL = "http://localhost:5000/api";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
 export const useStore = create<AppState>((set, get) => {
   let initialUser = null;
@@ -145,6 +217,190 @@ export const useStore = create<AppState>((set, get) => {
         console.error("Error fetching talent:", err);
       } finally {
         set({ isLoadingTalent: false });
+      }
+    },
+
+    offers: [],
+    isLoadingOffers: false,
+    setOffers: (offers) => set({ offers }),
+    fetchOffers: async () => {
+      set({ isLoadingOffers: true });
+      try {
+        const token = localStorage.getItem("accessToken");
+        const res = await fetch(`${API_URL}/offers`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const data = await res.json();
+        set({ offers: data });
+      } catch (err) {
+        console.error("Failed to fetch offers:", err);
+      } finally {
+        set({ isLoadingOffers: false });
+      }
+    },
+
+    notifications: [],
+    sentNotifications: [],
+    isLoadingNotifications: false,
+    fetchNotifications: async (dir: 'received' | 'sent' = 'received') => {
+      set({ isLoadingNotifications: true });
+      try {
+        const token = localStorage.getItem("accessToken");
+        const res = await fetch(`${API_URL}/notifications?dir=${dir}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const data = await res.json();
+        if (dir === 'sent') {
+          set({ sentNotifications: data });
+        } else {
+          set({ notifications: data });
+        }
+      } catch (err) {
+        console.error("Error fetching notifications:", err);
+      } finally {
+        set({ isLoadingNotifications: false });
+      }
+    },
+
+    markNotificationAsRead: async (id: string) => {
+      try {
+        const token = localStorage.getItem("accessToken");
+        const res = await fetch(`${API_URL}/notifications/${id}/read`, {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (res.ok) {
+          const updatedNotifications = get().notifications.map((n) =>
+            n._id === id ? { ...n, isRead: true } : n
+          );
+          set({ notifications: updatedNotifications });
+        }
+      } catch (err) {
+        console.error("Failed to mark notification as read:", err);
+      }
+    },
+
+    markAllNotificationsAsRead: async () => {
+      try {
+        const token = localStorage.getItem("accessToken");
+        const res = await fetch(`${API_URL}/notifications/mark-all-read`, {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (res.ok) {
+          const updatedNotifications = get().notifications.map((n) => ({
+            ...n,
+            isRead: true,
+          }));
+          set({ notifications: updatedNotifications });
+        }
+      } catch (err) {
+        console.error("Failed to mark all as read:", err);
+      }
+    },
+
+    myJobs: [],
+    myProposals: [],
+    receivedProposals: [],
+    isLoadingMyData: false,
+    fetchMyJobs: async () => {
+      set({ isLoadingMyData: true });
+      try {
+        const token = localStorage.getItem("accessToken");
+        const res = await fetch(`${API_URL}/jobs/my-jobs`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        set({ myJobs: data });
+      } catch (err) {
+        console.error("Failed to fetch my jobs:", err);
+      } finally {
+        set({ isLoadingMyData: false });
+      }
+    },
+    fetchMyProposals: async () => {
+      set({ isLoadingMyData: true });
+      try {
+        const token = localStorage.getItem("accessToken");
+        const res = await fetch(`${API_URL}/jobs/my-proposals`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        set({ myProposals: data });
+      } catch (err) {
+        console.error("Failed to fetch my proposals:", err);
+      } finally {
+        set({ isLoadingMyData: false });
+      }
+    },
+    fetchReceivedProposals: async () => {
+      set({ isLoadingMyData: true });
+      try {
+        const token = localStorage.getItem("accessToken");
+        const res = await fetch(`${API_URL}/jobs/received-proposals`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        set({ receivedProposals: data });
+      } catch (err) {
+        console.error("Failed to fetch received proposals:", err);
+      } finally {
+        set({ isLoadingMyData: false });
+      }
+    },
+    updateProposalStatus: async (id: string, status: 'accepted' | 'rejected') => {
+      try {
+        const token = localStorage.getItem("accessToken");
+        const res = await fetch(`${API_URL}/jobs/proposals/${id}/status`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ status }),
+        });
+
+        if (res.ok) {
+          // Update local state
+          const updatedReceived = get().receivedProposals.map((p) =>
+            p._id === id ? { ...p, status } : p
+          );
+          set({ receivedProposals: updatedReceived });
+        } else {
+          const errorData = await res.json();
+          console.error("Failed to update proposal status:", errorData.message);
+        }
+      } catch (err) {
+        console.error("Error updating proposal status:", err);
+      }
+    },
+    markProposalAsViewed: async (id: string) => {
+      try {
+        const token = localStorage.getItem("accessToken");
+        const res = await fetch(`${API_URL}/jobs/proposals/${id}/viewed`, {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (res.ok) {
+          // Update local state for received proposals
+          const updatedReceived = get().receivedProposals.map((p) =>
+            p._id === id ? { ...p, status: 'viewed' as any } : p
+          );
+          set({ receivedProposals: updatedReceived });
+        }
+      } catch (err) {
+        console.error("Error marking proposal as viewed:", err);
       }
     },
   }

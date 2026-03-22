@@ -23,7 +23,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         const token = localStorage.getItem("accessToken");
         if (!token) return;
 
-        const res = await fetch("http://localhost:5000/api/users/profile", {
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+        const res = await fetch(`${API_URL}/users/profile`, {
           headers: {
             "Authorization": `Bearer ${token}`
           }
@@ -45,8 +46,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [user?.id, router, updateUser]);
 
   const handleLogout = async () => {
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
     try {
-      await fetch("http://localhost:5000/api/auth/logout", {
+      await fetch(`${API_URL}/auth/logout`, {
         method: "POST",
         credentials: "include",
       });
