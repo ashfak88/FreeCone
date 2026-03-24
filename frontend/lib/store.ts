@@ -118,6 +118,7 @@ interface AppState {
   isLoadingOffers: boolean;
   setOffers: (offers: Offer[]) => void;
   fetchOffers: () => Promise<void>;
+  updateOfferStatus: (id: string, status: 'accepted' | 'rejected') => Promise<void>;
 
   // Notification State
   notifications: any[];
@@ -126,6 +127,7 @@ interface AppState {
   fetchNotifications: (dir?: 'received' | 'sent') => Promise<void>;
   markNotificationAsRead: (id: string) => Promise<void>;
   markAllNotificationsAsRead: () => Promise<void>;
+  markAllNotificationsAsUnread: () => Promise<void>;
 
   // User-specific Job/Proposal State
   myJobs: Job[];
@@ -240,6 +242,31 @@ export const useStore = create<AppState>((set, get) => {
         set({ isLoadingOffers: false });
       }
     },
+    updateOfferStatus: async (id: string, status: 'accepted' | 'rejected') => {
+      try {
+        const token = localStorage.getItem("accessToken");
+        const res = await fetch(`${API_URL}/offers/${id}/status`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ status }),
+        });
+
+        if (res.ok) {
+          const updatedOffers = get().offers.map((o) =>
+            o._id === id ? { ...o, status } : o
+          );
+          set({ offers: updatedOffers });
+        } else {
+          const errorData = await res.json();
+          console.error("Failed to update offer status:", errorData.message);
+        }
+      } catch (err) {
+        console.error("Error updating offer status:", err);
+      }
+    },
 
     notifications: [],
     sentNotifications: [],
@@ -254,10 +281,11 @@ export const useStore = create<AppState>((set, get) => {
           },
         });
         const data = await res.json();
+        const notificationData = Array.isArray(data) ? data : [];
         if (dir === 'sent') {
-          set({ sentNotifications: data });
+          set({ sentNotifications: notificationData });
         } else {
-          set({ notifications: data });
+          set({ notifications: notificationData });
         }
       } catch (err) {
         console.error("Error fetching notifications:", err);
@@ -279,7 +307,10 @@ export const useStore = create<AppState>((set, get) => {
           const updatedNotifications = get().notifications.map((n) =>
             n._id === id ? { ...n, isRead: true } : n
           );
-          set({ notifications: updatedNotifications });
+          const updatedSent = get().sentNotifications.map((n) =>
+            n._id === id ? { ...n, isRead: true } : n
+          );
+          set({ notifications: updatedNotifications, sentNotifications: updatedSent });
         }
       } catch (err) {
         console.error("Failed to mark notification as read:", err);
@@ -300,10 +331,39 @@ export const useStore = create<AppState>((set, get) => {
             ...n,
             isRead: true,
           }));
-          set({ notifications: updatedNotifications });
+          const updatedSent = get().sentNotifications.map((n) => ({
+            ...n,
+            isRead: true,
+          }));
+          set({ notifications: updatedNotifications, sentNotifications: updatedSent });
         }
       } catch (err) {
         console.error("Failed to mark all as read:", err);
+      }
+    },
+
+    markAllNotificationsAsUnread: async () => {
+      try {
+        const token = localStorage.getItem("accessToken");
+        const res = await fetch(`${API_URL}/notifications/mark-all-unread`, {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (res.ok) {
+          const updatedNotifications = get().notifications.map((n) => ({
+            ...n,
+            isRead: false,
+          }));
+          const updatedSent = get().sentNotifications.map((n) => ({
+            ...n,
+            isRead: false,
+          }));
+          set({ notifications: updatedNotifications, sentNotifications: updatedSent });
+        }
+      } catch (err) {
+        console.error("Failed to mark all as unread:", err);
       }
     },
 

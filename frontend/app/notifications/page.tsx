@@ -34,6 +34,7 @@ export default function NotificationsPage() {
     fetchReceivedProposals,
     updateProposalStatus,
     markProposalAsViewed,
+    updateOfferStatus,
     isLoadingNotifications,
     isLoadingOffers,
     user
@@ -92,7 +93,7 @@ export default function NotificationsPage() {
   }, [realNotifications, sentNotifications]);
 
   const filteredNotifications = mappedNotifications.filter((n) => {
-    if (activeTab === "all") return n.direction === 'received'; // Show received only in 'all'
+    if (activeTab === "all") return true; // Show all notifications
     if (activeTab === "proposals") return n.type === "proposal" && n.direction === proposalTab;
     if (activeTab === "offers") return n.type === "offer" && n.direction === offerTab;
     if (activeTab === "payments") return n.type === "payment" && n.direction === 'received';
@@ -115,12 +116,18 @@ export default function NotificationsPage() {
           Notifications
         </h2>
 
-        <div className="flex items-center justify-end">
+        <div className="flex items-center justify-end gap-2">
           <button
             onClick={() => useStore.getState().markAllNotificationsAsRead()}
-            className="text-primary text-sm font-bold leading-normal tracking-wide shrink-0 hover:bg-primary/10 px-3 py-1.5 rounded-xl transition-colors"
+            className="text-primary text-xs font-bold leading-normal tracking-wide shrink-0 hover:bg-primary/10 px-3 py-1.5 rounded-xl transition-colors border border-primary/20"
           >
             Mark all as read
+          </button>
+          <button
+            onClick={() => useStore.getState().markAllNotificationsAsUnread()}
+            className="text-slate-500 dark:text-slate-400 text-xs font-bold leading-normal tracking-wide shrink-0 hover:bg-slate-100 dark:hover:bg-white/5 px-3 py-1.5 rounded-xl transition-colors border border-slate-200 dark:border-white/10"
+          >
+            Mark all as unread
           </button>
         </div>
       </div>
@@ -203,12 +210,29 @@ export default function NotificationsPage() {
                       if (!proposal) return null;
 
                       const statusMap: any = {
-                        pending: { label: 'Applied', color: 'bg-amber-100 text-amber-600 border-amber-200' },
+                        pending: { label: 'Pending', color: 'bg-amber-100 text-amber-600 border-amber-200' },
                         viewed: { label: 'Viewed', color: 'bg-blue-100 text-blue-600 border-blue-200' },
                         accepted: { label: 'Accepted', color: 'bg-emerald-100 text-emerald-600 border-emerald-200' },
                         rejected: { label: 'Rejected', color: 'bg-red-100 text-red-600 border-red-200' }
                       };
                       const s = statusMap[proposal.status] || { label: proposal.status, color: 'bg-slate-100 text-slate-600' };
+
+                      return (
+                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border ${s.color}`}>
+                          {s.label}
+                        </span>
+                      );
+                    })()}
+                    {notif.type === 'offer' && (() => {
+                      const offer = offers.find(o => o._id === notif.relatedId || o._id === notif.id);
+                      if (!offer) return null;
+
+                      const statusMap: any = {
+                        pending: { label: 'Pending', color: 'bg-amber-100 text-amber-600 border-amber-200' },
+                        accepted: { label: 'Accepted', color: 'bg-emerald-100 text-emerald-600 border-emerald-200' },
+                        rejected: { label: 'Rejected', color: 'bg-red-100 text-red-600 border-red-200' }
+                      };
+                      const s = statusMap[offer.status] || { label: offer.status, color: 'bg-slate-100 text-slate-600' };
 
                       return (
                         <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border ${s.color}`}>
@@ -226,17 +250,62 @@ export default function NotificationsPage() {
                       const proposal = receivedProposals.find(p => p._id === notif.relatedId);
                       if (proposal && (proposal.status === 'pending' || proposal.status === 'viewed')) {
                         return (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (window.confirm("Are you sure you want to reject this proposal?")) {
-                                updateProposalStatus(proposal._id, 'rejected');
-                              }
-                            }}
-                            className="bg-red-50 text-red-600 hover:bg-red-100 px-3 py-1 rounded-lg text-[10px] font-bold border border-red-100 transition-colors"
-                          >
-                            Reject Proposal
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (window.confirm("Are you sure you want to accept this proposal?")) {
+                                  updateProposalStatus(proposal._id, 'accepted');
+                                }
+                              }}
+                              className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 px-3 py-1 rounded-lg text-[10px] font-bold border border-emerald-100 transition-colors"
+                            >
+                              Accept
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (window.confirm("Are you sure you want to reject this proposal?")) {
+                                  updateProposalStatus(proposal._id, 'rejected');
+                                }
+                              }}
+                              className="bg-red-50 text-red-600 hover:bg-red-100 px-3 py-1 rounded-lg text-[10px] font-bold border border-red-100 transition-colors"
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
+                    {notif.type === 'offer' && notif.direction === 'received' && (() => {
+                      const offer = offers.find(o => o._id === notif.relatedId || o._id === notif.id);
+                      if (offer && offer.status === 'pending') {
+                        return (
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (window.confirm("Are you sure you want to accept this offer?")) {
+                                  updateOfferStatus(offer._id, 'accepted');
+                                }
+                              }}
+                              className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 px-3 py-1 rounded-lg text-[10px] font-bold border border-emerald-100 transition-colors"
+                            >
+                              Accept
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (window.confirm("Are you sure you want to reject this offer?")) {
+                                  updateOfferStatus(offer._id, 'rejected');
+                                }
+                              }}
+                              className="bg-red-50 text-red-600 hover:bg-red-100 px-3 py-1 rounded-lg text-[10px] font-bold border border-red-100 transition-colors"
+                            >
+                              Reject
+                            </button>
+                          </div>
                         );
                       }
                       return null;
@@ -365,9 +434,26 @@ export default function NotificationsPage() {
                 Close
               </button>
               {selectedOffer.status === 'pending' && user?.id === (typeof selectedOffer.freelancer === 'string' ? selectedOffer.freelancer : (selectedOffer.freelancer?._id || selectedOffer.freelancer?.id)) && (
-                <button className="flex-1 py-3 px-4 bg-primary text-white rounded-xl font-bold text-sm hover:bg-[#5a5c41] transition-all shadow-lg shadow-primary/20">
-                  Accecpt Offer
-                </button>
+                <div className="flex flex-1 gap-3">
+                  <button 
+                    onClick={() => {
+                      updateOfferStatus(selectedOffer._id, 'rejected');
+                      setSelectedOffer(null);
+                    }}
+                    className="flex-1 py-3 px-4 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl font-bold text-sm transition-all border border-red-100"
+                  >
+                    Reject Offer
+                  </button>
+                  <button 
+                    onClick={() => {
+                      updateOfferStatus(selectedOffer._id, 'accepted');
+                      setSelectedOffer(null);
+                    }}
+                    className="flex-1 py-3 px-4 bg-primary text-white rounded-xl font-bold text-sm hover:bg-[#5a5c41] transition-all shadow-lg shadow-primary/20"
+                  >
+                    Accept Offer
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -423,6 +509,24 @@ export default function NotificationsPage() {
                   <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
                     {selectedProposal.message}
                   </p>
+                  {proposalDetail && proposalDetail.talent && (
+                    <div className="mt-4 pt-4 border-t border-slate-200 dark:border-white/10 flex items-center gap-3">
+                      <div className="size-10 rounded-full bg-slate-100 dark:bg-white/10 overflow-hidden flex-shrink-0">
+                        {proposalDetail.talent.imageUrl ? (
+                          <img src={proposalDetail.talent.imageUrl} alt={proposalDetail.talent.name} className="size-full object-cover" />
+                        ) : (
+                          <div className="size-full flex items-center justify-center text-slate-400">
+                            <span className="material-symbols-outlined">person</span>
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Sender Profile</p>
+                        <p className="text-sm font-bold text-slate-900 dark:text-white">{proposalDetail.talent.name}</p>
+                        <p className="text-xs text-slate-500">{proposalDetail.talent.email}</p>
+                      </div>
+                    </div>
+                  )}
                   {proposalDetail && (
                     <div className="mt-4 pt-4 border-t border-slate-200 dark:border-white/10">
                       <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Cover Letter Snippet</p>

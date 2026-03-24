@@ -11,6 +11,7 @@ import {
   markProposalAsViewed
 } from "../controllers/jobController";
 import { protect } from "../middleware/auth";
+import { uploadResume } from "../middleware/upload";
 
 const router = express.Router();
 
@@ -39,6 +40,6 @@ router.get("/:id", getJobById);
 router.post("/", protect, createJob);
 
 // POST apply for a job
-router.post("/:id/apply", protect, applyForJob);
+router.post("/:id/apply", protect, uploadResume.single("resume"), applyForJob);
 
 export default router;

@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { Mail, Lock, Eye, EyeOff, Briefcase, Apple } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { useStore } from "@/lib/store";
 import LoadingScreen from "@/components/LoadingScreen";
 
@@ -13,6 +13,16 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showLoader, setShowLoader] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const err = params.get("error");
+      if (err) {
+        setError(decodeURIComponent(err));
+      }
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,6 +46,12 @@ export default function LoginPage() {
 
       // Store access token and user info
       localStorage.setItem("accessToken", data.accessToken);
+      
+      // Set a flag to prevent ProtectedRoute from instantly redirecting us away before the animation finishes
+      if (typeof window !== "undefined") {
+        (window as any).isLoggingInAnimation = true;
+      }
+
       // setUser already handles localStorage for "user"
       setUser(data.user);
 
@@ -78,9 +94,9 @@ export default function LoginPage() {
 
           {/* Header Section */}
           <div className="text-center space-y-2">
-            <div className="inline-flex items-center justify-center p-3 rounded-xl bg-[#6A6B4C]/10 text-primary mb-4">
-              <Briefcase size={32} strokeWidth={2.5} />
-            </div>
+            <Link href="/" className="inline-flex items-center justify-center p-3 rounded-xl bg-[#6A6B4C]/10 text-primary mb-4 hover:opacity-90 transition-opacity">
+              <span className="material-symbols-outlined text-[32px] leading-none">hub</span>
+            </Link>
             <h1 className="text-3xl font-bold tracking-tight text-slate-900">Welcome back</h1>
             <p className="text-slate-500">Sign in to FreeCone to continue</p>
           </div>
@@ -159,7 +175,7 @@ export default function LoginPage() {
           </div>
 
           {/* Social Buttons */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4">
             <button
               onClick={handleGoogleLogin}
               className="flex items-center justify-center h-12 border border-slate-200 rounded-lg hover:bg-slate-50 transition-all font-medium text-sm gap-2"
@@ -170,11 +186,7 @@ export default function LoginPage() {
                 <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05" />
                 <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
               </svg>
-              Google
-            </button>
-            <button className="flex items-center justify-center h-12 border border-slate-200 rounded-lg hover:bg-slate-50 transition-all font-medium text-sm gap-2">
-              <Apple size={20} />
-              Apple
+              Continue with Google
             </button>
           </div>
 

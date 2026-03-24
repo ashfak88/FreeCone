@@ -1,6 +1,7 @@
 import "./globals.css";
 import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 const geist = Geist({ subsets: ['latin'], variable: '--font-sans' });
 
@@ -8,6 +9,9 @@ export const metadata = {
   title: "FreeCone | Elite Global Talent Marketplace",
   description: "Elite Global Talent Marketplace",
 };
+
+import SocketProvider from "@/components/SocketProvider";
+import { Toaster } from "react-hot-toast";
 
 export default function RootLayout({
   children,
@@ -27,7 +31,12 @@ export default function RootLayout({
         />
       </head>
       <body className="bg-[#f6f7f8] font-display text-slate-900" suppressHydrationWarning>
-        {children}
+        <Toaster position="bottom-right" />
+        <SocketProvider>
+          <ProtectedRoute>
+            {children}
+          </ProtectedRoute>
+        </SocketProvider>
       </body>
     </html>
   );

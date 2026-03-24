@@ -65,3 +65,13 @@ export const markAllAsRead = async (req: any, res: Response): Promise<void> => {
     res.status(500).json({ message: "Server error while updating notifications" });
   }
 };
+// MARK all notifications as unread
+export const markAllAsUnread = async (req: any, res: Response): Promise<void> => {
+  try {
+    await Notification.updateMany({ recipient: req.user._id, isRead: true }, { isRead: false });
+    res.status(200).json({ message: "All notifications marked as unread" });
+  } catch (error) {
+    console.error("Error marking all as unread:", error);
+    res.status(500).json({ message: "Server error while updating notifications" });
+  }
+};

@@ -8,26 +8,34 @@ import { motion } from "framer-motion";
 
 export default function Navbar() {
   const router = useRouter();
-  const { user, setUser } = useStore();
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const [isMounted, setIsMounted] = useState(false);
-  const [showProfilePrompt, setShowProfilePrompt] = useState(false);
-  const [isExiting, setIsExiting] = useState(false);
+  const { user, setUser, notifications, fetchNotifications } = useStore()
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+  const [isMounted, setIsMounted] = useState(false)
+  const [showProfilePrompt, setShowProfilePrompt] = useState(false)
+  const [isExiting, setIsExiting] = useState(false)
 
   useEffect(() => {
-    setIsMounted(true);
-  }, []);
+    setIsMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (isMounted && user) {
+      fetchNotifications('received')
+    }
+  }, [isMounted, user, fetchNotifications])
+
+  const unreadCount = (Array.isArray(notifications) ? notifications : []).filter((n: any) => !n.isRead).length;
 
   const dismissPrompt = () => {
-    setIsExiting(true);
+    setIsExiting(true)
     setTimeout(() => {
-      setShowProfilePrompt(false);
+      setShowProfilePrompt(false)
       if (user) {
         localStorage.setItem(`first_login_prompt_seen_${user.id}`, "true");
       }
-    }, 500); // Wait for fade-out animation
-  };
+    }, 500)
+  }
 
   useEffect(() => {
     if (isMounted && user && !user.isProfileComplete && !localStorage.getItem(`first_login_prompt_seen_${user.id}`)) {
@@ -66,13 +74,11 @@ export default function Navbar() {
     <nav className="sticky top-0 z-50 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-primary/20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
-          {/* Logo */}
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => router.push("/")}>
             <span className="material-symbols-outlined text-primary text-3xl">hub</span>
             <span className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">FreeCone</span>
           </div>
 
-          {/* Nav Links */}
           <div className="hidden md:flex items-center space-x-8">
             <a className="text-sm font-semibold text-slate-700 dark:text-slate-300 hover:text-primary transition-colors" href="/find-talent">Browse Talent</a>
             <Link className="text-sm font-semibold text-slate-700 dark:text-slate-300 hover:text-primary transition-colors" href="/find-work">Find Work</Link>
@@ -82,6 +88,7 @@ export default function Navbar() {
             {!isMounted ? (
               <div className="flex items-center gap-3">
                 <div className="h-8 w-16 bg-slate-100 animate-pulse rounded-lg"></div>
+
                 <div className="h-8 w-20 bg-slate-200 animate-pulse rounded-lg"></div>
               </div>
             ) : user ? (
@@ -89,9 +96,14 @@ export default function Navbar() {
                 <button
                   title="Notifications"
                   onClick={() => router.push("/notifications")}
-                  className="flex items-center justify-center rounded-full w-9 h-9 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
+                  className="relative flex items-center justify-center rounded-full w-9 h-9 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
                 >
                   <span className="material-symbols-outlined text-[22px]">notifications</span>
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-white dark:ring-slate-800">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
                 </button>
 
                 <button

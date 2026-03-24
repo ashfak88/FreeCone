@@ -7,6 +7,7 @@ export interface IProposal extends Document {
   proposedRate: number;
   timeline: string;
   figmaLink?: string;
+  resume?: string;
   status: "pending" | "viewed" | "accepted" | "rejected";
   createdAt: Date;
 }
@@ -36,6 +37,9 @@ const ProposalSchema: Schema = new mongoose.Schema(
       required: true,
     },
     figmaLink: {
+      type: String,
+    },
+    resume: {
       type: String,
     },
     status: {

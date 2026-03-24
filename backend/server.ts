@@ -1,11 +1,13 @@
 import dotenv from "dotenv";
 import express from "express";
+import http from "http";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import session from "express-session";
 import passport from "passport";
 import "./config/passport";
 import connectDB from "./config/db";
+import { initSocket } from "./config/socket";
 import { loggerMiddleware } from "./middleware/loggerMiddleware";
 import { notFoundHandler, errorHandler } from "./middleware/errorMiddleware";
 import authRoutes from "./routes/auth";
@@ -18,11 +20,15 @@ import notificationRoutes from "./routes/notificationRoutes";
 dotenv.config();
 
 const app = express();
+const server = http.createServer(app);
+
+// Initialize Socket.io
+initSocket(server);
 
 connectDB();
 
 app.use(cors({
-  origin: "http://localhost:3000",
+  origin: ["http://localhost:3000", "http://localhost:3001"],
   credentials: true,
 }));
 app.use(express.json());
@@ -72,6 +78,6 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5001;
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`   SERVER ACTIVE ON PORT ${PORT}`);
 });

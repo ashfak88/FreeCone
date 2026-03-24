@@ -42,7 +42,7 @@ export default function LoadingScreen({ destination = "/" }: { destination?: str
       const viewportWidth = window.innerWidth;
       const maxWidth = 1280;
       const marginX = Math.max(0, (viewportWidth - maxWidth) / 2);
-      
+
       // Navbar ping: px-4 (16px), sm:px-6 (24px, >640), lg:px-8 (32px, >1024)
       let paddingX = 16;
       if (viewportWidth >= 1024) paddingX = 32;
@@ -52,18 +52,18 @@ export default function LoadingScreen({ destination = "/" }: { destination?: str
       const iconOffset = 38;
       // Target text (text-xl "FreeCone") is approx 95px wide. Half is 47.5px.
       const halfTargetWidth = 47.5;
-      
+
       // Exact center X of the Navbar's "FreeCone" text
-      const navLogoX = marginX + paddingX + iconOffset + halfTargetWidth; 
+      const navLogoX = marginX + paddingX + iconOffset + halfTargetWidth;
       // Navbar is h-16 (64px). Exact center Y is 32px.
-      const navLogoY = 32; 
+      const navLogoY = 32;
 
       const currentCenterX = rect.left + rect.width / 2;
       const currentCenterY = rect.top + rect.height / 2;
 
       const targetX = navLogoX - currentCenterX;
       const targetY = navLogoY - currentCenterY;
-      
+
       // Scale from text-5xl to text-xl is exactly 20px/48px = ~0.416
       const targetScale = 0.416;
 
@@ -118,7 +118,7 @@ export default function LoadingScreen({ destination = "/" }: { destination?: str
                 {/* Invisible text where the flying text will land */}
                 <span className="text-xl font-extrabold tracking-tight opacity-0">FreeCone</span>
               </div>
-              
+
               {/* Fake Nav Links just for the visual illusion */}
               <div className="hidden md:flex items-center space-x-8 opacity-50">
                 <span className="text-sm font-semibold text-slate-700">Browse Talent</span>
@@ -126,14 +126,14 @@ export default function LoadingScreen({ destination = "/" }: { destination?: str
                 <span className="text-sm font-semibold text-slate-700">Enterprise</span>
                 <div className="h-4 w-px bg-primary/20"></div>
                 <div className="flex items-center gap-3">
-                   <div className="h-8 w-16 bg-slate-200 rounded-lg"></div>
-                   <div className="h-8 w-20 bg-slate-300 rounded-lg"></div>
+                  <div className="h-8 w-16 bg-slate-200 rounded-lg"></div>
+                  <div className="h-8 w-20 bg-slate-300 rounded-lg"></div>
                 </div>
               </div>
             </div>
           </div>
         </nav>
-        
+
         {/* Render the actual Hero component to complete the illusion */}
         <Hero />
       </motion.div>

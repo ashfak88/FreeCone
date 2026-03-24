@@ -2,8 +2,9 @@ import { Request, Response } from "express";
 import Job from "../models/Job";
 import Proposal from "../models/Proposal";
 import Notification from "../models/Notification";
+import { emitToUser } from "../config/socket";
 
-// GET all jobs
+
 export const getJobs = async (req: Request, res: Response): Promise<void> => {
   try {
     const jobs = await Job.find().sort({ createdAt: -1 });
@@ -14,7 +15,6 @@ export const getJobs = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-// GET a single job by ID
 export const getJobById = async (req: Request, res: Response): Promise<void> => {
   try {
     const job = await Job.findById(req.params.id);
@@ -40,7 +40,7 @@ export const createJob = async (req: any, res: Response): Promise<void> => {
     }
 
     const newJob = new Job({
-      user: req.user?._id || user, // Use authenticated user if available
+      user: req.user?._id || user,
       title,
       description,
       budget,
@@ -64,6 +64,7 @@ export const applyForJob = async (req: any, res: Response): Promise<void> => {
     const { id } = req.params;
     const { coverLetter, proposedRate, timeline, figmaLink } = req.body;
     const talentId = req.user?._id;
+    const resume = req.file?.path;
 
     if (!talentId) {
       res.status(401).json({ message: "You must be logged in to apply." });
@@ -84,6 +85,7 @@ export const applyForJob = async (req: any, res: Response): Promise<void> => {
       proposedRate,
       timeline,
       figmaLink,
+      resume,
     });
     const savedProposal = await newProposal.save();
 
@@ -98,6 +100,9 @@ export const applyForJob = async (req: any, res: Response): Promise<void> => {
         message: `A new proposal has been received for '${job.title}' with a rate of $${proposedRate}.`,
       });
       await clientNotification.save();
+
+      // Emit real-time notification to client
+      emitToUser(job.user.toString(), "newNotification", clientNotification);
     }
 
     // Create a notification for the talent (sender) - Sent
@@ -202,6 +207,9 @@ export const updateProposalStatus = async (req: any, res: Response): Promise<voi
       talentNotification.message = `Your proposal for '${job.title}' has been ${status}.`;
       talentNotification.isRead = false;
       await talentNotification.save();
+
+      // Emit update to talent
+      emitToUser(proposal.talent.toString(), "notificationUpdate", talentNotification);
     }
 
     // 2. Update the client's notification (Received history)
@@ -215,6 +223,9 @@ export const updateProposalStatus = async (req: any, res: Response): Promise<voi
       clientNotification.title = `Proposal ${status === 'accepted' ? 'Accepted' : 'Rejected'}`;
       clientNotification.message = `You ${status} the proposal for '${job.title}'.`;
       await clientNotification.save();
+
+      // Emit update to client
+      emitToUser(clientId.toString(), "notificationUpdate", clientNotification);
     }
 
     res.status(200).json({ message: `Proposal ${status} successfully`, proposal });

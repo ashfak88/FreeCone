@@ -1,8 +1,4 @@
 import { v2 as cloudinary } from "cloudinary";
-// @ts-ignore
-import { CloudinaryStorage } from "multer-storage-cloudinary";
-// @ts-ignore
-import multer from "multer";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -13,16 +9,4 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: async (req: any, file: any) => {
-    return {
-      folder: "profile_photos",
-      allowed_formats: ["jpg", "png", "jpeg", "webp"],
-      public_id: `user_${req.user?.id || Date.now()}`,
-    };
-  },
-});
-
-export const upload = multer({ storage: storage });
 export default cloudinary;

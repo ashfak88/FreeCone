@@ -1,0 +1,30 @@
+import multer from "multer";
+// @ts-ignore
+import { CloudinaryStorage } from "multer-storage-cloudinary";
+import cloudinary from "../config/cloudinary";
+
+const profileStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: async (req: any, file: any) => {
+    return {
+      folder: "profile_photos",
+      allowed_formats: ["jpg", "png", "jpeg", "webp"],
+      public_id: `user_${req.user?.id || req.user?._id || Date.now()}`,
+    };
+  },
+});
+
+const resumeStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: async (req: any, file: any) => {
+    return {
+      folder: "resumes",
+      resource_type: "raw", // Required for documents (pdf, docx)
+      public_id: `resume_${req.user?.id || req.user?._id || Date.now()}_${file.originalname}`,
+      // Cloudinary 'raw' resource_type handles any file, so allowed_formats isn't strictly enforced by Cloudinary in the same way, but we can restrict on Multer level if we want.
+    };
+  },
+});
+
+export const uploadProfile = multer({ storage: profileStorage });
+export const uploadResume = multer({ storage: resumeStorage });

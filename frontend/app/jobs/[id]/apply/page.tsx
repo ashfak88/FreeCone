@@ -15,6 +15,7 @@ export default function ApplyForProjectPage() {
     timeline: "",
     figmaLink: "",
   });
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -42,13 +43,20 @@ export default function ApplyForProjectPage() {
     try {
       const token = localStorage.getItem("accessToken");
       const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+      
+      const submitData = new FormData();
+      submitData.append("coverLetter", formData.coverLetter);
+      submitData.append("proposedRate", formData.proposedRate);
+      submitData.append("timeline", formData.timeline);
+      if (formData.figmaLink) submitData.append("figmaLink", formData.figmaLink);
+      if (resumeFile) submitData.append("resume", resumeFile);
+
       const response = await fetch(`${API_URL}/jobs/${params.id}/apply`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(formData),
+        body: submitData,
       });
 
       if (!response.ok) {
@@ -245,13 +253,29 @@ export default function ApplyForProjectPage() {
                         </div>
                       </div>
 
-                      <div className="border-4 border-dashed border-primary/10 rounded-[2.5rem] p-12 flex flex-col items-center justify-center bg-primary/5 hover:bg-primary/10 hover:border-primary/40 transition-all cursor-pointer group shadow-inner">
-                        <div className="size-20 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center mb-6 shadow-xl group-hover:scale-110 transition-transform">
-                          <span className="material-symbols-outlined text-primary text-4xl">article</span>
+                      <label className="border-4 border-dashed border-primary/10 rounded-[2.5rem] p-12 flex flex-col items-center justify-center bg-primary/5 hover:bg-primary/10 hover:border-primary/40 transition-all cursor-pointer group shadow-inner relative overflow-hidden">
+                        <input 
+                          type="file" 
+                          accept=".pdf,.doc,.docx" 
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
+                          onChange={(e) => {
+                            if (e.target.files && e.target.files.length > 0) {
+                              setResumeFile(e.target.files[0]);
+                            }
+                          }}
+                        />
+                        <div className="size-20 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center mb-6 shadow-xl group-hover:scale-110 transition-transform relative z-10">
+                          <span className="material-symbols-outlined text-primary text-4xl">
+                            {resumeFile ? 'check_circle' : 'article'}
+                          </span>
                         </div>
-                        <p className="text-slate-900 dark:text-slate-100 font-black text-xl mb-1">Upload your Resume</p>
-                        <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">PDF, DOCX up to 10MB</p>
-                      </div>
+                        <p className="text-slate-900 dark:text-slate-100 font-black text-xl mb-1 relative z-10 text-center max-w-full truncate px-4">
+                          {resumeFile ? resumeFile.name : 'Upload your Resume'}
+                        </p>
+                        <p className="text-slate-400 text-xs font-bold uppercase tracking-widest relative z-10 text-center">
+                          {resumeFile ? 'Ready to upload' : 'PDF, DOCX up to 10MB'}
+                        </p>
+                      </label>
                     </div>
                   </div>
 

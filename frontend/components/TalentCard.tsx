@@ -1,7 +1,19 @@
-import { User } from "@/lib/store";
-import Link from "next/link";
+import { User, useStore } from "@/lib/store";
+import { useRouter } from "next/navigation";
 
 export default function TalentCard({ talent }: { talent: User }) {
+  const { user } = useStore();
+  const router = useRouter();
+
+  const handleAuthRedirect = (e: React.MouseEvent, path: string) => {
+    e.preventDefault();
+    if (!user) {
+      router.push(`/login?error=${encodeURIComponent("Please login to access that page")}`);
+    } else {
+      router.push(path);
+    }
+  };
+
   // Use fallbacks for users that might not have the new fields yet
   const rating = talent.rating || 0;
   const reviews = talent.reviews || 0;
@@ -83,18 +95,20 @@ export default function TalentCard({ talent }: { talent: User }) {
           </div>
         </div>
         <div className="flex gap-3">
-          <Link
+          <a
             href={`/talent/${talent._id || talent.id}`}
-            className="px-6 py-3 text-slate-700 dark:text-slate-300 font-bold text-sm border-2 border-slate-100 dark:border-slate-800 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-all text-center"
+            onClick={(e) => handleAuthRedirect(e, `/talent/${talent._id || talent.id}`)}
+            className="px-6 py-3 text-slate-700 dark:text-slate-300 font-bold text-sm border-2 border-slate-100 dark:border-slate-800 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-all text-center cursor-pointer"
           >
             View Profile
-          </Link>
-          <Link
+          </a>
+          <a
             href={`/send-offer?id=${talent._id || talent.id}`}
-            className="px-8 py-3 bg-primary text-white font-extrabold text-sm rounded-2xl hover:shadow-xl hover:shadow-primary/30 transition-all active:scale-95 text-center"
+            onClick={(e) => handleAuthRedirect(e, `/send-offer?id=${talent._id || talent.id}`)}
+            className="px-8 py-3 bg-primary text-white font-extrabold text-sm rounded-2xl hover:shadow-xl hover:shadow-primary/30 transition-all active:scale-95 text-center cursor-pointer"
           >
             Hire
-          </Link>
+          </a>
         </div>
       </div>
     </div>

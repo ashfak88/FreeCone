@@ -1,5 +1,6 @@
 import React from "react";
-import Link from "next/link";
+import { useStore } from "@/lib/store";
+import { useRouter } from "next/navigation";
 
 export interface Job {
   _id: string;
@@ -14,6 +15,9 @@ export interface Job {
   rating?: number;
   reviews?: number;
   tags?: string[];
+  timeline?: string;
+  skills?: string[];
+  client?: any;
 }
 
 interface JobCardProps {
@@ -21,6 +25,18 @@ interface JobCardProps {
 }
 
 export default function JobCard({ job }: JobCardProps) {
+  const { user } = useStore();
+  const router = useRouter();
+
+  const handleAuthRedirect = (e: React.MouseEvent, path: string) => {
+    e.preventDefault();
+    if (!user) {
+      router.push(`/login?error=${encodeURIComponent("Please login to access that page")}`);
+    } else {
+      router.push(path);
+    }
+  };
+
   // Format the date
   const dateStr = new Date(job.createdAt).toLocaleDateString("en-US", {
     month: "short",
@@ -76,7 +92,7 @@ export default function JobCard({ job }: JobCardProps) {
 
       <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center">
         <div className="flex gap-2">
-          {tags.slice(0, 3).map((tag) => (
+          {tags.slice(0, 3).map((tag: any) => (
             <span 
               key={tag} 
               className="px-3 py-1 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs rounded-full font-semibold border border-slate-100 dark:border-slate-600"
@@ -85,13 +101,14 @@ export default function JobCard({ job }: JobCardProps) {
             </span>
           ))}
         </div>
-        <Link 
+        <a 
           href={`/jobs/${job._id || job.id}`} 
-          className="text-primary font-bold text-sm hover:underline flex items-center gap-1 group/link"
+          onClick={(e) => handleAuthRedirect(e, `/jobs/${job._id || job.id}`)}
+          className="text-primary font-bold text-sm hover:underline flex items-center gap-1 group/link cursor-pointer"
         >
           View Details
           <span className="material-symbols-outlined text-sm group-hover/link:translate-x-1 transition-transform">arrow_forward</span>
-        </Link>
+        </a>
       </div>
     </div>
   );

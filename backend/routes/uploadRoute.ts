@@ -1,5 +1,5 @@
 import express from "express";
-import { upload } from "../config/cloudinary";
+import { uploadProfile } from "../middleware/upload";
 import User from "../models/User";
 import { Request, Response } from "express";
 import { protect } from "../middleware/auth";
@@ -9,7 +9,7 @@ const router = express.Router();
 // @route   POST /api/upload/profile-photo
 // @desc    Upload profile photo to Cloudinary
 // @access  Private (Authenticated)
-router.post("/profile-photo", protect, upload.single("image"), async (req: Request, res: Response): Promise<any> => {
+router.post("/profile-photo", protect, uploadProfile.single("image"), async (req: Request, res: Response): Promise<any> => {
   try {
     const userId = (req as any).user?.id || (req as any).user?._id;
     if (!userId) {

@@ -13,10 +13,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     setIsHydrated(true);
-    if (!user) {
-      router.push("/login");
-      return;
-    }
+    // ProtectedRoute now handles authentication redirects globally
 
     const fetchProfile = async () => {
       try {
