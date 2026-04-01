@@ -8,12 +8,14 @@ import { motion } from "framer-motion";
 
 export default function Navbar() {
   const router = useRouter();
-  const { user, setUser, notifications, fetchNotifications } = useStore()
+  const { user, setUser, notifications, fetchNotifications, conversations, fetchConversations } = useStore()
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const [isMounted, setIsMounted] = useState(false)
   const [showProfilePrompt, setShowProfilePrompt] = useState(false)
   const [isExiting, setIsExiting] = useState(false)
+
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   useEffect(() => {
     setIsMounted(true)
@@ -22,10 +24,27 @@ export default function Navbar() {
   useEffect(() => {
     if (isMounted && user) {
       fetchNotifications('received')
+      fetchConversations()
     }
-  }, [isMounted, user, fetchNotifications])
+  }, [isMounted, user, fetchNotifications, fetchConversations])
 
   const unreadCount = (Array.isArray(notifications) ? notifications : []).filter((n: any) => !n.isRead).length;
+  const unreadMessagesCount = (Array.isArray(conversations) ? conversations : []).filter((c: any) => {
+    if (!c.lastMessage || !user) return false;
+    const myId = user._id || user.id;
+    let senderId = c.lastMessage.sender;
+    if (typeof senderId === 'object' && senderId !== null) {
+      senderId = senderId._id || senderId.id;
+    }
+    if (senderId === myId) return false;
+    
+    const readArray = Array.isArray(c.lastMessage.readBy) ? c.lastMessage.readBy : [];
+    const isRead = readArray.some((r: any) => {
+      if (typeof r === 'object' && r !== null) return r._id === myId || r.id === myId;
+      return r === myId;
+    });
+    return !isRead;
+  }).length;
 
   const dismissPrompt = () => {
     setIsExiting(true)
@@ -58,7 +77,7 @@ export default function Navbar() {
   }, []);
 
   const handleLogout = async () => {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
     try {
       await fetch(`${API_URL}/auth/logout`, {
         method: "POST",
@@ -109,9 +128,14 @@ export default function Navbar() {
                 <button
                   title="Messages"
                   onClick={() => router.push("/messages")}
-                  className="flex items-center justify-center rounded-full w-9 h-9 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
+                  className="relative flex items-center justify-center rounded-full w-9 h-9 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
                 >
                   <span className="material-symbols-outlined text-[20px]">chat</span>
+                  {unreadMessagesCount > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-white dark:ring-slate-800">
+                      {unreadMessagesCount > 99 ? '99+' : unreadMessagesCount}
+                    </span>
+                  )}
                 </button>
 
                 <div className="relative" ref={dropdownRef}>
@@ -179,11 +203,98 @@ export default function Navbar() {
           </div>
 
           {/* Mobile menu icon */}
-          <div className="md:hidden">
-            <span className="material-symbols-outlined text-slate-900 dark:text-slate-100">menu</span>
+          <div className="md:hidden flex items-center">
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-1 focus:outline-none"
+            >
+              <span className="material-symbols-outlined text-slate-900 dark:text-slate-100 text-3xl">
+                {mobileMenuOpen ? "close" : "menu"}
+              </span>
+            </button>
           </div>
         </div>
       </div>
+
+      {/* Mobile Menu Overlay */}
+      {mobileMenuOpen && (
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          exit={{ opacity: 0, height: 0 }}
+          className="md:hidden bg-background-light dark:bg-background-dark border-b border-primary/20 overflow-hidden"
+        >
+          <div className="px-4 pt-2 pb-6 space-y-2">
+            <a
+              href="/find-talent"
+              className="block px-3 py-2.5 rounded-lg text-base font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Browse Talent
+            </a>
+            <Link
+              href="/find-work"
+              className="block px-3 py-2.5 rounded-lg text-base font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Find Work
+            </Link>
+            <Link
+              href="/enterprise"
+              className="block px-3 py-2.5 rounded-lg text-base font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Enterprise
+            </Link>
+
+            <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+              {user ? (
+                <div className="space-y-2">
+                  <div className="px-3 py-2">
+                    <p className="text-sm font-bold text-slate-900 dark:text-slate-100">{user.name}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{user.email}</p>
+                  </div>
+                  <button
+                    onClick={() => { router.push("/profile"); setMobileMenuOpen(false); }}
+                    className="w-full text-left px-3 py-2.5 text-base font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                  >
+                    My Profile
+                  </button>
+                  <button
+                    onClick={() => { router.push("/dashboard"); setMobileMenuOpen(false); }}
+                    className="w-full text-left px-3 py-2.5 text-base font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                  >
+                    Dashboard
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full text-left px-3 py-2.5 text-base font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                  >
+                    Log Out
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3 px-3 py-2">
+                  <Link
+                    href="/login"
+                    className="text-center py-3 text-base font-semibold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-xl"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Log In
+                  </Link>
+                  <Link
+                    href="/register"
+                    className="text-center py-3 text-base font-bold bg-primary text-white rounded-xl shadow-lg shadow-primary/20"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Sign Up
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
+        </motion.div>
+      )}
     </nav>
   );
 }

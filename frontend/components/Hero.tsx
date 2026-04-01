@@ -10,10 +10,9 @@ export default function Hero() {
   useEffect(() => {
     const fetchTopUsers = async () => {
       try {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
         const response = await fetch(`${API_URL}/users/freelancers`);
         const data = await response.json();
-        // The API sorts by rating descending, so we take the top 3
         setTopUsers(data.slice(0, 3));
       } catch (error) {
         console.error("Failed to fetch top users:", error);

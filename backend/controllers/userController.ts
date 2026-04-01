@@ -13,7 +13,7 @@ export const getFreelancers = async (req: Request, res: Response): Promise<any> 
 
     console.log(`[DEBUG] Received Params - search: "${search}", rateRange: "${rateRange}", rating: "${rating}"`);
 
-    let query: any = { role: { $in: ["talent", "user"] } }; 
+    let query: any = { role: { $in: ["talent", "user"] } };
 
     // Search filter
     if (search !== "") {
@@ -116,5 +116,17 @@ export const getProfile = async (req: Request, res: Response): Promise<any> => {
   } catch (error: any) {
     console.error("   [DEBUG] Get Profile Error:", error.message);
     res.status(500).json({ message: "Server Error" });
+  }
+};
+
+// @desc    Get all users for testing
+// @route   GET /api/test-users
+// @access  Public (Testing only)
+export const getTestUsers = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const users = await User.find({}).select("-password");
+    res.json({ count: users.length, users });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
   }
 };

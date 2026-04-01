@@ -80,7 +80,7 @@ export default function ProfilePage() {
         throw new Error("You are not logged in. Please sign in again.");
       }
 
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
       const response = await fetch(`${API_URL}/users/profile`, {
         method: "PUT",
         headers: {
@@ -124,7 +124,7 @@ export default function ProfilePage() {
       const token = localStorage.getItem("accessToken");
       if (!token) throw new Error("Not logged in");
 
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
       const response = await fetch(`${API_URL}/upload/profile-photo`, {
         method: "DELETE",
         headers: {
@@ -465,7 +465,7 @@ export default function ProfilePage() {
               const file = new File([croppedBlob], "profile-photo.jpg", { type: "image/jpeg" });
               formData.append("image", file);
 
-              const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+              const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
               const response = await fetch(`${API_URL}/upload/profile-photo`, {
                 method: "POST",
                 headers: {

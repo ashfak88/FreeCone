@@ -1,5 +1,4 @@
 import multer from "multer";
-// @ts-ignore
 import { CloudinaryStorage } from "multer-storage-cloudinary";
 import cloudinary from "../config/cloudinary";
 
@@ -19,9 +18,8 @@ const resumeStorage = new CloudinaryStorage({
   params: async (req: any, file: any) => {
     return {
       folder: "resumes",
-      resource_type: "raw", // Required for documents (pdf, docx)
+      resource_type: "raw",
       public_id: `resume_${req.user?.id || req.user?._id || Date.now()}_${file.originalname}`,
-      // Cloudinary 'raw' resource_type handles any file, so allowed_formats isn't strictly enforced by Cloudinary in the same way, but we can restrict on Multer level if we want.
     };
   },
 });

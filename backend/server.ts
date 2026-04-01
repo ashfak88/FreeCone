@@ -16,13 +16,14 @@ import jobRoutes from "./routes/jobRoutes";
 import offerRoutes from "./routes/offerRoutes";
 import uploadRoutes from "./routes/uploadRoute";
 import notificationRoutes from "./routes/notificationRoutes";
+import messageRoutes from "./routes/messageRoutes";
+import miscRoutes from "./routes/miscRoutes";
 
 dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
 
-// Initialize Socket.io
 initSocket(server);
 
 connectDB();
@@ -51,26 +52,15 @@ app.use(passport.session());
 
 app.use(loggerMiddleware);
 
-app.get("/api/ping", (req, res) => {
-  res.send("pong " + new Date().toISOString());
-});
-
-app.get("/api/test-users", async (req, res) => {
-  try {
-    const User = (await import("./models/User")).default;
-    const users = await User.find({});
-    res.json({ count: users.length, users });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
+app.use("/api", miscRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/jobs", jobRoutes);
 app.use("/api/offers", offerRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/messages", messageRoutes);
+
 
 
 app.use(notFoundHandler);

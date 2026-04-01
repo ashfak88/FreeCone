@@ -43,13 +43,29 @@ export default function SocketProvider({
         fetchNotifications('sent');
       };
 
+      const onNewMessage = (message: any) => {
+        console.log("   [SOCKET] New message received:", message);
+        useStore.getState().addMessage(message);
+        // Also fetch conversations to update the last message in sidebar if not the active one
+        useStore.getState().fetchConversations();
+      };
+
+      const onConversationUpdate = (conversation: any) => {
+        console.log("   [SOCKET] Conversation update received:", conversation);
+        useStore.getState().updateConversationLocally(conversation);
+      };
+
       socket.on("newNotification", onNewNotification);
       socket.on("notificationUpdate", onNotificationUpdate);
+      socket.on("newMessage", onNewMessage);
+      socket.on("conversationUpdate", onConversationUpdate);
 
       return () => {
         socket.off("connect", handleConnect);
         socket.off("newNotification", onNewNotification);
         socket.off("notificationUpdate", onNotificationUpdate);
+        socket.off("newMessage", onNewMessage);
+        socket.off("conversationUpdate", onConversationUpdate);
       };
     } else {
       socketService.disconnect();

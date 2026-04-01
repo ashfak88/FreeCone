@@ -12,13 +12,16 @@
 }
 
 :root {
-  --background: 0 0% 96.5%; /* #f6f7f8 */
-  --foreground: 210 36% 10%; /* #101922 */
+  --background: 0 0% 96.5%;
+  /* #f6f7f8 */
+  --foreground: 210 36% 10%;
+  /* #101922 */
   --card: 0 0% 100%;
   --card-foreground: 210 36% 10%;
   --popover: 0 0% 100%;
   --popover-foreground: 210 36% 10%;
-  --primary: 48 18% 36%; /* #6A6B4C */
+  --primary: 48 18% 36%;
+  /* #6A6B4C */
   --primary-foreground: 0 0% 100%;
   --secondary: 210 40% 96%;
   --secondary-foreground: 222 47% 11%;
@@ -60,6 +63,7 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground font-display;
     min-height: max(100vh, 100dvh);
@@ -86,4 +90,8 @@
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
+}
+
+custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
 }

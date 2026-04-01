@@ -15,14 +15,21 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
       const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET as string) as { id: string };
 
       req.user = await User.findById(decoded.id).select("-password");
-      next();
-    } catch (error) {
-      console.error(error);
-      res.status(401).json({ message: "Not authorized, token failed" });
+      
+      if (!req.user) {
+        console.warn(`   [AUTH] Token valid but user ${decoded.id} not found in DB`);
+        return res.status(401).json({ message: "User no longer exists" });
+      }
+
+      return next();
+    } catch (error: any) {
+      console.error("   [AUTH] Token verification failed:", error.message);
+      return res.status(401).json({ message: "Not authorized, token expired or invalid" });
     }
   }
 
   if (!token) {
-    res.status(401).json({ message: "Not authorized, no token" });
+    console.warn("   [AUTH] Request blocked: No token provided");
+    return res.status(401).json({ message: "Not authorized, no token" });
   }
 };

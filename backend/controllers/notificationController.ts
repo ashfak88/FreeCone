@@ -3,7 +3,6 @@ import Notification from "../models/Notification";
 import Proposal from "../models/Proposal";
 import Offer from "../models/Offer";
 
-// GET all notifications for the authenticated user (received or sent)
 export const getNotifications = async (req: any, res: Response): Promise<void> => {
   try {
     const { dir } = req.query;
@@ -14,9 +13,8 @@ export const getNotifications = async (req: any, res: Response): Promise<void> =
     const notifications = await Notification.find(query)
       .sort({ createdAt: -1 })
       .populate("sender", "name imageUrl")
-      .populate("recipient", "name imageUrl");
+      .populate("recipient", "name imageUrl")
 
-    // Filter out orphaned notifications
     const validatedNotifications = [];
     for (const n of notifications) {
       if (n.type === 'proposal' && n.relatedId) {
@@ -30,7 +28,7 @@ export const getNotifications = async (req: any, res: Response): Promise<void> =
     }
 
     res.status(200).json(validatedNotifications);
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error fetching notifications:", error);
     res.status(500).json({ message: "Server error while fetching notifications" });
   }
@@ -49,7 +47,7 @@ export const markAsRead = async (req: any, res: Response): Promise<void> => {
       return;
     }
     res.status(200).json(notification);
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error marking notification as read:", error);
     res.status(500).json({ message: "Server error while updating notification" });
   }
@@ -60,7 +58,7 @@ export const markAllAsRead = async (req: any, res: Response): Promise<void> => {
   try {
     await Notification.updateMany({ recipient: req.user._id, isRead: false }, { isRead: true });
     res.status(200).json({ message: "All notifications marked as read" });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error marking all as read:", error);
     res.status(500).json({ message: "Server error while updating notifications" });
   }
@@ -70,7 +68,7 @@ export const markAllAsUnread = async (req: any, res: Response): Promise<void> =>
   try {
     await Notification.updateMany({ recipient: req.user._id, isRead: true }, { isRead: false });
     res.status(200).json({ message: "All notifications marked as unread" });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error marking all as unread:", error);
     res.status(500).json({ message: "Server error while updating notifications" });
   }

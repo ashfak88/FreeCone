@@ -11,10 +11,12 @@ const protectedBaseRoutes = [
   "/post-job",
   "/proposals",
   "/send-offer",
-  "/profile"
+  "/profile",
+  "/jobs",
+  "/talent",
+  "/projects"
 ];
 
-// Routes that should only be accessible to logged-out users
 const authRoutes = [
   "/login",
   "/register"
@@ -30,12 +32,8 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
     setIsHydrated(true);
   }, []);
 
-  // Determine if the current path requires authentication
-  const isProtected = 
-    protectedBaseRoutes.some(route => pathname.startsWith(route)) || 
-    pathname.match(/^\/jobs\/[^\/]+\/apply/);
-    
-  // Determine if the current path is for unauthenticated users only (like login)
+  const isProtected = protectedBaseRoutes.some(route => pathname.startsWith(route));
+
   const isAuthRoute = authRoutes.includes(pathname);
 
   useEffect(() => {
@@ -45,7 +43,6 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
       const isLoggingIn = typeof window !== 'undefined' ? (window as any).isLoggingInAnimation : false;
 
       if (isProtected && !isAuthenticated) {
-        // Redirect to login if user is not authenticated
         router.push(`/login`);
       } else if (isAuthRoute && isAuthenticated && !isLoggingIn) {
         // Redirect away from login/register if already authenticated
@@ -59,7 +56,7 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
     if (!isHydrated) return null; // Avoid hydration mismatch
 
     const hasToken = typeof window !== 'undefined' ? localStorage.getItem("accessToken") : null;
-    
+
     // If there's no user and no token, we are redirecting, so don't render children
     if (!user && !hasToken) {
       return (
@@ -76,7 +73,7 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
 
     const hasToken = typeof window !== 'undefined' ? localStorage.getItem("accessToken") : null;
     const isLoggingIn = typeof window !== 'undefined' ? (window as any).isLoggingInAnimation : false;
-    
+
     if ((user || hasToken) && !isLoggingIn) {
       return (
         <div className="flex flex-col items-center justify-center h-screen bg-slate-50 dark:bg-slate-900 gap-4">

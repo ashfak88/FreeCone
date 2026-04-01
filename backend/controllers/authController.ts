@@ -5,7 +5,7 @@ import User from "../models/User";
 
 const generateAccessToken = (userId: string, role: string) => {
   const secret = process.env.JWT_ACCESS_SECRET as string;
-  return jwt.sign({ id: userId, role }, secret, { expiresIn: "15m" });
+  return jwt.sign({ id: userId, role }, secret, { expiresIn: "24h" });
 };
 
 const generateRefreshToken = (userId: string) => {
@@ -35,10 +35,10 @@ export const registerUser = async (req: Request, res: Response): Promise<any> =>
 
     res.status(201).json({
       message: "User registered successfully",
-      user: { 
-        id: user._id, 
-        name: user.name, 
-        email: user.email, 
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
         role: user.role,
         title: user.title,
         bio: user.bio,
@@ -48,7 +48,7 @@ export const registerUser = async (req: Request, res: Response): Promise<any> =>
         imageUrl: user.imageUrl,
         portfolio: user.portfolio,
         socialLinks: user.socialLinks,
-        isProfileComplete: user.isProfileComplete 
+        isProfileComplete: user.isProfileComplete
       },
     });
   } catch (err: any) {
@@ -89,10 +89,10 @@ export const loginUser = async (req: Request, res: Response): Promise<any> => {
     res.json({
       message: "Logged in successfully",
       accessToken,
-      user: { 
-        id: user._id, 
-        name: user.name, 
-        email: user.email, 
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
         role: user.role,
         title: user.title,
         bio: user.bio,
@@ -102,7 +102,7 @@ export const loginUser = async (req: Request, res: Response): Promise<any> => {
         imageUrl: user.imageUrl,
         portfolio: user.portfolio,
         socialLinks: user.socialLinks,
-        isProfileComplete: user.isProfileComplete 
+        isProfileComplete: user.isProfileComplete
       },
     });
   } catch (err: any) {

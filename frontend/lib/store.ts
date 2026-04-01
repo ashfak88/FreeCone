@@ -97,6 +97,24 @@ export interface Proposal {
   createdAt: string;
 }
 
+export interface Conversation {
+  _id: string;
+  participants: any[];
+  lastMessage?: any;
+  updatedAt: string;
+  isTemp?: boolean;
+  favoritedBy?: string[];
+}
+
+export interface Message {
+  _id: string;
+  conversationId: string;
+  sender: any;
+  content: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
 interface AppState {
   user: User | null;
   setUser: (user: User | null) => void;
@@ -139,9 +157,25 @@ interface AppState {
   fetchReceivedProposals: () => Promise<void>;
   updateProposalStatus: (id: string, status: 'accepted' | 'rejected') => Promise<void>;
   markProposalAsViewed: (id: string) => Promise<void>;
+
+  // Chat/Message State
+  conversations: Conversation[];
+  activeConversation: Conversation | null;
+  tempParticipant: User | null;
+  messages: Message[];
+  isLoadingMessages: boolean;
+  fetchConversations: () => Promise<void>;
+  fetchMessages: (conversationId: string) => Promise<void>;
+  deleteConversation: (conversationId: string) => Promise<void>;
+  deleteAllConversations: () => Promise<void>;
+  toggleFavoriteConversation: (conversationId: string) => Promise<void>;
+  setActiveConversation: (conversation: Conversation | null) => void;
+  setTempParticipant: (participant: User | null) => void;
+  addMessage: (message: Message) => void;
+  updateConversationLocally: (conversation: Conversation) => void;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
 export const useStore = create<AppState>((set, get) => {
   let initialUser = null;
@@ -188,7 +222,7 @@ export const useStore = create<AppState>((set, get) => {
     fetchJobs: async () => {
       set({ isLoadingJobs: true });
       try {
-        const res = await fetch(`${API_URL}/jobs`);
+        const res = await fetch(`${API_URL}/jobs`, { cache: "no-store" });
         const data = await res.json();
         set({ jobs: data });
       } catch (err) {
@@ -212,7 +246,7 @@ export const useStore = create<AppState>((set, get) => {
         }
 
         const url = `${API_URL}/users/freelancers?${queryParams.toString()}`;
-        const res = await fetch(url);
+        const res = await fetch(url, { cache: "no-store" });
         const data = await res.json();
         set({ talent: data });
       } catch (err) {
@@ -230,6 +264,7 @@ export const useStore = create<AppState>((set, get) => {
       try {
         const token = localStorage.getItem("accessToken");
         const res = await fetch(`${API_URL}/offers`, {
+          cache: "no-store",
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -276,6 +311,7 @@ export const useStore = create<AppState>((set, get) => {
       try {
         const token = localStorage.getItem("accessToken");
         const res = await fetch(`${API_URL}/notifications?dir=${dir}`, {
+          cache: "no-store",
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -376,6 +412,7 @@ export const useStore = create<AppState>((set, get) => {
       try {
         const token = localStorage.getItem("accessToken");
         const res = await fetch(`${API_URL}/jobs/my-jobs`, {
+          cache: "no-store",
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
@@ -391,6 +428,7 @@ export const useStore = create<AppState>((set, get) => {
       try {
         const token = localStorage.getItem("accessToken");
         const res = await fetch(`${API_URL}/jobs/my-proposals`, {
+          cache: "no-store",
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
@@ -406,6 +444,7 @@ export const useStore = create<AppState>((set, get) => {
       try {
         const token = localStorage.getItem("accessToken");
         const res = await fetch(`${API_URL}/jobs/received-proposals`, {
+          cache: "no-store",
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
@@ -462,6 +501,209 @@ export const useStore = create<AppState>((set, get) => {
       } catch (err) {
         console.error("Error marking proposal as viewed:", err);
       }
+    },
+
+    conversations: [],
+    activeConversation: null,
+    tempParticipant: null,
+    messages: [],
+    isLoadingMessages: false,
+    fetchConversations: async () => {
+      try {
+        const token = localStorage.getItem("accessToken");
+        const res = await fetch(`${API_URL}/messages/conversations`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        set({ conversations: Array.isArray(data) ? data : [] });
+      } catch (err) {
+        console.error("Error fetching conversations:", err);
+      }
+    },
+    fetchMessages: async (conversationId: string) => {
+      set({ isLoadingMessages: true });
+      try {
+        const token = localStorage.getItem("accessToken");
+        const res = await fetch(`${API_URL}/messages/${conversationId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        set({ messages: Array.isArray(data) ? data : [] });
+
+        // Mark as read in backend
+        fetch(`${API_URL}/messages/${conversationId}/read`, {
+          method: "PUT",
+          headers: { Authorization: `Bearer ${token}` },
+        }).catch(() => console.warn("Failed to mark as read returning from API"));
+        
+        // Optimistically clear the unread badge locally
+        const { conversations, user } = get();
+        if (user) {
+          const myId = user._id || user.id;
+          const updatedConvs = conversations.map(c => {
+            if (c._id === conversationId && c.lastMessage) {
+              const readArray = Array.isArray(c.lastMessage.readBy) ? c.lastMessage.readBy : [];
+              const isAlreadyRead = readArray.some((r: any) => {
+                 if (typeof r === 'object' && r !== null) return r._id === myId || r.id === myId;
+                 return r === myId;
+              });
+              if (!isAlreadyRead) {
+                return {
+                  ...c,
+                  lastMessage: {
+                    ...c.lastMessage,
+                    readBy: [...readArray, myId]
+                  }
+                };
+              }
+            }
+            return c;
+          });
+          set({ conversations: updatedConvs });
+        }
+      } catch (err) {
+        console.warn("Error fetching messages:", err);
+      } finally {
+        set({ isLoadingMessages: false });
+      }
+    },
+    deleteConversation: async (conversationId: string) => {
+      try {
+        const token = localStorage.getItem("accessToken");
+        await fetch(`${API_URL}/messages/${conversationId}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        
+        const { conversations, activeConversation } = get();
+        set({ conversations: conversations.filter(c => c._id !== conversationId) });
+        if (activeConversation?._id === conversationId) {
+          set({ activeConversation: null, messages: [] });
+        }
+      } catch (err) {
+        console.warn("Failed to delete conversation:", err);
+      }
+    },
+    deleteAllConversations: async () => {
+      // Optimistic update
+      const { conversations } = get();
+      set({ conversations: [] });
+
+      try {
+        const token = localStorage.getItem("accessToken");
+        const res = await fetch(`${API_URL}/messages/all`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (!res.ok) {
+          set({ conversations }); // Revert
+          console.warn("Failed to delete all conversations API response");
+        }
+      } catch (err) {
+        set({ conversations }); // Revert
+        console.warn("Failed to delete all conversations:", err);
+      }
+    },
+    toggleFavoriteConversation: async (conversationId: string) => {
+      // Optimistic update
+      const { conversations, user } = get();
+      if (!user) return;
+      const myId = user._id || user.id;
+
+      const optimisticConversations = conversations.map(c => {
+        if (c._id === conversationId) {
+          const favs = c.favoritedBy || [];
+          const hasFav = favs.some((id: any) => id.toString() === myId.toString());
+          return {
+            ...c,
+            favoritedBy: hasFav
+              ? favs.filter((id: any) => id.toString() !== myId.toString())
+              : [...favs, myId]
+          };
+        }
+        return c;
+      });
+      set({ conversations: optimisticConversations });
+
+      try {
+        const token = localStorage.getItem("accessToken");
+        const res = await fetch(`${API_URL}/messages/${conversationId}/favorite`, {
+          method: "PUT",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        
+        if (!res.ok) {
+           // Revert if failed
+           set({ conversations });
+           console.warn("Failed to toggle favorite API response");
+           return;
+        }
+
+        const updatedConversation = await res.json();
+        
+        // Final sync
+        set({ 
+          conversations: get().conversations.map(c => 
+            c._id === conversationId ? updatedConversation : c
+          ) 
+        });
+      } catch (err) {
+        set({ conversations }); // Revert
+        console.warn("Failed to toggle favorite:", err);
+      }
+    },
+    setActiveConversation: (conversation) => set({ activeConversation: conversation, tempParticipant: null }),
+    setTempParticipant: (participant) => set({ tempParticipant: participant, activeConversation: null, messages: [] }),
+    addMessage: (message) => {
+      const { activeConversation, tempParticipant, messages } = get();
+      const currentActiveId = activeConversation?._id;
+      const incomingConvId = message.conversationId;
+
+      console.log("   [STORE] addMessage check:", { currentActiveId, incomingConvId });
+
+      // If we are in a temporary chat with a participant, we should check if this message 
+      // belongs to the newly created conversation for that participant.
+      // But usually, MessageInput will set activeConversation once it gets the first response.
+
+      if (currentActiveId && incomingConvId === currentActiveId) {
+        const isDuplicate = messages.some(m => m._id === message._id);
+        if (!isDuplicate) {
+          set({ messages: [...messages, message] });
+        }
+      } else if (!currentActiveId && tempParticipant) {
+        // This handles cases where the first message comes in via socket before the POST response
+        // Or for the recipient who doesn't have the conversation yet
+        set({ messages: [...messages, message] });
+      }
+    },
+    updateConversationLocally: (updatedConv) => {
+      const { conversations } = get();
+      const updatedId = updatedConv._id;
+
+      // Ensure participants are properly merged if the incoming update is partial
+      const existing = conversations.find(c => c._id === updatedId);
+      const mergedConv = {
+        ...existing,
+        ...updatedConv,
+        participants: updatedConv.participants?.length > 0 ? updatedConv.participants : (existing?.participants || [])
+      };
+
+      let newConversations;
+      if (existing) {
+        newConversations = conversations.map(c => c._id === updatedId ? mergedConv : c);
+      } else {
+        newConversations = [mergedConv, ...conversations];
+      }
+
+      // Sort by updatedAt descending
+      newConversations.sort((a, b) => {
+        const dateA = new Date(a.updatedAt || 0).getTime();
+        const dateB = new Date(b.updatedAt || 0).getTime();
+        return dateB - dateA;
+      });
+
+      set({ conversations: newConversations });
     },
   }
 });

@@ -2,6 +2,7 @@ import "./globals.css";
 import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import QueryProvider from "@/components/providers/QueryProvider";
 
 const geist = Geist({ subsets: ['latin'], variable: '--font-sans' });
 
@@ -32,11 +33,13 @@ export default function RootLayout({
       </head>
       <body className="bg-[#f6f7f8] font-display text-slate-900" suppressHydrationWarning>
         <Toaster position="bottom-right" />
-        <SocketProvider>
-          <ProtectedRoute>
-            {children}
-          </ProtectedRoute>
-        </SocketProvider>
+        <QueryProvider>
+          <SocketProvider>
+            <ProtectedRoute>
+              {children}
+            </ProtectedRoute>
+          </SocketProvider>
+        </QueryProvider>
       </body>
     </html>
   );

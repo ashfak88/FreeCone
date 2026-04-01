@@ -5,21 +5,22 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useStore } from "@/lib/store";
 import DashboardHeader from "@/components/DashboardHeader";
+import { socketService } from "@/lib/socket";
 
 export default function DashboardPage() {
   const router = useRouter();
   const { 
     user, 
-    offers, 
     fetchOffers, 
-    myJobs,
     fetchMyJobs,
-    myProposals,
     fetchMyProposals,
-    receivedProposals,
     fetchReceivedProposals,
     isLoadingOffers,
-    isLoadingMyData
+    isLoadingMyData,
+    offers,
+    receivedProposals,
+    myProposals,
+    myJobs
   } = useStore();
 
   useEffect(() => {
@@ -27,6 +28,29 @@ export default function DashboardPage() {
     fetchMyJobs();
     fetchMyProposals();
     fetchReceivedProposals();
+
+    // Socket.io Real-time Listeners
+    const socket = socketService.getSocket();
+    if (socket) {
+      const handleUpdate = () => {
+        fetchOffers();
+        fetchMyJobs();
+        fetchMyProposals();
+        fetchReceivedProposals();
+      };
+
+      socket.on("newNotification", handleUpdate);
+      socket.on("notificationUpdate", handleUpdate);
+      socket.on("offerUpdate", handleUpdate);
+      socket.on("proposalUpdate", handleUpdate);
+
+      return () => {
+        socket.off("newNotification", handleUpdate);
+        socket.off("notificationUpdate", handleUpdate);
+        socket.off("offerUpdate", handleUpdate);
+        socket.off("proposalUpdate", handleUpdate);
+      };
+    }
   }, [fetchOffers, fetchMyJobs, fetchMyProposals, fetchReceivedProposals]);
 
   // Format activity message

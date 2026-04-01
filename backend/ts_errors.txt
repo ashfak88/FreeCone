@@ -1,0 +1,1 @@
+controllers/messageController.ts(102,62): error TS7006: Parameter 'p' implicitly has an 'any' type.

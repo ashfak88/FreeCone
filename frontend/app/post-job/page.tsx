@@ -14,6 +14,7 @@ export default function PostJobPage() {
     title: "",
     description: "",
     budget: "",
+    timeline: "1-2 Weeks",
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -26,7 +27,7 @@ export default function PostJobPage() {
     setError("");
 
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
       const token = localStorage.getItem("accessToken");
       const res = await fetch(`${API_URL}/jobs`, {
         method: "POST",
@@ -133,6 +134,27 @@ export default function PostJobPage() {
               className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
               placeholder="e.g. 500"
             />
+          </div>
+
+          <div>
+            <label htmlFor="timeline" className="block text-sm font-bold text-slate-700 mb-2">
+              Estimated Deadline / Duration
+            </label>
+            <select
+              id="timeline"
+              name="timeline"
+              required
+              value={formData.timeline}
+              onChange={handleChange}
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all bg-white"
+            >
+              <option value="Less than 1 Week">Less than 1 Week</option>
+              <option value="1-2 Weeks">1-2 Weeks</option>
+              <option value="2-4 Weeks">2-4 Weeks</option>
+              <option value="1-3 Months">1-3 Months</option>
+              <option value="3-6 Months">3-6 Months</option>
+              <option value="More than 6 Months">More than 6 Months</option>
+            </select>
           </div>
 
           <div className="flex gap-4 pt-4">

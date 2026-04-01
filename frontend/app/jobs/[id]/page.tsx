@@ -14,7 +14,7 @@ export default function ProjectDetailsPage() {
   useEffect(() => {
     const fetchJob = async () => {
       try {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
         const response = await fetch(`${API_URL}/jobs/${params.id}`);
         if (!response.ok) throw new Error("Job not found");
         const data = await response.json();

@@ -15,7 +15,6 @@ export const initSocket = (server: HttpServer) => {
   io.on("connection", (socket: Socket) => {
     console.log(`   [SOCKET] New connection: ${socket.id}`);
 
-    // Join a room based on userId when provided
     socket.on("join", (userId: string) => {
       if (userId) {
         socket.join(userId);

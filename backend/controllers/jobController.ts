@@ -9,7 +9,7 @@ export const getJobs = async (req: Request, res: Response): Promise<void> => {
   try {
     const jobs = await Job.find().sort({ createdAt: -1 });
     res.status(200).json(jobs);
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error fetching jobs:", error);
     res.status(500).json({ message: "Server error" });
   }
@@ -23,7 +23,7 @@ export const getJobById = async (req: Request, res: Response): Promise<void> => 
       return;
     }
     res.status(200).json(job);
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error fetching job:", error);
     res.status(500).json({ message: "Server error" });
   }
@@ -52,7 +52,7 @@ export const createJob = async (req: any, res: Response): Promise<void> => {
 
     const savedJob = await newJob.save();
     res.status(201).json(savedJob);
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error creating job:", error);
     res.status(500).json({ message: "Server error while creating job" });
   }
@@ -103,6 +103,7 @@ export const applyForJob = async (req: any, res: Response): Promise<void> => {
 
       // Emit real-time notification to client
       emitToUser(job.user.toString(), "newNotification", clientNotification);
+      emitToUser(job.user.toString(), "proposalUpdate", savedProposal);
     }
 
     // Create a notification for the talent (sender) - Sent
@@ -115,9 +116,10 @@ export const applyForJob = async (req: any, res: Response): Promise<void> => {
       message: `You sent a proposal for '${job.title}' with a rate of $${proposedRate}.`,
     });
     await talentNotification.save();
+    emitToUser(talentId.toString(), "proposalUpdate", savedProposal);
 
     res.status(201).json({ message: "Application submitted successfully", proposal: savedProposal });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error applying for job:", error);
     res.status(500).json({ message: "Server error while applying for job" });
   }
@@ -128,7 +130,7 @@ export const getMyJobs = async (req: any, res: Response): Promise<void> => {
   try {
     const jobs = await Job.find({ user: req.user._id }).sort({ createdAt: -1 });
     res.status(200).json(jobs);
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error fetching my jobs:", error);
     res.status(500).json({ message: "Server error" });
   }
@@ -141,7 +143,7 @@ export const getMyProposals = async (req: any, res: Response): Promise<void> => 
       .populate("job")
       .sort({ createdAt: -1 });
     res.status(200).json(proposals);
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error fetching my proposals:", error);
     res.status(500).json({ message: "Server error" });
   }
@@ -161,7 +163,7 @@ export const getReceivedProposals = async (req: any, res: Response): Promise<voi
       .sort({ createdAt: -1 });
 
     res.status(200).json(proposals);
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error fetching received proposals:", error);
     res.status(500).json({ message: "Server error" });
   }
@@ -210,6 +212,7 @@ export const updateProposalStatus = async (req: any, res: Response): Promise<voi
 
       // Emit update to talent
       emitToUser(proposal.talent.toString(), "notificationUpdate", talentNotification);
+      emitToUser(proposal.talent.toString(), "proposalUpdate", proposal);
     }
 
     // 2. Update the client's notification (Received history)
@@ -226,10 +229,11 @@ export const updateProposalStatus = async (req: any, res: Response): Promise<voi
 
       // Emit update to client
       emitToUser(clientId.toString(), "notificationUpdate", clientNotification);
+      emitToUser(clientId.toString(), "proposalUpdate", proposal);
     }
 
     res.status(200).json({ message: `Proposal ${status} successfully`, proposal });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error updating proposal status:", error);
     res.status(500).json({ message: "Server error while updating proposal status" });
   }
@@ -261,7 +265,7 @@ export const markProposalAsViewed = async (req: any, res: Response): Promise<voi
     }
 
     res.status(200).json({ message: "Proposal marked as viewed", proposal });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error marking proposal as viewed:", error);
     res.status(500).json({ message: "Server error" });
   }

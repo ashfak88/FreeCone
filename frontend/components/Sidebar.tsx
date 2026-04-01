@@ -2,6 +2,7 @@
 
 import React from "react";
 import { useRouter, usePathname } from "next/navigation";
+import Link from "next/link";
 import { useStore } from "@/lib/store";
 
 interface SidebarProps {
@@ -47,17 +48,17 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
         {navItems.map((item) => {
           const isActive = pathname === item.path;
           return (
-            <a
+            <Link
               key={item.name}
-              onClick={() => router.push(item.path)}
-              className={`cursor-pointer flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive
+              href={item.path}
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive
                 ? "bg-primary/10 text-primary border-l-4 border-primary font-semibold"
                 : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium"
                 }`}
             >
               <span className={`material-symbols-outlined ${isActive ? "text-primary" : ""}`}>{item.icon}</span>
               <span>{item.name}</span>
-            </a>
+            </Link>
           );
         })}
 

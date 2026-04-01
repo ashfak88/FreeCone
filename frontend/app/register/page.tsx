@@ -22,7 +22,7 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
       const res = await fetch(`${API_URL}/auth/register`, {
         method: "POST",
         headers: {
@@ -51,7 +51,7 @@ export default function RegisterPage() {
   };
 
   const handleGoogleLogin = () => {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
     window.location.href = `${API_URL}/auth/google`;
   };
 

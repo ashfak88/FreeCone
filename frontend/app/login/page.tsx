@@ -30,11 +30,11 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
       const res = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include", // needed to receive the refreshToken cookie
+        credentials: "include",
         body: JSON.stringify(formData),
       });
 
@@ -44,18 +44,14 @@ export default function LoginPage() {
         throw new Error(data.message || "Login failed");
       }
 
-      // Store access token and user info
       localStorage.setItem("accessToken", data.accessToken);
       
-      // Set a flag to prevent ProtectedRoute from instantly redirecting us away before the animation finishes
       if (typeof window !== "undefined") {
         (window as any).isLoggingInAnimation = true;
       }
 
-      // setUser already handles localStorage for "user"
       setUser(data.user);
 
-      // Show loading animation before redirecting
       setShowLoader(true);
     } catch (err: any) {
       setError(err.message);
@@ -69,7 +65,7 @@ export default function LoginPage() {
   };
 
   const handleGoogleLogin = () => {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
     window.location.href = `${API_URL}/auth/google`;
   };
 
@@ -83,7 +79,6 @@ export default function LoginPage() {
         } transition-opacity duration-300`}
       >
 
-        {/* Background Abstract Decoration */}
         <div className="fixed inset-0 -z-10 overflow-hidden opacity-20 pointer-events-none">
           <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-[#6A6B4C]/30 blur-[100px]" />
           <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-[#6A6B4C]/20 blur-[100px]" />

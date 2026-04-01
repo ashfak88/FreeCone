@@ -45,6 +45,7 @@ export const createOffer = async (req: Request, res: Response): Promise<any> => 
 
     // Emit real-time notification to freelancer
     emitToUser(recipientId, "newNotification", freelancerNotification);
+    emitToUser(recipientId, "offerUpdate", savedOffer);
 
     // Create a notification for the client (Sent)
     const clientNotification = new Notification({
@@ -56,6 +57,7 @@ export const createOffer = async (req: Request, res: Response): Promise<any> => 
       message: `You sent an offer for '${jobTitle}' to the talent.`,
     });
     await clientNotification.save();
+    emitToUser(clientId, "offerUpdate", savedOffer);
 
     res.status(201).json(savedOffer);
   } catch (error: any) {
@@ -128,9 +130,10 @@ export const updateOfferStatus = async (req: Request, res: Response): Promise<an
       clientNotification.message = `Your offer for '${offer.jobTitle}' has been ${status}.`;
       clientNotification.isRead = false;
       await clientNotification.save();
-      
+
       // Emit update to client
       emitToUser(offer.client._id, "notificationUpdate", clientNotification);
+      emitToUser(offer.client._id, "offerUpdate", offer);
     }
 
     // 2. Update the Freelancer's notification (Received history)
@@ -144,6 +147,7 @@ export const updateOfferStatus = async (req: Request, res: Response): Promise<an
       freelancerNotification.title = `Offer ${status === 'accepted' ? 'Accepted' : 'Rejected'}`;
       freelancerNotification.message = `You ${status} the offer for '${offer.jobTitle}'.`;
       await freelancerNotification.save();
+      emitToUser(userId, "offerUpdate", offer);
     }
 
     res.status(200).json({ message: `Offer ${status} successfully`, offer });
