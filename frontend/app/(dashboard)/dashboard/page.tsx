@@ -1,11 +1,20 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useStore } from "@/lib/store";
 import DashboardHeader from "@/components/DashboardHeader";
 import { socketService } from "@/lib/socket";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
+
+interface EscrowSummary {
+  escrowAsClient: { total: number; count: number };
+  escrowAsFreelancer: { total: number; count: number };
+  totalSpent: number;
+  totalEarned: number;
+}
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -23,11 +32,33 @@ export default function DashboardPage() {
     myJobs
   } = useStore();
 
+  const [escrow, setEscrow] = useState<EscrowSummary | null>(null);
+  const [loadingEscrow, setLoadingEscrow] = useState(true);
+
+  const fetchEscrow = useCallback(async () => {
+    try {
+      const token = localStorage.getItem("accessToken");
+      if (!token) return;
+      const res = await fetch(`${API_URL}/offers/escrow-summary`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setEscrow(data);
+      }
+    } catch (e) {
+      // non-blocking
+    } finally {
+      setLoadingEscrow(false);
+    }
+  }, []);
+
   useEffect(() => {
     fetchOffers();
     fetchMyJobs();
     fetchMyProposals();
     fetchReceivedProposals();
+    fetchEscrow();
 
     // Socket.io Real-time Listeners
     const socket = socketService.getSocket();
@@ -38,20 +69,25 @@ export default function DashboardPage() {
         fetchMyProposals();
         fetchReceivedProposals();
       };
+      const handleEscrowUpdate = () => {
+        fetchEscrow();
+      };
 
       socket.on("newNotification", handleUpdate);
       socket.on("notificationUpdate", handleUpdate);
       socket.on("offerUpdate", handleUpdate);
       socket.on("proposalUpdate", handleUpdate);
+      socket.on("escrowUpdate", handleEscrowUpdate);
 
       return () => {
         socket.off("newNotification", handleUpdate);
         socket.off("notificationUpdate", handleUpdate);
         socket.off("offerUpdate", handleUpdate);
         socket.off("proposalUpdate", handleUpdate);
+        socket.off("escrowUpdate", handleEscrowUpdate);
       };
     }
-  }, [fetchOffers, fetchMyJobs, fetchMyProposals, fetchReceivedProposals]);
+  }, [fetchOffers, fetchMyJobs, fetchMyProposals, fetchReceivedProposals, fetchEscrow]);
 
   // Format activity message
   const getActivityMessage = (activity: any) => {
@@ -76,8 +112,21 @@ export default function DashboardPage() {
   };
 
   const isClientRole = user?.role === "client";
-  const activeProjectsCount = isClientRole ? myJobs.length : myProposals.filter(p => p.status === 'accepted').length;
-  const pendingProposalsCount = isClientRole ? receivedProposals.length : myProposals.filter(p => p.status === 'pending').length;
+
+  const activeProjectsCount = React.useMemo(() => {
+    return offers.filter(o => o.status === 'accepted' && o.isPaid === true).length;
+  }, [offers]);
+
+  // Determine escrow balance based on role
+  const escrowBalance = isClientRole
+    ? escrow?.escrowAsClient.total ?? 0
+    : escrow?.escrowAsFreelancer.total ?? 0;
+  const escrowCount = isClientRole
+    ? escrow?.escrowAsClient.count ?? 0
+    : escrow?.escrowAsFreelancer.count ?? 0;
+  const totalFinancial = isClientRole
+    ? (escrow?.totalSpent ?? 0)
+    : (escrow?.totalEarned ?? 0);
 
   return (
     <div className="flex-1 overflow-y-auto">
@@ -98,53 +147,76 @@ export default function DashboardPage() {
 
         {/* Stats Row */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {/* Card 1 */}
-          <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between">
-            <div className="flex justify-between items-start mb-4">
-              <p className="text-sm font-semibold text-slate-500">Total Earnings</p>
-              <span className="material-symbols-outlined text-slate-400 text-xl">payments</span>
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-slate-900">$0.00</h2>
-              <div className="flex items-center gap-1 mt-2 text-slate-400 font-medium text-xs">
-                <span>No earnings yet</span>
-              </div>
-            </div>
-          </div>
 
-          {/* Card 2 */}
-          <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between">
-            <div className="flex justify-between items-start mb-4">
-              <p className="text-sm font-semibold text-slate-500">Total Spend</p>
-              <span className="material-symbols-outlined text-slate-400 text-xl">shopping_cart</span>
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-slate-900">$0.00</h2>
-              <div className="flex items-center gap-1 mt-2 text-slate-400 font-medium text-xs">
-                <span>No spending yet</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Card 3 */}
+          {/* Card 1 — Earnings / Spend */}
           <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between">
             <div className="flex justify-between items-start mb-4">
               <p className="text-sm font-semibold text-slate-500">
-                {isClientRole ? "Active Projects" : "Submitted Proposals"}
+                {isClientRole ? "Total Spend" : "Total Earnings"}
               </p>
+              <span className="material-symbols-outlined text-slate-400 text-xl">payments</span>
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900">
+                ${totalFinancial.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </h2>
+              <div className="flex items-center gap-1 mt-2 text-slate-400 font-medium text-xs">
+                <span>{totalFinancial > 0 ? `${isClientRole ? "Paid out" : "Earned"} so far` : "No activity yet"}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Card 2 — Escrow Balance */}
+          <div className={`rounded-xl border p-6 shadow-sm flex flex-col justify-between ${
+            escrowBalance > 0
+              ? "bg-gradient-to-br from-amber-50 to-yellow-50 border-amber-200"
+              : "bg-white border-slate-200"
+          }`}>
+            <div className="flex justify-between items-start mb-4">
+              <p className="text-sm font-semibold text-slate-500">In Escrow</p>
+              <span className={`material-symbols-outlined text-xl ${escrowBalance > 0 ? "text-amber-500" : "text-slate-400"}`}>
+                lock
+              </span>
+            </div>
+            <div>
+              {loadingEscrow ? (
+                <div className="w-6 h-6 border-2 border-amber-300 border-t-amber-600 rounded-full animate-spin mt-1"></div>
+              ) : (
+                <>
+                  <h2 className={`text-2xl font-bold ${escrowBalance > 0 ? "text-amber-700" : "text-slate-900"}`}>
+                    ${escrowBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </h2>
+                  <div className="flex items-center gap-1.5 mt-2">
+                    {escrowBalance > 0 ? (
+                      <span className="text-[11px] font-bold text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">
+                        🔒 {escrowCount} payment{escrowCount > 1 ? "s" : ""} held
+                      </span>
+                    ) : (
+                      <span className="text-xs text-slate-400 font-medium">No funds in escrow</span>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Card 3 — Active Projects */}
+          <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between">
+            <div className="flex justify-between items-start mb-4">
+              <p className="text-sm font-semibold text-slate-500">Active Projects</p>
               <span className="material-symbols-outlined text-slate-400 text-xl">account_tree</span>
             </div>
             <div>
               <h2 className="text-2xl font-bold text-slate-900">
-                {isClientRole ? myJobs.length : myProposals.length}
+                {activeProjectsCount}
               </h2>
               <div className="flex items-center gap-1 mt-2 text-slate-400 font-medium text-xs">
-                <span>{isClientRole ? `${myJobs.length} jobs posted` : `${myProposals.length} proposals sent`}</span>
+                <span>{isClientRole ? `${myJobs.length} total jobs posted` : `${myProposals.length} total proposals sent`}</span>
               </div>
             </div>
           </div>
 
-          {/* Card 4 */}
+          {/* Card 4 — Success Rate */}
           <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between">
             <div className="flex justify-between items-start mb-4">
               <p className="text-sm font-semibold text-slate-500">Success Rate</p>
@@ -164,6 +236,46 @@ export default function DashboardPage() {
 
           {/* Left Column */}
           <div className="lg:col-span-2 space-y-10">
+
+            {/* Escrow Detail Card — shown when there's an active escrow balance */}
+            {escrowBalance > 0 && (
+              <div className="bg-gradient-to-r from-amber-50 via-yellow-50 to-orange-50 rounded-2xl border border-amber-200 p-6 shadow-sm">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
+                    <span className="material-symbols-outlined text-amber-600 text-xl">account_balance_wallet</span>
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-900 text-sm">Escrow Balance</h3>
+                    <p className="text-xs text-slate-500">
+                      {isClientRole
+                        ? "Funds you've deposited, held securely until work is approved."
+                        : "Funds awaiting release after work is approved by the client."}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-end justify-between">
+                  <div>
+                    <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-1">Amount Held</p>
+                    <p className="text-3xl font-extrabold text-amber-700">
+                      ${escrowBalance.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Across {escrowCount} active payment{escrowCount !== 1 ? "s" : ""}
+                    </p>
+                  </div>
+                  <div className="flex flex-col items-end gap-2">
+                    <span className="px-3 py-1.5 bg-amber-100 text-amber-700 text-xs font-bold rounded-full flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[14px]">lock</span>
+                      Escrow Protected
+                    </span>
+                    <p className="text-[11px] text-slate-400 text-right max-w-[180px]">
+                      USD • Secured by FreeCone
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Dynamically Render My Posted Jobs OR Recent Proposals based on activity */}
             {myJobs.length > 0 && (

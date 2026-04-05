@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import Job from "../models/Job";
 import Proposal from "../models/Proposal";
 import Notification from "../models/Notification";
+import Transaction from "../models/Transaction";
 import { emitToUser } from "../config/socket";
 import { sendSystemMessage } from "../utils/messageUtils";
 
@@ -159,6 +160,39 @@ export const getReceivedProposals = async (req: any, res: Response): Promise<voi
   }
 };
 
+// @desc    Get a single proposal by ID
+// @route   GET /api/jobs/proposals/:id
+// @access  Private
+export const getProposalById = async (req: any, res: Response): Promise<any> => {
+  try {
+    const { id } = req.params;
+    const userId = req.user?._id;
+
+    const proposal = await Proposal.findById(id)
+      .populate("job")
+      .populate("talent", "name email imageUrl")
+      .populate({
+        path: "job",
+        populate: { path: "user", select: "name email imageUrl" }
+      });
+
+    if (!proposal) {
+      return res.status(404).json({ message: "Proposal not found" });
+    }
+
+    const job = proposal.job as any;
+    // Check if user is participant (client or talent)
+    if (job.user._id.toString() !== userId.toString() && proposal.talent._id.toString() !== userId.toString()) {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    res.status(200).json(proposal);
+  } catch (error: any) {
+    console.error("Error fetching proposal by ID:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 export const updateProposalStatus = async (req: any, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
@@ -189,8 +223,19 @@ export const updateProposalStatus = async (req: any, res: Response): Promise<voi
     if (status === 'accepted') {
       const job = proposal.job as any;
       const freelancerId = proposal.talent._id || proposal.talent;
-      const messageContent = `Your proposal for '${job.title}' has been accepted! 🚀`;
-      await sendSystemMessage(clientId, freelancerId, messageContent);
+      
+      // 1. Message to Freelancer
+      const freelancerMsg = `Your proposal for '${job.title}' has been accepted! 🚀`;
+      await sendSystemMessage(clientId, freelancerId, freelancerMsg);
+
+      // 2. Handshake / Confirmation message to freelancer
+      // This will show "Accept" and "Reject" buttons for the freelancer to finalize.
+      const confirmationMsg = `The client has accepted your proposal for '${job.title}'. Please confirm if you are ready to start.`;
+      await sendSystemMessage(clientId, freelancerId, confirmationMsg, 'confirmation', {
+        proposalId: proposal._id,
+        jobTitle: job.title,
+        amount: proposal.proposedRate
+      });
     }
 
     const talentNotification = await Notification.findOne({
@@ -228,6 +273,131 @@ export const updateProposalStatus = async (req: any, res: Response): Promise<voi
   } catch (error: any) {
     console.error("Error updating proposal status:", error);
     res.status(500).json({ message: "Server error while updating proposal status" });
+  }
+};
+
+export const confirmProposalHandshake = async (req: any, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { action } = req.body; // 'confirm' or 'reject'
+    const freelancerId = req.user._id;
+
+    const proposal = await Proposal.findById(id).populate("job");
+    if (!proposal) {
+      res.status(404).json({ message: "Proposal not found" });
+      return;
+    }
+
+    const job = proposal.job as any;
+    if (proposal.talent.toString() !== freelancerId.toString()) {
+      res.status(403).json({ message: "Only the freelancer can confirm this handshake." });
+      return;
+    }
+
+    if (action === 'confirm') {
+      const clientId = job.user._id || job.user;
+      
+      // 1. Send Payment card to client
+      const paymentMsg = `I'm ready to start! Please proceed with the payment of $${proposal.proposedRate}.`;
+      await sendSystemMessage(freelancerId, clientId, paymentMsg, 'payment', {
+        proposalId: proposal._id,
+        amount: proposal.proposedRate,
+        jobTitle: job.title,
+        type: 'proposal'
+      });
+
+      // 2. Create Payment notification for client
+      const paymentNotification = new Notification({
+        recipient: clientId,
+        sender: freelancerId,
+        type: "payment",
+        relatedId: proposal._id,
+        title: "Payment Required (Proposal)",
+        message: `Freelancer confirmed the project! Please pay the advance of $${proposal.proposedRate} now.`,
+      });
+      await paymentNotification.save();
+      emitToUser(clientId.toString(), "newNotification", paymentNotification);
+
+      res.status(200).json({ message: "Handshake confirmed. Payment requested from client." });
+    } else {
+      proposal.status = 'rejected';
+      await proposal.save();
+      
+      // Notify client about rejection if needed
+      const clientId = job.user._id || job.user;
+      const rejectMsg = `I'm sorry, I cannot proceed with this project at this time.`;
+      await sendSystemMessage(freelancerId, clientId, rejectMsg);
+
+      res.status(200).json({ message: "Handshake rejected." });
+    }
+  } catch (error: any) {
+    console.error("Error in confirmProposalHandshake:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const payProposal = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const { id } = req.params;
+    const userId = (req as any).user?._id;
+
+    const proposal = await Proposal.findById(id).populate("talent", "name") as any;
+    if (!proposal) {
+      return res.status(404).json({ message: "Proposal not found" });
+    }
+
+    // Since Proposal.job is not fully populated, we might need more info or just find job
+    const job = await Job.findById(proposal.job);
+    if (!job) {
+      return res.status(404).json({ message: "Job not found" });
+    }
+
+    // Only the client (job owner) can pay
+    if (job.user.toString() !== userId.toString()) {
+      return res.status(403).json({ message: "Only the client can mark this as paid." });
+    }
+
+    if (proposal.isPaid) {
+      return res.status(400).json({ message: "This proposal has already been paid." });
+    }
+
+    proposal.isPaid = true;
+    await proposal.save();
+
+    // Create an Escrow transaction record
+    const txnId = `TXN-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+    const transaction = new Transaction({
+      txnId,
+      amount: proposal.proposedRate,
+      currency: "USD",
+      sender: userId,
+      receiver: proposal.talent._id,
+      status: "Escrow",
+      type: "Deposit",
+      description: `Advance payment for '${job.title}' (Proposal #${proposal._id}) — held in escrow`,
+    });
+    await transaction.save();
+
+    // Notify the freelancer about the payment
+    const paymentConfirmNotif = new Notification({
+      recipient: proposal.talent._id,
+      sender: userId,
+      type: "payment",
+      relatedId: proposal._id,
+      title: "Payment Received",
+      message: `You received a payment of $${proposal.proposedRate} for '${job.title}'. Funds are now in escrow.`,
+    });
+    await paymentConfirmNotif.save();
+    emitToUser(proposal.talent._id.toString(), "newNotification", paymentConfirmNotif);
+
+    // Emit escrow update to both parties
+    emitToUser(userId.toString(), "escrowUpdate", { proposalId: proposal._id, amount: proposal.proposedRate });
+    emitToUser(proposal.talent._id.toString(), "escrowUpdate", { proposalId: proposal._id, amount: proposal.proposedRate });
+
+    res.status(200).json({ message: "Payment successful", proposal, transaction });
+  } catch (error: any) {
+    console.error("   [ERROR] PAY PROPOSAL:", error.message);
+    res.status(500).json({ message: "Server Error" });
   }
 };
 

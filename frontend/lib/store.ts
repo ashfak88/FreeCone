@@ -66,6 +66,7 @@ export interface Offer {
   description: string;
   budget: number;
   status: "pending" | "viewed" | "accepted" | "rejected";
+  isPaid?: boolean;
   createdAt: string;
 }
 
@@ -77,7 +78,7 @@ export interface Notification {
     name: string;
     imageUrl?: string;
   };
-  type: "proposal" | "offer" | "message" | "payment" | "other";
+  type: "proposal" | "offer" | "message" | "payment" | "confirmation" | "other";
   relatedId?: string;
   title: string;
   message: string;
@@ -111,6 +112,8 @@ export interface Message {
   conversationId: string;
   sender: any;
   content: string;
+  type: "text" | "payment" | "confirmation";
+  metadata?: any;
   isRead: boolean;
   createdAt: string;
 }

@@ -45,6 +45,11 @@ export default function FindTalentPage() {
   const hasFilters = search !== "" || rateRange !== "" || selectedRating !== "";
 
 
+  // Filter out current user from the list
+  const filteredTalent = talent.filter(
+    (item: User) => (item._id || item.id) !== (user?._id || user?.id)
+  );
+
   if (!isMounted) return null;
 
   return (
@@ -116,7 +121,7 @@ export default function FindTalentPage() {
           <h3 className="text-slate-900 text-lg font-extrabold flex items-center gap-2">
             {hasFilters ? "Filtered Results" : "Top Talent"}
             {!loading && <span className="text-xs font-bold text-slate-300">•</span>}
-            {!loading && <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{talent.length} found</span>}
+            {!loading && <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{filteredTalent.length} found</span>}
           </h3>
         </div>
 
@@ -127,8 +132,8 @@ export default function FindTalentPage() {
               <span className="material-symbols-outlined text-6xl mb-4 text-primary/20">hourglass_top</span>
               <p className="font-bold text-sm tracking-widest uppercase">Fetching Talent...</p>
             </div>
-          ) : talent.length > 0 ? (
-            talent.map((item: User) => (
+          ) : filteredTalent.length > 0 ? (
+            filteredTalent.map((item: User) => (
               <TalentCard key={item._id || item.id} talent={item} />
             ))
           ) : (

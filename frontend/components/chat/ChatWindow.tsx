@@ -5,6 +5,146 @@ import { useStore, Conversation, User, Message } from "@/lib/store";
 import MessageInput from "./MessageInput";
 import { format, isToday, isYesterday } from "date-fns";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
+
+function ConfirmationMessageBubble({ msg }: { msg: any }) {
+  const [status, setStatus] = useState<string | null>(msg.metadata?.status || null);
+  const [isLoading, setIsLoading] = useState(false);
+  const { user } = useStore();
+
+  const handleAction = async (action: 'confirm' | 'reject') => {
+    setIsLoading(true);
+    try {
+      const token = localStorage.getItem("accessToken");
+      const res = await fetch(`${API_URL}/jobs/proposals/${msg.metadata?.proposalId}/confirm`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ action })
+      });
+      if (res.ok) {
+        setStatus(action === 'confirm' ? 'confirmed' : 'rejected');
+      }
+    } catch (err) {
+      console.error("Handshake error:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const isFreelancer = user?.id === msg.metadata?.freelancerId || user?._id === msg.metadata?.freelancerId;
+
+  return (
+    <div className="flex flex-col gap-3 p-3 bg-slate-900/5 dark:bg-white/5 rounded-xl border border-primary/20 mt-1 mb-2">
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+          <span className="material-symbols-outlined text-[22px] text-primary font-bold">handshake</span>
+        </div>
+        <div className="flex flex-col">
+          <span className="text-[13px] font-bold text-primary">Project Confirmation</span>
+          <p className="text-[12px] text-wa-text-primary leading-tight mt-0.5">{msg.content}</p>
+        </div>
+      </div>
+
+      {status === 'confirmed' ? (
+        <div className="w-full py-2 bg-emerald-50 border border-emerald-200 rounded-lg text-[13px] font-bold text-emerald-600 flex items-center justify-center gap-2">
+          <span className="material-symbols-outlined text-[16px]">check_circle</span>
+          Confirmed
+        </div>
+      ) : status === 'rejected' ? (
+        <div className="w-full py-2 bg-rose-50 border border-rose-200 rounded-lg text-[13px] font-bold text-rose-600 flex items-center justify-center gap-2">
+          <span className="material-symbols-outlined text-[16px]">cancel</span>
+          Rejected
+        </div>
+      ) : (
+        <div className="flex gap-2">
+          <button
+            onClick={() => handleAction('confirm')}
+            disabled={isLoading}
+            className="flex-1 h-9 bg-emerald-500 text-white rounded-lg text-[12px] font-bold hover:bg-emerald-600 transition-all shadow-md shadow-emerald-500/10"
+          >
+            Accept
+          </button>
+          <button
+            onClick={() => handleAction('reject')}
+            disabled={isLoading}
+            className="flex-1 h-9 bg-rose-50 text-rose-500 border border-rose-200 rounded-lg text-[12px] font-bold hover:bg-rose-100 transition-all"
+          >
+            Reject
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PaymentMessageBubble({ msg }: { msg: any }) {
+  const [isPaid, setIsPaid] = useState<boolean | null>(null);
+  const offerId = msg.metadata?.offerId || msg.metadata?.proposalId;
+
+  useEffect(() => {
+    if (!offerId) return;
+    const token = localStorage.getItem("accessToken");
+    // Use the appropriate endpoint based on type
+    const endpoint = msg.metadata?.type === 'proposal' ? `/jobs/proposals/${offerId}` : `/offers/${offerId}`;
+    
+    fetch(`${API_URL}${endpoint}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.isPaid !== undefined) setIsPaid(data.isPaid);
+        // Fallback for proposal which might use status === 'paid' or similar if handled differently
+      })
+      .catch(() => {});
+  }, [offerId, msg.metadata?.type]);
+
+  const handlePay = () => {
+    const type = msg.metadata?.type === 'proposal' ? 'proposal' : 'offer';
+    const id = msg.metadata?.proposalId || msg.metadata?.offerId;
+    window.location.href = `/payment/${id}?type=${type}`;
+  };
+
+  return (
+    <div className={`flex flex-col gap-3 p-3 ${isPaid ? 'bg-emerald-50/50' : 'bg-slate-900/5'} dark:bg-white/5 rounded-xl border ${isPaid ? 'border-emerald-200' : 'border-primary/20'} mt-1 mb-2`}>
+      <div className="flex items-center gap-3">
+        <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${isPaid ? 'bg-emerald-100' : 'bg-primary/10'}`}>
+          <span className={`material-symbols-outlined text-[24px] ${isPaid ? 'text-emerald-600' : 'text-primary'}`}>
+            {isPaid ? 'check_circle' : 'payments'}
+          </span>
+        </div>
+        <div className="flex flex-col">
+          <span className={`text-[13px] font-bold ${isPaid ? 'text-emerald-700' : 'text-primary'}`}>
+            {isPaid ? 'Payment Completed' : 'Payment Request'}
+          </span>
+          <span className="text-[11px] text-wa-text-secondary line-clamp-1">{msg.metadata?.jobTitle || 'Advance Payment'}</span>
+        </div>
+      </div>
+
+      <div className="flex justify-between items-center px-1">
+        <span className="text-[12px] font-medium text-wa-text-secondary">Amount</span>
+        <span className={`text-[16px] font-black ${isPaid ? 'text-emerald-700' : 'text-wa-text-primary'}`}>${msg.metadata?.amount?.toLocaleString() || '0'}</span>
+      </div>
+
+      {isPaid ? (
+        <div className="w-full h-10 bg-emerald-500 text-white rounded-lg text-[13px] font-bold flex items-center justify-center gap-2 shadow-sm">
+          <span className="material-symbols-outlined text-[18px]">check_circle</span>
+          Paid
+        </div>
+      ) : (
+        <button
+          onClick={handlePay}
+          className="w-full h-10 bg-primary text-white rounded-lg text-[13px] font-bold hover:bg-primary/90 transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/10"
+        >
+          Pay Now
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function ChatWindow() {
   const { 
     activeConversation, 
@@ -139,9 +279,15 @@ export default function ChatWindow() {
                        </div>
 
                        <div className={`relative flex flex-col pb-[2px] pt-[2px] min-w-[85px] max-w-full ${isMe ? 'pr-[70px]' : 'pr-[50px]'}`}>
-                          <span className="text-[14.2px] leading-snug break-words whitespace-pre-wrap inline-block">
-                            {msg.content}
-                          </span>
+                          {msg.type === 'payment' ? (
+                            <PaymentMessageBubble msg={msg} />
+                          ) : msg.type === 'confirmation' ? (
+                            <ConfirmationMessageBubble msg={msg} />
+                          ) : (
+                            <span className="text-[14.2px] leading-snug break-words whitespace-pre-wrap inline-block">
+                              {msg.content}
+                            </span>
+                          )}
                           <div className="absolute right-1 bottom-[1px] flex items-center justify-end h-4 select-none">
                              <span className="text-[10.5px] text-wa-text-secondary font-medium tracking-tight mt-[1px]">
                                {format(msgDate, "h:mm a").toLowerCase()}

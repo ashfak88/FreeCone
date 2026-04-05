@@ -9,6 +9,7 @@ export interface IProposal extends Document {
   figmaLink?: string;
   resume?: string;
   status: "pending" | "viewed" | "accepted" | "rejected";
+  isPaid: boolean;
   createdAt: Date;
 }
 
@@ -46,6 +47,10 @@ const ProposalSchema: Schema = new mongoose.Schema(
       type: String,
       enum: ["pending", "viewed", "accepted", "rejected"],
       default: "pending",
+    },
+    isPaid: {
+      type: Boolean,
+      default: false,
     },
   },
   { timestamps: true }

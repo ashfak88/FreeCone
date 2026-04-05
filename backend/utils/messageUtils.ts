@@ -15,16 +15,12 @@ const logToFile = (message: string) => {
   console.log(`[MESSAGE_DEBUG] ${message}`);
 };
 
-/**
- * Sends a system-generated or automated message between two users
- * @param senderId The ID of the user "sending" the automated message
- * @param recipientId The ID of the user receiving the message
- * @param content The text content of the message
- */
 export const sendSystemMessage = async (
   senderId: string | mongoose.Types.ObjectId,
   recipientId: string | mongoose.Types.ObjectId,
-  content: string
+  content: string,
+  type: "text" | "payment" | "confirmation" = "text",
+  metadata?: any
 ): Promise<void> => {
   try {
     // 1. Find or create conversation
@@ -58,6 +54,8 @@ export const sendSystemMessage = async (
       conversationId: conversation._id,
       sender: senderId,
       content,
+      type,
+      metadata,
       readBy: [senderId],
     });
 

@@ -50,13 +50,13 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
 
         if (isAdminRoute && !isAdmin) {
           // Standard user trying to access admin panel
-          router.push("/dashboard");
+          router.push("/");
         } else if (!isAdminRoute && !isAuthRoute && isAdmin) {
           // Admin trying to access standard user side (isolated to Admin Panel)
           router.push("/admin/dashboard");
         } else if (isAuthRoute && !isLoggingIn) {
           // LOGGED IN: Redirect away from login/register
-          router.push(isAdmin ? "/admin/dashboard" : "/dashboard");
+          router.push(isAdmin ? "/admin/dashboard" : "/");
         }
       }
     }

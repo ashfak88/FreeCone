@@ -21,6 +21,7 @@ export default function NotificationsPage() {
   const [proposalTab, setProposalTab] = useState<"received" | "sent">("received");
   const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
   const [selectedProposal, setSelectedProposal] = useState<any | null>(null);
+  const [selectedPaymentReceipt, setSelectedPaymentReceipt] = useState<any | null>(null);
   const {
     offers,
     fetchOffers,
@@ -65,6 +66,20 @@ export default function NotificationsPage() {
         await markProposalAsViewed(proposal._id);
       }
       setSelectedProposal(notif);
+    } else if (notif.type === "payment") {
+      const relatedOffer = offers.find(o => o._id === notif.relatedId);
+      const isPaid = relatedOffer?.isPaid === true;
+
+      const isPaymentRequired = notif.title?.toLowerCase().includes("required") || notif.title?.toLowerCase().includes("payment required");
+      
+      if (isPaymentRequired && !isPaid) {
+        // Client side, not yet paid: redirect to payment page
+        const isProposal = notif.title?.toLowerCase().includes("proposal");
+        router.push(`/payment/${notif.relatedId}${isProposal ? "?type=proposal" : ""}`);
+      } else {
+        // Either freelancer side OR client side already paid: show receipt modal
+        setSelectedPaymentReceipt(notif);
+      }
     }
   };
 
@@ -101,6 +116,7 @@ export default function NotificationsPage() {
   });
 
   return (
+    <>
     <div className="relative flex h-auto min-h-screen w-full flex-col bg-background-light dark:bg-background-dark overflow-x-hidden font-display text-slate-900 dark:text-slate-100">
 
       {/* Header */}
@@ -203,7 +219,9 @@ export default function NotificationsPage() {
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <h3 className={`text-sm ${!notif.isRead ? "font-bold text-slate-900 dark:text-white" : "font-medium text-slate-700 dark:text-slate-300"}`}>
-                      {notif.title}
+                      {notif.type === 'payment' && offers.find(o => o._id === notif.relatedId)?.isPaid 
+                        ? "Payment Successful" 
+                        : notif.title}
                     </h3>
                     {notif.type === 'proposal' && (() => {
                       const proposal = [...myProposals, ...receivedProposals].find(p => p._id === notif.relatedId);
@@ -309,6 +327,35 @@ export default function NotificationsPage() {
                         );
                       }
                       return null;
+                    })()}
+                    {notif.type === 'payment' && (() => {
+                      const relatedOffer = offers.find(o => o._id === notif.relatedId);
+                      const isPaid = relatedOffer?.isPaid === true;
+                      
+                      // Only show Pay Now for the CLIENT side if NOT YET paid
+                      const isPaymentRequired = notif.title?.toLowerCase().includes("required");
+                      
+                      if (!isPaymentRequired || isPaid) {
+                        // Freelancer side OR client side already paid — show "View Receipt" hint
+                        return (
+                          <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-3 py-1.5 rounded-lg flex items-center gap-1">
+                            <span className="material-symbols-outlined text-[12px]">receipt_long</span>
+                            {isPaid ? "View Receipt" : "View Receipt"}
+                          </span>
+                        );
+                      }
+                      
+                      return (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleNotificationClick(notif);
+                          }}
+                          className="bg-primary text-white hover:bg-opacity-90 px-4 py-1.5 rounded-lg text-[10px] font-bold shadow-md shadow-primary/20 transition-all ml-auto"
+                        >
+                          Pay Now
+                        </button>
+                      );
                     })()}
                   </div>
                 </div>
@@ -568,5 +615,86 @@ export default function NotificationsPage() {
 
       <div className="h-10"></div>
     </div>
+
+    {/* Payment Receipt Modal — shown on freelancer side when clicking Payment Received */}
+    {selectedPaymentReceipt && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+
+          {/* Receipt Header */}
+          <div className="bg-gradient-to-br from-emerald-500 to-green-600 p-8 text-white text-center relative overflow-hidden">
+            <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.3) 10px, rgba(255,255,255,0.3) 11px)' }}></div>
+            <div className="relative z-10">
+              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 ring-4 ring-white/30">
+                <span className="material-symbols-outlined text-3xl">check_circle</span>
+              </div>
+              <h3 className="text-xl font-bold mb-1">Payment Received!</h3>
+              <p className="text-emerald-100 text-sm">Your funds are safely held in escrow</p>
+            </div>
+          </div>
+
+          {/* Receipt Body */}
+          <div className="p-6 space-y-4">
+            {/* Receipt ID */}
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-slate-400 font-medium uppercase tracking-wider">Receipt ID</span>
+              <span className="font-mono font-bold text-slate-600">
+                #{String(selectedPaymentReceipt.relatedId || selectedPaymentReceipt.id).slice(-10).toUpperCase()}
+              </span>
+            </div>
+
+            <div className="border-t border-dashed border-slate-200"></div>
+
+            <div className="space-y-3">
+              <div>
+                <p className="text-xs text-slate-400 font-medium uppercase tracking-wider mb-1">Details</p>
+                <p className="text-sm font-medium text-slate-700 leading-snug">{selectedPaymentReceipt.message}</p>
+              </div>
+
+              {/* Amount highlight */}
+              <div className="flex justify-between items-center bg-emerald-50 rounded-xl px-4 py-3 border border-emerald-100">
+                <span className="text-sm font-bold text-slate-700">Amount in Escrow</span>
+                <span className="text-xl font-extrabold text-emerald-600">
+                  {selectedPaymentReceipt.message?.match(/\$[\d,]+/)?.[0] || '—'}
+                </span>
+              </div>
+
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-slate-500">Status</span>
+                <span className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[13px]">lock</span>
+                  In Escrow
+                </span>
+              </div>
+
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-slate-500">Date</span>
+                <span className="font-medium text-slate-700">{selectedPaymentReceipt.time}</span>
+              </div>
+            </div>
+
+            <div className="border-t border-dashed border-slate-200"></div>
+
+            <div className="bg-slate-50 rounded-xl p-4 flex gap-3">
+              <span className="material-symbols-outlined text-amber-500 text-[18px] mt-0.5 shrink-0">info</span>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                Funds will be released to your account once the client approves the completed work milestones.
+              </p>
+            </div>
+          </div>
+
+          {/* Receipt Footer */}
+          <div className="px-6 pb-6">
+            <button
+              onClick={() => setSelectedPaymentReceipt(null)}
+              className="w-full py-3 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-slate-800 transition-all"
+            >
+              Close Receipt
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }

@@ -62,7 +62,7 @@ export default function LoginPage() {
       if (role === "admin") {
         router.push("/admin/dashboard");
       } else {
-        setRedirectPath("/dashboard");
+        setRedirectPath("/");
         setShowLoader(true);
       }
     } catch (err: any) {

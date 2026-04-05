@@ -1,8 +1,10 @@
 import { Request, Response } from "express";
 import Offer from "../models/Offer";
 import Notification from "../models/Notification";
+import Transaction from "../models/Transaction";
 import { emitToUser } from "../config/socket";
 import { sendSystemMessage } from "../utils/messageUtils";
+
 
 // @desc    Create a new offer
 // @route   POST /api/offers
@@ -93,6 +95,42 @@ export const getMyOffers = async (req: Request, res: Response): Promise<any> => 
   }
 };
 
+// @desc    Get a single offer by ID
+// @route   GET /api/offers/:id
+// @access  Private
+export const getOfferById = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const { id } = req.params;
+    const userId = (req as any).user?.id || (req as any).user?._id;
+
+    if (!userId) {
+      return res.status(401).json({ message: "Not authorized" });
+    }
+
+    const offer = await Offer.findById(id)
+      .populate("client", "name email imageUrl")
+      .populate("freelancer", "name email imageUrl");
+
+    if (!offer) {
+      return res.status(404).json({ message: "Offer not found" });
+    }
+
+    // Safely get client & freelancer IDs regardless of populate state
+    const clientId = (offer.client as any)?._id?.toString() || offer.client?.toString();
+    const freelancerId = (offer.freelancer as any)?._id?.toString() || offer.freelancer?.toString();
+
+    // Check if user is participant
+    if (clientId !== userId.toString() && freelancerId !== userId.toString()) {
+      return res.status(403).json({ message: "Not authorized to view this offer" });
+    }
+
+    res.status(200).json(offer);
+  } catch (error: any) {
+    console.error("   [ERROR] GET OFFER BY ID:", error.message);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
 // @desc    Update offer status (Accept/Reject)
 // @route   PUT /api/offers/:id/status
 // @access  Private
@@ -122,8 +160,18 @@ export const updateOfferStatus = async (req: Request, res: Response): Promise<an
     // Send automated chat message if accepted
     if (status === 'accepted') {
       const clientId = offer.client._id || offer.client;
+      // 1. Confirmation message
       const messageContent = `I have accepted your offer for '${offer.jobTitle}'. Let's get started! 🤝`;
       await sendSystemMessage(userId, clientId, messageContent);
+
+      // 2. Payment Request message
+      const paymentMsg = `Offer accepted! Please pay the advance of $${offer.budget} to start the project.`;
+      await sendSystemMessage(userId, clientId, paymentMsg, 'payment', {
+        offerId: offer._id,
+        amount: offer.budget,
+        jobTitle: offer.jobTitle,
+        type: 'advance_payment'
+      });
     }
 
     // 1. Update the Client's notification (Sent history)
@@ -144,6 +192,20 @@ export const updateOfferStatus = async (req: Request, res: Response): Promise<an
       emitToUser(offer.client._id, "offerUpdate", offer);
     }
 
+    // 1.5 Create a NEW Payment notification if accepted
+    if (status === 'accepted') {
+      const paymentNotification = new Notification({
+        recipient: offer.client._id,
+        sender: userId,
+        type: "payment",
+        relatedId: offer._id,
+        title: "Payment Required",
+        message: `Your offer for '${offer.jobTitle}' was accepted! Please pay the advance of $${offer.budget} now.`,
+      });
+      await paymentNotification.save();
+      emitToUser(offer.client._id, "newNotification", paymentNotification);
+    }
+
     // 2. Update the Freelancer's notification (Received history)
     const freelancerNotification = await Notification.findOne({
       recipient: userId,
@@ -161,6 +223,121 @@ export const updateOfferStatus = async (req: Request, res: Response): Promise<an
     res.status(200).json({ message: `Offer ${status} successfully`, offer });
   } catch (error: any) {
     console.error("   [ERROR] UPDATE OFFER STATUS:", error.message);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+// @desc    Mark an offer as paid
+// @route   PUT /api/offers/:id/pay
+// @access  Private (Client only)
+export const payOffer = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const { id } = req.params;
+    const userId = (req as any).user?.id || (req as any).user?._id;
+
+    const offer = await Offer.findById(id).populate("freelancer", "name") as any;
+    if (!offer) {
+      return res.status(404).json({ message: "Offer not found" });
+    }
+
+    // Only the client who created the offer can pay
+    if (offer.client.toString() !== userId.toString()) {
+      return res.status(403).json({ message: "Only the client can mark this as paid." });
+    }
+
+    if (offer.isPaid) {
+      return res.status(400).json({ message: "This offer has already been paid." });
+    }
+
+    offer.isPaid = true;
+    await offer.save();
+
+    // Create an Escrow transaction record
+    const txnId = `TXN-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+    const transaction = new Transaction({
+      txnId,
+      amount: offer.budget,
+      currency: "USD",
+      sender: userId,
+      receiver: offer.freelancer._id,
+      status: "Escrow",
+      type: "Deposit",
+      description: `Advance payment for '${offer.jobTitle}' — held in escrow`,
+    });
+    await transaction.save();
+
+    // Notify the freelancer about the payment
+    const paymentConfirmNotif = new Notification({
+      recipient: offer.freelancer._id,
+      sender: userId,
+      type: "payment",
+      relatedId: offer._id,
+      title: "Payment Received",
+      message: `You received a payment of $${offer.budget} for '${offer.jobTitle}'. Funds are now in escrow.`,
+    });
+    await paymentConfirmNotif.save();
+    emitToUser(offer.freelancer._id, "newNotification", paymentConfirmNotif);
+
+    // Emit escrow update to both parties
+    emitToUser(userId, "escrowUpdate", { offerId: offer._id, amount: offer.budget });
+    emitToUser(offer.freelancer._id, "escrowUpdate", { offerId: offer._id, amount: offer.budget });
+
+    res.status(200).json({ message: "Payment successful", offer, transaction });
+  } catch (error: any) {
+    console.error("   [ERROR] PAY OFFER:", error.message);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+// @desc    Get escrow summary for the logged-in user
+// @route   GET /api/offers/escrow-summary
+// @access  Private
+export const getEscrowSummary = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const userId = (req as any).user?.id || (req as any).user?._id;
+
+    if (!userId) {
+      return res.status(401).json({ message: "Not authorized" });
+    }
+
+    // Total escrow held AS CLIENT (money sent, in escrow)
+    const clientEscrow = await Transaction.aggregate([
+      { $match: { sender: require("mongoose").Types.ObjectId.createFromHexString(userId.toString()), status: "Escrow" } },
+      { $group: { _id: null, total: { $sum: "$amount" }, count: { $sum: 1 } } }
+    ]);
+
+    // Total escrow held AS FREELANCER (money to receive, in escrow)
+    const freelancerEscrow = await Transaction.aggregate([
+      { $match: { receiver: require("mongoose").Types.ObjectId.createFromHexString(userId.toString()), status: "Escrow" } },
+      { $group: { _id: null, total: { $sum: "$amount" }, count: { $sum: 1 } } }
+    ]);
+
+    // Total paid out (success)
+    const totalPaid = await Transaction.aggregate([
+      { $match: { sender: require("mongoose").Types.ObjectId.createFromHexString(userId.toString()), status: "Success" } },
+      { $group: { _id: null, total: { $sum: "$amount" } } }
+    ]);
+
+    // Total earned (success, as receiver)
+    const totalEarned = await Transaction.aggregate([
+      { $match: { receiver: require("mongoose").Types.ObjectId.createFromHexString(userId.toString()), status: "Success" } },
+      { $group: { _id: null, total: { $sum: "$amount" } } }
+    ]);
+
+    res.status(200).json({
+      escrowAsClient: {
+        total: clientEscrow[0]?.total || 0,
+        count: clientEscrow[0]?.count || 0,
+      },
+      escrowAsFreelancer: {
+        total: freelancerEscrow[0]?.total || 0,
+        count: freelancerEscrow[0]?.count || 0,
+      },
+      totalSpent: totalPaid[0]?.total || 0,
+      totalEarned: totalEarned[0]?.total || 0,
+    });
+  } catch (error: any) {
+    console.error("   [ERROR] GET ESCROW SUMMARY:", error.message);
     res.status(500).json({ message: "Server Error" });
   }
 };

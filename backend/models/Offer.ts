@@ -7,6 +7,7 @@ export interface IOffer extends Document {
   description: string;
   budget: number;
   status: "pending" | "accepted" | "rejected";
+  isPaid: boolean;
   createdAt: Date;
 }
 
@@ -38,6 +39,10 @@ const OfferSchema: Schema = new mongoose.Schema(
       type: String,
       enum: ["pending", "accepted", "rejected"],
       default: "pending",
+    },
+    isPaid: {
+      type: Boolean,
+      default: false,
     },
     createdAt: {
       type: Date,

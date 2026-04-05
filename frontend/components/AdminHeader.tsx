@@ -26,12 +26,12 @@ export default function AdminHeader() {
       await fetch(`${API_URL}/auth/logout`, {
         method: "POST",
         credentials: "include",
-      });
+      })
     } catch (_) { }
-    setUser(null);
+    setUser(null)
     setDropdownOpen(false);
-    router.push("/");
-  };
+    router.push("/")
+  }
 
   if (!user) return null;
 
@@ -60,7 +60,7 @@ export default function AdminHeader() {
           <span className="material-symbols-outlined text-[20px]">notifications</span>
         </button>
         <div className="relative" ref={dropdownRef}>
-          <button 
+          <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
             className="flex size-9 items-center justify-center rounded-full overflow-hidden border border-primary/20 hover:border-primary/50 transition-all cursor-pointer"
           >

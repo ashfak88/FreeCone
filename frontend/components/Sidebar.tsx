@@ -14,10 +14,25 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
 
+  const { offers, fetchOffers } = useStore();
+
+  React.useEffect(() => {
+    fetchOffers();
+  }, [fetchOffers]);
+
+  const activeProjectsCount = React.useMemo(() => {
+    return offers.filter(o => o.status === 'accepted' && o.isPaid === true).length;
+  }, [offers]);
+
   const navItems = [
     { name: "Dashboard", icon: "dashboard", path: "/dashboard" },
     { name: "Profile", icon: "person", path: "/profile" },
-    { name: "Projects", icon: "work", path: "/projects" },
+    { 
+      name: "Projects", 
+      icon: "work", 
+      path: "/projects",
+      badge: activeProjectsCount > 0 ? activeProjectsCount : null 
+    },
     { name: "Messages", icon: "chat", path: "/messages" },
     { name: "Earnings", icon: "payments", path: "/earnings" },
   ];
@@ -51,13 +66,20 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
             <Link
               key={item.name}
               href={item.path}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive
+              className={`flex items-center justify-between px-4 py-3 rounded-lg transition-colors ${isActive
                 ? "bg-primary/10 text-primary border-l-4 border-primary font-semibold"
                 : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium"
                 }`}
             >
-              <span className={`material-symbols-outlined ${isActive ? "text-primary" : ""}`}>{item.icon}</span>
-              <span>{item.name}</span>
+              <div className="flex items-center gap-3">
+                <span className={`material-symbols-outlined ${isActive ? "text-primary" : ""}`}>{item.icon}</span>
+                <span>{item.name}</span>
+              </div>
+              {item.badge && (
+                <span className="bg-primary text-white text-[10px] font-black px-2 py-0.5 rounded-full ring-2 ring-white dark:ring-slate-900">
+                  {item.badge}
+                </span>
+              )}
             </Link>
           );
         })}
