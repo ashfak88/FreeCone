@@ -2,17 +2,20 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { useStore } from "@/lib/store";
 import LoadingScreen from "@/components/LoadingScreen";
 
 export default function LoginPage() {
+  const router = useRouter();
   const setUser = useStore((state) => state.setUser);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showLoader, setShowLoader] = useState(false);
+  const [redirectPath, setRedirectPath] = useState("/");
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -50,9 +53,18 @@ export default function LoginPage() {
         (window as any).isLoggingInAnimation = true;
       }
 
+
       setUser(data.user);
 
-      setShowLoader(true);
+      // Determine redirect path based on role (case-insensitive)
+      const role = data.user.role?.toLowerCase();
+
+      if (role === "admin") {
+        router.push("/admin/dashboard");
+      } else {
+        setRedirectPath("/dashboard");
+        setShowLoader(true);
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -71,7 +83,7 @@ export default function LoginPage() {
 
   return (
     <>
-      {showLoader && <LoadingScreen destination="/" />}
+      {showLoader && <LoadingScreen destination={redirectPath} />}
 
       <main 
         className={`relative flex min-h-screen w-full flex-col items-center justify-center p-4 bg-bg-light ${

@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import Offer from "../models/Offer";
 import Notification from "../models/Notification";
 import { emitToUser } from "../config/socket";
+import { sendSystemMessage } from "../utils/messageUtils";
 
 // @desc    Create a new offer
 // @route   POST /api/offers
@@ -98,7 +99,7 @@ export const getMyOffers = async (req: Request, res: Response): Promise<any> => 
 export const updateOfferStatus = async (req: Request, res: Response): Promise<any> => {
   try {
     const { id } = req.params;
-    const { status } = req.body; // 'accepted' or 'rejected'
+    const status = (req.body.status || "").toLowerCase();
     const userId = (req as any).user?.id || (req as any).user?._id;
 
     if (!['accepted', 'rejected'].includes(status)) {
@@ -117,6 +118,13 @@ export const updateOfferStatus = async (req: Request, res: Response): Promise<an
 
     offer.status = status;
     await offer.save();
+
+    // Send automated chat message if accepted
+    if (status === 'accepted') {
+      const clientId = offer.client._id || offer.client;
+      const messageContent = `I have accepted your offer for '${offer.jobTitle}'. Let's get started! 🤝`;
+      await sendSystemMessage(userId, clientId, messageContent);
+    }
 
     // 1. Update the Client's notification (Sent history)
     const clientNotification = await Notification.findOne({

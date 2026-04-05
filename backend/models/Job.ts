@@ -2,10 +2,12 @@ import mongoose, { Document, Model, Schema } from 'mongoose';
 
 export interface IJob extends Document {
   user: mongoose.Types.ObjectId; // The client who posted the job
+  freelancer?: mongoose.Types.ObjectId; // The hired freelancer
   title: string;
   description: string;
   budget: number;
   category: string;
+  status: "pending" | "active" | "completed" | "disputed";
   timeline: string;
   skills: string[];
   client: {
@@ -27,6 +29,16 @@ const JobSchema: Schema<IJob> = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: false, // temporarily false to not break existing jobs
+    },
+    freelancer: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: false,
+    },
+    status: {
+      type: String,
+      enum: ["pending", "active", "completed", "disputed"],
+      default: "pending",
     },
     title: {
       type: String,

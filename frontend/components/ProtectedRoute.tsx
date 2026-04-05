@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useStore } from "@/lib/store";
 
-const protectedBaseRoutes = [
+const userOnlyProtectedRoutes = [
   "/dashboard",
   "/messages",
   "/notifications",
@@ -12,10 +12,9 @@ const protectedBaseRoutes = [
   "/proposals",
   "/send-offer",
   "/profile",
-  "/jobs",
-  "/talent",
-  "/projects"
 ];
+
+const adminOnlyPrefix = "/admin";
 
 const authRoutes = [
   "/login",
@@ -32,8 +31,8 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
     setIsHydrated(true);
   }, []);
 
-  const isProtected = protectedBaseRoutes.some(route => pathname.startsWith(route));
-
+  const isUserProtectedRoute = userOnlyProtectedRoutes.some(route => pathname.startsWith(route));
+  const isAdminRoute = pathname.startsWith(adminOnlyPrefix);
   const isAuthRoute = authRoutes.includes(pathname);
 
   useEffect(() => {
@@ -42,29 +41,42 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
       const isAuthenticated = !!user || !!hasToken;
       const isLoggingIn = typeof window !== 'undefined' ? (window as any).isLoggingInAnimation : false;
 
-      if (isProtected && !isAuthenticated) {
-        router.push(`/login`);
-      } else if (isAuthRoute && isAuthenticated && !isLoggingIn) {
-        // Redirect away from login/register if already authenticated
-        router.push(`/`);
+      if (!isAuthenticated) {
+        if (isUserProtectedRoute || isAdminRoute) {
+          router.push(`/login`);
+        }
+      } else if (user) {
+        const isAdmin = user.role?.toLowerCase() === "admin";
+
+        if (isAdminRoute && !isAdmin) {
+          // Standard user trying to access admin panel
+          router.push("/dashboard");
+        } else if (!isAdminRoute && !isAuthRoute && isAdmin) {
+          // Admin trying to access standard user side (isolated to Admin Panel)
+          router.push("/admin/dashboard");
+        } else if (isAuthRoute && !isLoggingIn) {
+          // LOGGED IN: Redirect away from login/register
+          router.push(isAdmin ? "/admin/dashboard" : "/dashboard");
+        }
       }
     }
-  }, [isHydrated, isProtected, isAuthRoute, user, router]);
+  }, [isHydrated, isAdminRoute, isAuthRoute, user, router, pathname]);
 
-  // If it's a protected route and we lack authentication, block render
-  if (isProtected) {
-    if (!isHydrated) return null; // Avoid hydration mismatch
+  // Combined protection check for rendering
+  const isAdmin = user?.role?.toLowerCase() === "admin";
+  const isDenied = isHydrated && user && (
+    (isAdminRoute && !isAdmin) ||
+    (!isAdminRoute && !isAuthRoute && isAdmin)
+  );
 
-    const hasToken = typeof window !== 'undefined' ? localStorage.getItem("accessToken") : null;
+  const isBlocked = (isUserProtectedRoute || isAdminRoute) && !user && (typeof window !== 'undefined' && !localStorage.getItem("accessToken"));
 
-    // If there's no user and no token, we are redirecting, so don't render children
-    if (!user && !hasToken) {
-      return (
-        <div className="flex items-center justify-center h-screen bg-slate-50 dark:bg-slate-900">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-        </div>
-      );
-    }
+  if (isDenied || isBlocked) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-slate-50 dark:bg-slate-900">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
   }
 
   // If it's an auth-only route and we ARE authenticated, block render

@@ -18,6 +18,7 @@ import uploadRoutes from "./routes/uploadRoute";
 import notificationRoutes from "./routes/notificationRoutes";
 import messageRoutes from "./routes/messageRoutes";
 import miscRoutes from "./routes/miscRoutes";
+import adminRoutes from "./routes/adminRoutes";
 
 dotenv.config();
 
@@ -60,6 +61,7 @@ app.use("/api/offers", offerRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/messages", messageRoutes);
+app.use("/api/admin", adminRoutes);
 
 
 

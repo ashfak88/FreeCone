@@ -10,6 +10,7 @@ function AuthSuccessContent() {
   const searchParams = useSearchParams();
   const setUser = useStore((state) => state.setUser);
   const [showLoader, setShowLoader] = useState(false);
+  const [redirectPath, setRedirectPath] = useState("/");
 
   useEffect(() => {
     const token = searchParams.get("token");
@@ -22,10 +23,21 @@ function AuthSuccessContent() {
 
         // Save to localStorage and update Zustand store — same as regular login
         localStorage.setItem("accessToken", token);
+        
+        if (typeof window !== "undefined") {
+          (window as any).isLoggingInAnimation = true;
+        }
+
         setUser(user);
 
-        // Show loading animation before redirecting
-        setShowLoader(true);
+        // Determine redirect path based on role (case-insensitive)
+        const role = user.role?.toLowerCase();
+        if (role === "admin") {
+          router.push("/admin/dashboard");
+        } else {
+          setRedirectPath("/");
+          setShowLoader(true);
+        }
       } catch (err) {
         console.error("Failed to parse user from Google Auth:", err);
         router.push("/login?error=AuthenticationFailed");
@@ -38,7 +50,7 @@ function AuthSuccessContent() {
 
   return (
     <>
-      {showLoader && <LoadingScreen destination="/" />}
+      {showLoader && <LoadingScreen destination={redirectPath} />}
       <div className={`flex flex-col items-center gap-4 transition-opacity duration-300 ${showLoader ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
         <div className="w-10 h-10 border-4 border-[#6A6B4C] border-t-transparent rounded-full animate-spin"></div>
         <p className="text-slate-600 font-medium animate-pulse">Completing sign in...</p>

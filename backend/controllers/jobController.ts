@@ -3,6 +3,7 @@ import Job from "../models/Job";
 import Proposal from "../models/Proposal";
 import Notification from "../models/Notification";
 import { emitToUser } from "../config/socket";
+import { sendSystemMessage } from "../utils/messageUtils";
 
 
 export const getJobs = async (req: Request, res: Response): Promise<void> => {
@@ -29,7 +30,6 @@ export const getJobById = async (req: Request, res: Response): Promise<void> => 
   }
 };
 
-// POST a new job
 export const createJob = async (req: any, res: Response): Promise<void> => {
   try {
     const { title, description, budget, category, timeline, skills, client, user } = req.body;
@@ -58,7 +58,6 @@ export const createJob = async (req: any, res: Response): Promise<void> => {
   }
 };
 
-// APPLY for a job
 export const applyForJob = async (req: any, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
@@ -77,7 +76,6 @@ export const applyForJob = async (req: any, res: Response): Promise<void> => {
       return;
     }
 
-    // Create the proposal
     const newProposal = new Proposal({
       job: id,
       talent: talentId,
@@ -89,7 +87,6 @@ export const applyForJob = async (req: any, res: Response): Promise<void> => {
     });
     const savedProposal = await newProposal.save();
 
-    // Create a notification for the client (job poster) - Received (only if different user)
     if (job.user && job.user.toString() !== talentId.toString()) {
       const clientNotification = new Notification({
         recipient: job.user,
@@ -101,12 +98,10 @@ export const applyForJob = async (req: any, res: Response): Promise<void> => {
       });
       await clientNotification.save();
 
-      // Emit real-time notification to client
       emitToUser(job.user.toString(), "newNotification", clientNotification);
       emitToUser(job.user.toString(), "proposalUpdate", savedProposal);
     }
 
-    // Create a notification for the talent (sender) - Sent
     const talentNotification = new Notification({
       recipient: talentId,
       sender: talentId,
@@ -125,7 +120,6 @@ export const applyForJob = async (req: any, res: Response): Promise<void> => {
   }
 };
 
-// GET jobs posted by the logged-in user
 export const getMyJobs = async (req: any, res: Response): Promise<void> => {
   try {
     const jobs = await Job.find({ user: req.user._id }).sort({ createdAt: -1 });
@@ -136,7 +130,6 @@ export const getMyJobs = async (req: any, res: Response): Promise<void> => {
   }
 };
 
-// GET proposals sent by the logged-in user
 export const getMyProposals = async (req: any, res: Response): Promise<void> => {
   try {
     const proposals = await Proposal.find({ talent: req.user._id })
@@ -149,14 +142,11 @@ export const getMyProposals = async (req: any, res: Response): Promise<void> => 
   }
 };
 
-// GET received proposals for jobs posted by the logged-in user
 export const getReceivedProposals = async (req: any, res: Response): Promise<void> => {
   try {
-    // 1. Find all jobs posted by this user
     const myJobs = await Job.find({ user: req.user._id });
     const myJobIds = myJobs.map(job => job._id);
 
-    // 2. Find all proposals for these jobs
     const proposals = await Proposal.find({ job: { $in: myJobIds } })
       .populate("job")
       .populate("talent", "name email imageUrl")
@@ -169,11 +159,10 @@ export const getReceivedProposals = async (req: any, res: Response): Promise<voi
   }
 };
 
-// UPDATE proposal status (Accept/Reject)
 export const updateProposalStatus = async (req: any, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const { status } = req.body; // 'accepted' or 'rejected'
+    const status = (req.body.status || "").toLowerCase();
     const clientId = req.user._id;
 
     if (!['accepted', 'rejected'].includes(status)) {
@@ -187,7 +176,6 @@ export const updateProposalStatus = async (req: any, res: Response): Promise<voi
       return;
     }
 
-    // Check if the current user is the owner of the job
     const job = proposal.job as any;
     if (job.user.toString() !== clientId.toString()) {
       res.status(403).json({ message: "You are not authorized to update this proposal." });
@@ -197,7 +185,14 @@ export const updateProposalStatus = async (req: any, res: Response): Promise<voi
     proposal.status = status;
     await proposal.save();
 
-    // 1. Update the freelancer's notification (Sent history)
+    // Send automated chat message if accepted
+    if (status === 'accepted') {
+      const job = proposal.job as any;
+      const freelancerId = proposal.talent._id || proposal.talent;
+      const messageContent = `Your proposal for '${job.title}' has been accepted! 🚀`;
+      await sendSystemMessage(clientId, freelancerId, messageContent);
+    }
+
     const talentNotification = await Notification.findOne({
       recipient: proposal.talent,
       relatedId: proposal._id,
@@ -210,12 +205,10 @@ export const updateProposalStatus = async (req: any, res: Response): Promise<voi
       talentNotification.isRead = false;
       await talentNotification.save();
 
-      // Emit update to talent
       emitToUser(proposal.talent.toString(), "notificationUpdate", talentNotification);
       emitToUser(proposal.talent.toString(), "proposalUpdate", proposal);
     }
 
-    // 2. Update the client's notification (Received history)
     const clientNotification = await Notification.findOne({
       recipient: clientId,
       relatedId: proposal._id,
@@ -227,7 +220,6 @@ export const updateProposalStatus = async (req: any, res: Response): Promise<voi
       clientNotification.message = `You ${status} the proposal for '${job.title}'.`;
       await clientNotification.save();
 
-      // Emit update to client
       emitToUser(clientId.toString(), "notificationUpdate", clientNotification);
       emitToUser(clientId.toString(), "proposalUpdate", proposal);
     }
@@ -239,7 +231,6 @@ export const updateProposalStatus = async (req: any, res: Response): Promise<voi
   }
 };
 
-// MARK proposal as viewed
 export const markProposalAsViewed = async (req: any, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
@@ -251,14 +242,12 @@ export const markProposalAsViewed = async (req: any, res: Response): Promise<voi
       return;
     }
 
-    // Check if the current user is the owner of the job
     const job = proposal.job as any;
     if (job.user.toString() !== clientId.toString()) {
       res.status(403).json({ message: "Not authorized" });
       return;
     }
 
-    // Only update to 'viewed' if it's currently 'pending'
     if (proposal.status === 'pending') {
       proposal.status = 'viewed';
       await proposal.save();

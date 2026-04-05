@@ -29,6 +29,7 @@ export interface IUser extends Document {
     website?: string;
   };
   isProfileComplete: boolean;
+  status: "active" | "pending" | "blocked";
   createdAt: Date;
 }
 
@@ -104,6 +105,11 @@ const UserSchema: Schema = new mongoose.Schema(
     isProfileComplete: {
       type: Boolean,
       default: false,
+    },
+    status: {
+      type: String,
+      enum: ["active", "pending", "blocked"],
+      default: "active",
     },
     createdAt: {
       type: Date,
