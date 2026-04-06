@@ -3,12 +3,11 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useStore } from "@/lib/store";
-import Navbar from "@/components/Navbar";
-import { 
-  CreditCard, 
-  ShieldCheck, 
-  Lock, 
-  CheckCircle2, 
+import {
+  CreditCard,
+  ShieldCheck,
+  Lock,
+  CheckCircle2,
   AlertCircle,
   ArrowLeft,
   Briefcase
@@ -23,7 +22,6 @@ export default function PaymentPage() {
 
   const [offer, setOffer] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  // Separate load errors from payment errors so inline vs full-page display works correctly
   const [loadError, setLoadError] = useState("");
   const [payError, setPayError] = useState("");
   const [processing, setProcessing] = useState(false);
@@ -96,10 +94,8 @@ export default function PaymentPage() {
       const token = localStorage.getItem("accessToken");
       const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
-      // Simulate card processing delay (2.5s for UX)
       await new Promise((resolve) => setTimeout(resolve, 2500));
 
-      // Try the /pay endpoint (Branch between offers and proposals)
       const type = searchParams.get("type");
       let endpoint = `${API_URL}/offers/${id}/pay`;
       if (type === "proposal") {
@@ -120,8 +116,7 @@ export default function PaymentPage() {
         setSuccess(true);
         setOffer((prev: any) => ({ ...prev, isPaid: true }));
       } else if (res.status === 404) {
-        // Route might not be registered yet — fall back to marking as paid via a PATCH to offers
-        // This can happen if the backend hasn't restarted after route changes
+
         setPayError(
           "Payment endpoint not found. Please restart the backend server and try again. " +
           "(The /api/offers/:id/pay route needs to be registered.)"
@@ -136,7 +131,6 @@ export default function PaymentPage() {
     }
   };
 
-  // ─── Loading State ────────────────────────────────────
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
@@ -146,7 +140,6 @@ export default function PaymentPage() {
     );
   }
 
-  // ─── Load Error State (only for INITIAL fetch failures) ───────────────────────
   if (loadError || !offer) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
@@ -156,7 +149,7 @@ export default function PaymentPage() {
           </div>
           <h2 className="text-xl font-bold text-slate-900">Payment Details Not Found</h2>
           <p className="text-slate-600 text-sm">{loadError || "We couldn't find the payment details you're looking for."}</p>
-          <button 
+          <button
             onClick={() => router.back()}
             className="px-6 py-3 bg-slate-900 text-white rounded-xl font-semibold hover:bg-slate-800 transition-colors w-full"
           >
@@ -167,13 +160,11 @@ export default function PaymentPage() {
     );
   }
 
-  // ─── Main Page ─────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-900">
-      <Navbar />
 
       <main className="max-w-6xl mx-auto px-4 py-8 md:py-16">
-        <button 
+        <button
           onClick={() => router.back()}
           className="flex items-center gap-2 text-slate-500 hover:text-primary transition-colors mb-8 group"
         >
@@ -183,13 +174,12 @@ export default function PaymentPage() {
 
         <AnimatePresence mode="wait">
           {!success ? (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95 }}
               className="grid grid-cols-1 lg:grid-cols-12 gap-10"
             >
-              {/* ─── Checkout Form ─── */}
               <div className="lg:col-span-7 space-y-8">
                 <div>
                   <h1 className="text-4xl font-bold tracking-tight text-slate-900 mb-2">Checkout</h1>
@@ -210,12 +200,11 @@ export default function PaymentPage() {
                         <CreditCard className="w-5 h-5 text-primary" />
                         Card Details
                       </h3>
-                      
+
                       <div className="space-y-4">
-                        {/* Cardholder Name */}
                         <div className="grid grid-cols-1 gap-1.5">
                           <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Cardholder Name</label>
-                          <input 
+                          <input
                             type="text"
                             required
                             value={formData.name}
@@ -225,11 +214,10 @@ export default function PaymentPage() {
                           />
                         </div>
 
-                        {/* Card Number */}
                         <div className="grid grid-cols-1 gap-1.5">
                           <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Card Number</label>
                           <div className="relative">
-                            <input 
+                            <input
                               type="text"
                               required
                               value={formData.cardNumber}
@@ -239,20 +227,19 @@ export default function PaymentPage() {
                               placeholder="0000 0000 0000 0000"
                             />
                             <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                              <img 
-                                src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Visa_Inc._logo.svg/2560px-Visa_Inc._logo.svg.png" 
-                                className="h-4 opacity-80" 
-                                alt="visa" 
+                              <img
+                                src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Visa_Inc._logo.svg/2560px-Visa_Inc._logo.svg.png"
+                                className="h-4 opacity-80"
+                                alt="visa"
                               />
                             </div>
                           </div>
                         </div>
 
-                        {/* Expiry & CVC */}
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-1.5">
                             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Expiry Date</label>
-                            <input 
+                            <input
                               type="text"
                               required
                               value={formData.expiry}
@@ -265,7 +252,7 @@ export default function PaymentPage() {
                           <div className="space-y-1.5">
                             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">CVC / CVV</label>
                             <div className="relative">
-                              <input 
+                              <input
                                 type="text"
                                 required
                                 value={formData.cvc}
@@ -281,7 +268,6 @@ export default function PaymentPage() {
                       </div>
                     </div>
 
-                    {/* Inline payment error — no longer triggers a full page error */}
                     {payError && (
                       <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm font-medium">
                         <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
@@ -289,14 +275,13 @@ export default function PaymentPage() {
                       </div>
                     )}
 
-                    <button 
+                    <button
                       type="submit"
                       disabled={processing}
-                      className={`w-full h-16 rounded-2xl font-bold text-lg transition-all flex items-center justify-center gap-3 ${
-                        processing 
-                        ? "bg-slate-100 text-slate-400 cursor-not-allowed" 
-                        : "bg-primary text-white hover:bg-primary/90 shadow-xl shadow-primary/20 active:scale-[0.98]"
-                      }`}
+                      className={`w-full h-16 rounded-2xl font-bold text-lg transition-all flex items-center justify-center gap-3 ${processing
+                          ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                          : "bg-primary text-white hover:bg-primary/90 shadow-xl shadow-primary/20 active:scale-[0.98]"
+                        }`}
                     >
                       {processing ? (
                         <>
@@ -307,7 +292,7 @@ export default function PaymentPage() {
                         `Pay $${(offer.budget || 0).toLocaleString()}`
                       )}
                     </button>
-                    
+
                     <p className="text-center text-xs text-slate-400 flex items-center justify-center gap-2">
                       <Lock className="w-3 h-3" />
                       Payments are encrypted and secured. No data is stored on our servers.
@@ -321,10 +306,10 @@ export default function PaymentPage() {
                 <div className="sticky top-24 space-y-6">
                   <div className="bg-slate-900 rounded-[32px] p-8 text-white shadow-2xl relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 blur-3xl -mr-16 -mt-16 rounded-full pointer-events-none"></div>
-                    
+
                     <h2 className="text-xl font-bold mb-8 flex items-center gap-2">
-                       <Briefcase className="w-5 h-5 text-primary" />
-                       Order Summary
+                      <Briefcase className="w-5 h-5 text-primary" />
+                      Order Summary
                     </h2>
 
                     <div className="space-y-6 relative z-10">
@@ -334,8 +319,8 @@ export default function PaymentPage() {
                       </div>
 
                       <div className="flex items-center gap-4 py-6 border-y border-white/10">
-                        <img 
-                          src={offer.freelancer?.imageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(offer.freelancer?.name || "Freelancer")}&background=6A6B4C&color=fff`} 
+                        <img
+                          src={offer.freelancer?.imageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(offer.freelancer?.name || "Freelancer")}&background=6A6B4C&color=fff`}
                           className="w-12 h-12 rounded-2xl border border-white/10 object-cover"
                           alt={offer.freelancer?.name || "Freelancer"}
                         />
@@ -380,7 +365,7 @@ export default function PaymentPage() {
             </motion.div>
           ) : (
             // ─── Success Screen ───
-            <motion.div 
+            <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               className="max-w-2xl mx-auto text-center py-20 px-8 bg-white rounded-[48px] shadow-2xl border border-slate-100 flex flex-col items-center"
@@ -392,15 +377,15 @@ export default function PaymentPage() {
               <p className="text-slate-600 text-lg mb-10 max-w-md mx-auto">
                 The advance payment for <span className="font-bold text-slate-900">"{offer.jobTitle}"</span> has been securely processed. The freelancer has been notified.
               </p>
-              
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-sm">
-                <button 
+                <button
                   onClick={() => router.push("/messages")}
                   className="h-14 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition-all shadow-lg"
                 >
                   Back to Chat
                 </button>
-                <button 
+                <button
                   onClick={() => router.push("/dashboard")}
                   className="h-14 bg-white text-slate-900 border border-slate-200 rounded-2xl font-bold hover:bg-slate-50 transition-all"
                 >

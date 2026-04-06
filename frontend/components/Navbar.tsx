@@ -93,125 +93,129 @@ export default function Navbar() {
     <nav className="sticky top-0 z-50 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-primary/20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
+          {/* Left: Brand */}
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => router.push("/")}>
             <span className="material-symbols-outlined text-primary text-3xl">hub</span>
             <span className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">FreeCone</span>
           </div>
 
-          <div className="hidden md:flex items-center space-x-8">
-            <a className="text-sm font-semibold text-slate-700 dark:text-slate-300 hover:text-primary transition-colors" href="/find-talent">Browse Talent</a>
-            <Link className="text-sm font-semibold text-slate-700 dark:text-slate-300 hover:text-primary transition-colors" href="/find-work">Find Work</Link>
-            <Link className="text-sm font-semibold text-slate-700 dark:text-slate-300 hover:text-primary transition-colors" href="/enterprise">Enterprise</Link>
-            <div className="h-4 w-px bg-primary/20"></div>
+          {/* Right: Nav Links + Icons */}
+          <div className="flex items-center gap-8">
+            <div className="hidden lg:flex items-center space-x-8 mr-4 border-r border-slate-200 dark:border-slate-700 pr-8">
+              <a className="text-sm font-semibold text-slate-700 dark:text-slate-300 hover:text-primary transition-colors" href="/find-talent">Browse Talent</a>
+              <Link className="text-sm font-semibold text-slate-700 dark:text-slate-300 hover:text-primary transition-colors" href="/find-work">Find Work</Link>
+              <Link className="text-sm font-semibold text-slate-700 dark:text-slate-300 hover:text-primary transition-colors" href="/enterprise">Enterprise</Link>
+            </div>
 
-            {!isMounted ? (
-              <div className="flex items-center gap-3">
-                <div className="h-8 w-16 bg-slate-100 animate-pulse rounded-lg"></div>
-
-                <div className="h-8 w-20 bg-slate-200 animate-pulse rounded-lg"></div>
-              </div>
-            ) : user ? (
-              <div className="flex items-center gap-3">
-                <button
-                  title="Notifications"
-                  onClick={() => router.push("/notifications")}
-                  className="relative flex items-center justify-center rounded-full w-9 h-9 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
-                >
-                  <span className="material-symbols-outlined text-[22px]">notifications</span>
-                  {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-white dark:ring-slate-800">
-                      {unreadCount > 99 ? '99+' : unreadCount}
-                    </span>
-                  )}
-                </button>
-
-                <button
-                  title="Messages"
-                  onClick={() => router.push("/messages")}
-                  className="relative flex items-center justify-center rounded-full w-9 h-9 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
-                >
-                  <span className="material-symbols-outlined text-[20px]">chat</span>
-                  {unreadMessagesCount > 0 && (
-                    <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-white dark:ring-slate-800">
-                      {unreadMessagesCount > 99 ? '99+' : unreadMessagesCount}
-                    </span>
-                  )}
-                </button>
-
-                <div className="relative" ref={dropdownRef}>
-                  <div
-                    title="Profile"
-                    onClick={() => {
-                      setDropdownOpen(!dropdownOpen);
-                      if (showProfilePrompt) dismissPrompt();
-                    }}
-                    className="h-9 w-9 rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+            <div className="flex items-center gap-2 sm:gap-3">
+              {isMounted && user ? (
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <button
+                    title="Notifications"
+                    onClick={() => router.push("/notifications")}
+                    className="relative flex items-center justify-center rounded-full w-8 h-8 sm:w-9 sm:h-9 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
                   >
-                    <img
-                      alt="Profile"
-                      className="w-full h-full object-cover"
-                      src={user.avatar || user.imageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=0ea5e9&color=fff`}
-                    />
-                  </div>
+                    <span className="material-symbols-outlined text-[20px] sm:text-[22px]">notifications</span>
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-white dark:ring-slate-800">
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </span>
+                    )}
+                  </button>
 
-                  {/* Auto-dismissing Profile Prompt */}
-                  {showProfilePrompt && (
-                    <div className={`absolute right-0 top-full mt-3 whitespace-nowrap bg-green-700 text-white text-[13px] font-black px-5 py-2 rounded-full shadow-2xl shadow-green-500/30 transition-all duration-500 ${isExiting ? "opacity-0 scale-90 -translate-y-2" : "opacity-100 scale-100 translate-y-0 animate-in fade-in slide-in-from-top-2 duration-300"} pointer-events-none z-[60]`}>
-                      Complete your profile 🚀
-                      <div className="absolute bottom-full right-4 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[8px] border-b-green-500"></div>
+                  <button
+                    title="Messages"
+                    onClick={() => router.push("/messages")}
+                    className="relative flex items-center justify-center rounded-full w-8 h-8 sm:w-9 sm:h-9 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
+                  >
+                    <span className="material-symbols-outlined text-[18px] sm:text-[20px]">chat</span>
+                    {unreadMessagesCount > 0 && (
+                      <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-white dark:ring-slate-800">
+                        {unreadMessagesCount > 99 ? '99+' : unreadMessagesCount}
+                      </span>
+                    )}
+                  </button>
+
+                  <div className="relative" ref={dropdownRef}>
+                    <div
+                      title="Profile"
+                      onClick={() => {
+                        setDropdownOpen(!dropdownOpen);
+                        if (showProfilePrompt) dismissPrompt();
+                      }}
+                      className="h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                    >
+                      <img
+                        alt="Profile"
+                        className="w-full h-full object-cover"
+                        src={user.avatar || user.imageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=0ea5e9&color=fff`}
+                      />
                     </div>
-                  )}
 
-                  {dropdownOpen && (
-                    <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-100 dark:border-slate-700 overflow-hidden z-50">
-                      <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700">
-                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">{user.name}</p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{user.email}</p>
+                    {showProfilePrompt && (
+                      <div className={`absolute right-0 top-full mt-3 whitespace-nowrap bg-green-700 text-white text-[13px] font-black px-5 py-2 rounded-full shadow-2xl shadow-green-500/30 transition-all duration-500 ${isExiting ? "opacity-0 scale-90 -translate-y-2" : "opacity-100 scale-100 translate-y-0 animate-in fade-in slide-in-from-top-2 duration-300"} pointer-events-none z-[60]`}>
+                        Complete your profile 🚀
+                        <div className="absolute bottom-full right-4 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[8px] border-b-green-500"></div>
                       </div>
-                      <button
-                        onClick={() => { router.push("/profile"); setDropdownOpen(false); }}
-                        className="w-full text-left px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-                      >
-                        My Profile
-                      </button>
-                      <button
-                        onClick={() => { router.push("/dashboard"); setDropdownOpen(false); }}
-                        className="w-full text-left px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-                      >
-                        Dashboard
-                      </button>
-                      <div className="border-t border-slate-100 dark:border-slate-700">
+                    )}
+
+                    {dropdownOpen && (
+                      <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-100 dark:border-slate-700 overflow-hidden z-50">
+                        <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700">
+                          <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">{user.name}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{user.email}</p>
+                        </div>
                         <button
-                          onClick={handleLogout}
-                          className="w-full text-left px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                          onClick={() => { router.push("/profile"); setDropdownOpen(false); }}
+                          className="w-full text-left px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
                         >
-                          Log Out
+                          My Profile
                         </button>
+                        <button
+                          onClick={() => { router.push("/dashboard"); setDropdownOpen(false); }}
+                          className="w-full text-left px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                        >
+                          Dashboard
+                        </button>
+                        <button
+                          onClick={() => { router.push("/dashboard/escrow"); setDropdownOpen(false); }}
+                          className="w-full text-left px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                        >
+                          Escrow & Payments
+                        </button>
+                        <div className="border-t border-slate-100 dark:border-slate-700">
+                          <button
+                            onClick={handleLogout}
+                            className="w-full text-left px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                          >
+                            Log Out
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <>
-                <a className="text-sm font-semibold text-slate-700 dark:text-slate-300 hover:text-primary transition-colors" href="/login">Log In</a>
-                <a href="/register" className="bg-primary text-white px-5 py-2 rounded-lg text-sm font-bold hover:bg-primary/90 transition-all shadow-sm">
-                  Sign Up
-                </a>
-              </>
-            )}
-          </div>
+              ) : isMounted && (
+                <div className="hidden md:flex items-center gap-4">
+                  <a className="text-sm font-semibold text-slate-700 dark:text-slate-300 hover:text-primary transition-colors" href="/login">Log In</a>
+                  <a href="/register" className="bg-primary text-white px-5 py-2 rounded-lg text-sm font-bold hover:bg-primary/90 transition-all shadow-sm">
+                    Sign Up
+                  </a>
+                </div>
+              )}
 
-          {/* Mobile menu icon */}
-          <div className="md:hidden flex items-center">
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-1 focus:outline-none"
-            >
-              <span className="material-symbols-outlined text-slate-900 dark:text-slate-100 text-3xl">
-                {mobileMenuOpen ? "close" : "menu"}
-              </span>
-            </button>
+              {/* Mobile menu icon (hamburger) */}
+              <div className="md:hidden flex items-center ml-1">
+                <button
+                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                  className="p-1 focus:outline-none"
+                >
+                  <span className="material-symbols-outlined text-slate-900 dark:text-slate-100 text-3xl">
+                    {mobileMenuOpen ? "close" : "menu"}
+                  </span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -250,10 +254,6 @@ export default function Navbar() {
             <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
               {user ? (
                 <div className="space-y-2">
-                  <div className="px-3 py-2">
-                    <p className="text-sm font-bold text-slate-900 dark:text-slate-100">{user.name}</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">{user.email}</p>
-                  </div>
                   <button
                     onClick={() => { router.push("/profile"); setMobileMenuOpen(false); }}
                     className="w-full text-left px-3 py-2.5 text-base font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
@@ -265,6 +265,12 @@ export default function Navbar() {
                     className="w-full text-left px-3 py-2.5 text-base font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                   >
                     Dashboard
+                  </button>
+                  <button
+                    onClick={() => { router.push("/dashboard/escrow"); setMobileMenuOpen(false); }}
+                    className="w-full text-left px-3 py-2.5 text-base font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                  >
+                    Escrow & Payments
                   </button>
                   <button
                     onClick={handleLogout}

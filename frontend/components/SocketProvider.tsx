@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useStore } from "@/lib/store";
 import { socketService } from "@/lib/socket";
-import toast from "react-hot-toast";
+import { useNotificationStore } from "@/lib/notificationStore";
 
 export default function SocketProvider({
   children,
@@ -23,7 +23,6 @@ export default function SocketProvider({
         console.log("   [SOCKET] Joined personal room:", userId);
       };
 
-      // If already connected, join immediately
       if (socket.connected) {
         handleConnect();
       }
@@ -32,13 +31,18 @@ export default function SocketProvider({
 
       const onNewNotification = (notification: any) => {
         console.log("   [SOCKET] New notification received:", notification);
-        toast.success(notification.title || "New notification");
+        // Add popup for NEW notifications (status: 'new')
+        useNotificationStore.getState().addNotification({
+          title: notification.title || "New Notification",
+          message: notification.message || "You have a new update",
+          type: "success"
+        });
         fetchNotifications('received');
       };
 
       const onNotificationUpdate = (notification: any) => {
-        console.log("   [SOCKET] Notification update received:", notification);
-        toast.success(notification.title || "Notification updated");
+        console.log("   [SOCKET] Notification update received (Status Change):", notification);
+        // SILENT UPDATE: We refresh the notification list but do NOT show a popup.
         fetchNotifications('received');
         fetchNotifications('sent');
       };
@@ -46,8 +50,21 @@ export default function SocketProvider({
       const onNewMessage = (message: any) => {
         console.log("   [SOCKET] New message received:", message);
         useStore.getState().addMessage(message);
-        // Also fetch conversations to update the last message in sidebar if not the active one
         useStore.getState().fetchConversations();
+        
+        // Show popup ONLY for incoming messages that are NOT from the user themselves
+        if (message.sender?._id !== user?.id && message.sender?._id !== user?._id) {
+          useNotificationStore.getState().addNotification({
+            title: `New Message from ${message.sender?.name || 'User'}`,
+            message: message.content,
+            type: "message"
+          });
+        }
+      };
+      
+      const onMessageUpdate = (message: any) => {
+        console.log("   [SOCKET] Message update received:", message);
+        useStore.getState().updateMessageLocally(message);
       };
 
       const onConversationUpdate = (conversation: any) => {
@@ -59,6 +76,7 @@ export default function SocketProvider({
       socket.on("notificationUpdate", onNotificationUpdate);
       socket.on("newMessage", onNewMessage);
       socket.on("conversationUpdate", onConversationUpdate);
+      socket.on("messageUpdate", onMessageUpdate);
 
       return () => {
         socket.off("connect", handleConnect);
@@ -66,6 +84,7 @@ export default function SocketProvider({
         socket.off("notificationUpdate", onNotificationUpdate);
         socket.off("newMessage", onNewMessage);
         socket.off("conversationUpdate", onConversationUpdate);
+        socket.off("messageUpdate", onMessageUpdate);
       };
     } else {
       socketService.disconnect();

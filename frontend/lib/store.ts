@@ -176,6 +176,7 @@ interface AppState {
   setTempParticipant: (participant: User | null) => void;
   addMessage: (message: Message) => void;
   updateConversationLocally: (conversation: Conversation) => void;
+  updateMessageLocally: (message: Message) => void;
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
@@ -707,6 +708,15 @@ export const useStore = create<AppState>((set, get) => {
       });
 
       set({ conversations: newConversations });
+    },
+    updateMessageLocally: (updatedMessage) => {
+      const { messages } = get();
+      const newMessages = messages.map(m => {
+        const mId = (m._id || (m as any).id)?.toString();
+        const uId = (updatedMessage._id || (updatedMessage as any).id)?.toString();
+        return mId === uId ? updatedMessage : m;
+      });
+      set({ messages: newMessages });
     },
   }
 });

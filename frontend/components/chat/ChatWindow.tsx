@@ -8,7 +8,7 @@ import { format, isToday, isYesterday } from "date-fns";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
 function ConfirmationMessageBubble({ msg }: { msg: any }) {
-  const [status, setStatus] = useState<string | null>(msg.metadata?.status || null);
+  const status = msg.metadata?.status || null;
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useStore();
 
@@ -22,10 +22,15 @@ function ConfirmationMessageBubble({ msg }: { msg: any }) {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ action })
+        body: JSON.stringify({ action, messageId: msg._id })
       });
       if (res.ok) {
-        setStatus(action === 'confirm' ? 'confirmed' : 'rejected');
+        // Optimistic UI update
+        const updatedMsg = { 
+          ...msg, 
+          metadata: { ...msg.metadata, status: action === 'confirm' ? 'confirmed' : 'rejected' } 
+        };
+        useStore.getState().updateMessageLocally(updatedMsg);
       }
     } catch (err) {
       console.error("Handshake error:", err);
@@ -34,7 +39,13 @@ function ConfirmationMessageBubble({ msg }: { msg: any }) {
     }
   };
 
-  const isFreelancer = user?.id === msg.metadata?.freelancerId || user?._id === msg.metadata?.freelancerId;
+  const isFreelancer = 
+    (user?.id && msg.metadata?.freelancerId && user.id.toString() === msg.metadata.freelancerId.toString()) ||
+    (user?._id && msg.metadata?.freelancerId && user._id.toString() === msg.metadata.freelancerId.toString()) ||
+    user?.id === msg.metadata?.freelancerId || 
+    user?._id === msg.metadata?.freelancerId;
+
+  const hasActionTaken = status === 'confirmed' || status === 'rejected';
 
   return (
     <div className="flex flex-col gap-3 p-3 bg-slate-900/5 dark:bg-white/5 rounded-xl border border-primary/20 mt-1 mb-2">
@@ -51,12 +62,17 @@ function ConfirmationMessageBubble({ msg }: { msg: any }) {
       {status === 'confirmed' ? (
         <div className="w-full py-2 bg-emerald-50 border border-emerald-200 rounded-lg text-[13px] font-bold text-emerald-600 flex items-center justify-center gap-2">
           <span className="material-symbols-outlined text-[16px]">check_circle</span>
-          Confirmed
+          Accepted
         </div>
       ) : status === 'rejected' ? (
         <div className="w-full py-2 bg-rose-50 border border-rose-200 rounded-lg text-[13px] font-bold text-rose-600 flex items-center justify-center gap-2">
           <span className="material-symbols-outlined text-[16px]">cancel</span>
           Rejected
+        </div>
+      ) : hasActionTaken ? null : !isFreelancer ? (
+        <div className="w-full py-2 bg-slate-50 border border-slate-200 rounded-lg text-[12px] font-bold text-slate-500 flex items-center justify-center gap-2">
+          <span className="material-symbols-outlined text-[16px]">pending</span>
+          Awaiting Confirmation
         </div>
       ) : (
         <div className="flex gap-2">
@@ -87,7 +103,6 @@ function PaymentMessageBubble({ msg }: { msg: any }) {
   useEffect(() => {
     if (!offerId) return;
     const token = localStorage.getItem("accessToken");
-    // Use the appropriate endpoint based on type
     const endpoint = msg.metadata?.type === 'proposal' ? `/jobs/proposals/${offerId}` : `/offers/${offerId}`;
     
     fetch(`${API_URL}${endpoint}`, {
@@ -96,7 +111,6 @@ function PaymentMessageBubble({ msg }: { msg: any }) {
       .then((r) => r.json())
       .then((data) => {
         if (data?.isPaid !== undefined) setIsPaid(data.isPaid);
-        // Fallback for proposal which might use status === 'paid' or similar if handled differently
       })
       .catch(() => {});
   }, [offerId, msg.metadata?.type]);
@@ -195,7 +209,6 @@ export default function ChatWindow() {
 
   return (
     <div className="flex-1 flex flex-col h-full bg-wa-bg-main relative">
-      {/* WhatsApp Chat Header */}
       <div className="px-4 py-2 bg-wa-bg-sidebar border-b border-wa-bg-search/20 flex justify-between items-center z-20">
         <div className="flex items-center gap-3 cursor-pointer p-1 hover:bg-wa-bg-search/30 rounded-lg transition-colors">
           <button 
@@ -225,7 +238,6 @@ export default function ChatWindow() {
         </div>
       </div>
 
-      {/* Chat Messages Area with Pattern */}
       <div 
         ref={scrollRef}
         className="flex-1 overflow-y-auto px-10 py-6 flex flex-col gap-1 relative scroll-smooth custom-scrollbar"
@@ -235,7 +247,6 @@ export default function ChatWindow() {
            backgroundBlendMode: 'overlay',
         }}
       >
-        {/* Overlay to dim the background slightly */}
         <div className="absolute inset-0 bg-wa-bg-main/90 pointer-events-none"></div>
 
         <div className="relative z-10 flex flex-col gap-1">
@@ -269,7 +280,6 @@ export default function ChatWindow() {
                            : "bg-wa-bubble-received text-wa-text-primary rounded-lg rounded-tl-none"
                        }`}
                     >
-                       {/* Triangle tails */}
                        <div className={`absolute top-0 w-2 h-4 overflow-hidden transform ${
                          isMe ? "right-[-7px] rotate-0" : "left-[-7px] rotate-0"
                        }`}>
@@ -315,7 +325,6 @@ export default function ChatWindow() {
         </div>
       </div>
 
-      {/* WhatsApp Input Area */}
       <MessageInput 
         conversationId={activeConversation?._id} 
         recipientId={!activeConversation ? otherUser?._id || otherUser?.id : undefined} 

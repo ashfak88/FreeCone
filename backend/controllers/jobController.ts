@@ -3,6 +3,7 @@ import Job from "../models/Job";
 import Proposal from "../models/Proposal";
 import Notification from "../models/Notification";
 import Transaction from "../models/Transaction";
+import Message from "../models/Message";
 import { emitToUser } from "../config/socket";
 import { sendSystemMessage } from "../utils/messageUtils";
 
@@ -220,21 +221,14 @@ export const updateProposalStatus = async (req: any, res: Response): Promise<voi
     await proposal.save();
 
     // Send automated chat message if accepted
-    if (status === 'accepted') {
-      const job = proposal.job as any;
-      const freelancerId = proposal.talent._id || proposal.talent;
-      
-      // 1. Message to Freelancer
-      const freelancerMsg = `Your proposal for '${job.title}' has been accepted! 🚀`;
-      await sendSystemMessage(clientId, freelancerId, freelancerMsg);
-
-      // 2. Handshake / Confirmation message to freelancer
+      // 1. Handshake / Confirmation message to freelancer
       // This will show "Accept" and "Reject" buttons for the freelancer to finalize.
       const confirmationMsg = `The client has accepted your proposal for '${job.title}'. Please confirm if you are ready to start.`;
       await sendSystemMessage(clientId, freelancerId, confirmationMsg, 'confirmation', {
         proposalId: proposal._id,
         jobTitle: job.title,
-        amount: proposal.proposedRate
+        amount: proposal.proposedRate,
+        freelancerId: (proposal.talent._id || proposal.talent).toString()
       });
     }
 
@@ -279,7 +273,7 @@ export const updateProposalStatus = async (req: any, res: Response): Promise<voi
 export const confirmProposalHandshake = async (req: any, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const { action } = req.body; // 'confirm' or 'reject'
+    const { action, messageId } = req.body; // 'confirm' or 'reject'
     const freelancerId = req.user._id;
 
     const proposal = await Proposal.findById(id).populate("job");
@@ -318,6 +312,27 @@ export const confirmProposalHandshake = async (req: any, res: Response): Promise
       await paymentNotification.save();
       emitToUser(clientId.toString(), "newNotification", paymentNotification);
 
+      // 3. Update the chat message metadata to persist the state
+      if (messageId) {
+        try {
+          const msgToUpdate = await Message.findById(messageId);
+          if (msgToUpdate) {
+            if (!msgToUpdate.metadata) msgToUpdate.metadata = {};
+            msgToUpdate.metadata.status = "confirmed";
+            msgToUpdate.markModified("metadata");
+            await msgToUpdate.save();
+            
+            const populatedMsg = await Message.findById(messageId).populate("sender", "name imageUrl");
+            if (populatedMsg) {
+              emitToUser(freelancerId.toString(), "messageUpdate", populatedMsg);
+              emitToUser(clientId.toString(), "messageUpdate", populatedMsg);
+            }
+          }
+        } catch (err) {
+          console.error("Failed to update message metadata:", err);
+        }
+      }
+
       res.status(200).json({ message: "Handshake confirmed. Payment requested from client." });
     } else {
       proposal.status = 'rejected';
@@ -329,6 +344,27 @@ export const confirmProposalHandshake = async (req: any, res: Response): Promise
       await sendSystemMessage(freelancerId, clientId, rejectMsg);
 
       res.status(200).json({ message: "Handshake rejected." });
+
+      // Update the chat message metadata to persist the state
+      if (messageId) {
+        try {
+          const msgToUpdate = await Message.findById(messageId);
+          if (msgToUpdate) {
+            if (!msgToUpdate.metadata) msgToUpdate.metadata = {};
+            msgToUpdate.metadata.status = "rejected";
+            msgToUpdate.markModified("metadata");
+            await msgToUpdate.save();
+            
+            const populatedMsg = await Message.findById(messageId).populate("sender", "name imageUrl");
+            if (populatedMsg) {
+              emitToUser(freelancerId.toString(), "messageUpdate", populatedMsg);
+              emitToUser(clientId.toString(), "messageUpdate", populatedMsg);
+            }
+          }
+        } catch (err) {
+          console.error("Failed to update message metadata:", err);
+        }
+      }
     }
   } catch (error: any) {
     console.error("Error in confirmProposalHandshake:", error);
