@@ -1,8 +1,8 @@
 import express from "express";
-import { 
-  getJobs, 
-  createJob, 
-  getJobById, 
+import {
+  getJobs,
+  createJob,
+  getJobById,
   applyForJob,
   getMyJobs,
   getMyProposals,

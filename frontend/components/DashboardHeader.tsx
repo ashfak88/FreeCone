@@ -8,21 +8,49 @@ interface DashboardHeaderProps {
   title?: string;
   subtitle?: string;
   showSearch?: boolean;
+  showBack?: boolean;
   children?: React.ReactNode;
 }
 
-export default function DashboardHeader({ user, title, subtitle, showSearch = false, children }: DashboardHeaderProps) {
+export default function DashboardHeader({ user, title, subtitle, showSearch = false, showBack = false, children }: DashboardHeaderProps) {
   const router = useRouter();
 
   return (
-    <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-10 border-b border-slate-200 dark:border-slate-800 px-4 md:px-8 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md fixed top-0 right-0 left-0 lg:left-72 z-30 border-b border-slate-200 dark:border-slate-800 px-4 md:px-8 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all duration-300">
       <div className="flex items-center gap-4">
-        <button onClick={() => router.push("/")} className="lg:hidden text-slate-500 hover:bg-slate-100 p-2 rounded-lg transition-colors">
-          <span className="material-symbols-outlined text-[20px]">hub</span>
-        </button>
-        <div>
-          <h2 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-slate-100">{title || "Freecone Dashboard"}</h2>
-          {subtitle && <p className="text-xs md:text-sm text-slate-500">{subtitle}</p>}
+        {showBack ? (
+          <button 
+            onClick={() => router.back()} 
+            className="flex items-center justify-center rounded-full w-10 h-10 -ml-2 text-slate-500 hover:text-primary hover:bg-primary/10 transition-all duration-300"
+            title="Go Back"
+          >
+            <span className="material-symbols-outlined text-[24px]">arrow_back</span>
+          </button>
+        ) : (
+          <button onClick={() => router.push("/")} className="lg:hidden text-slate-500 hover:bg-slate-100 p-2 rounded-lg transition-colors">
+            <span className="material-symbols-outlined text-[20px]">hub</span>
+          </button>
+        )}
+        <div className="flex flex-col">
+          <h2 className="text-xl md:text-2xl font-black text-slate-900 dark:text-slate-100 flex items-center gap-1">
+            {title ? (
+              title
+            ) : (
+              <span className="flex items-center tracking-tighter">
+                {"FreeCone".split("").map((letter, i) => (
+                  <span 
+                    key={i} 
+                    className={`animate-jump ${(i === 0 || i === 4) ? 'text-primary' : ''}`}
+                    style={{ animationDelay: `${0.2 + i * 0.1}s` }}
+                  >
+                    {letter}
+                  </span>
+                ))}
+                <span className="ml-2 font-black text-slate-900 dark:text-slate-100 uppercase tracking-[0.2em] text-[10px] bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">Dashboard</span>
+              </span>
+            )}
+          </h2>
+          {subtitle && <p className="text-xs md:text-sm text-slate-500 mt-1">{subtitle}</p>}
         </div>
       </div>
 

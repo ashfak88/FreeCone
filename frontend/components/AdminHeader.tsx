@@ -9,8 +9,10 @@ export default function AdminHeader() {
   const { user, setUser } = useStore();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [hasMounted, setHasMounted] = useState(false);
 
   useEffect(() => {
+    setHasMounted(true);
     const handleClickOutside = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setDropdownOpen(false);
@@ -33,29 +35,30 @@ export default function AdminHeader() {
     router.push("/")
   }
 
-  if (!user) return null;
+  if (!hasMounted || !user) return null;
 
   return (
-    <header className="flex items-center bg-white/80 dark:bg-slate-900/80 backdrop-blur-md p-4 sticky top-0 z-40 border-b border-primary/10 justify-between w-full h-16">
-      <div className="flex items-center min-w-[100px]">
-        <button
-          onClick={() => window.history.back()}
-          className="p-2 hover:bg-primary/5 rounded-full text-slate-400 hover:text-primary transition-all"
-        >
-          <span className="material-symbols-outlined text-xl">arrow_back</span>
-        </button>
-      </div>
-
+    <header className="flex items-center bg-white/80 dark:bg-slate-900/80 backdrop-blur-md px-6 sticky top-0 z-40 border-b border-primary/10 justify-between w-full h-16">
       <div
-        className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2 cursor-pointer"
+        className="flex items-center gap-2.5 cursor-pointer group"
         onClick={() => window.location.href = "/admin/dashboard"}
       >
-        <span className="material-symbols-outlined text-primary text-3xl">hub</span>
-        <span className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">FreeCone</span>
+        <span className="material-symbols-outlined text-primary text-4xl group-hover:rotate-12 transition-transform duration-300">hub</span>
+        <span className="text-2xl font-black tracking-tighter text-slate-900 dark:text-slate-100 flex items-center">
+          {"FreeCone".split("").map((letter, i) => (
+            <span
+              key={i}
+              className={`animate-jump ${(i === 0 || i === 4) ? 'text-primary' : ''}`}
+              style={{ animationDelay: `${i * 0.1}s` }}
+            >
+              {letter}
+            </span>
+          ))}
+        </span>
         <div className="bg-primary/10 text-primary text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider">Admin</div>
       </div>
 
-      <div className="flex items-center gap-2 min-w-[100px] justify-end">
+      <div className="flex items-center gap-2 justify-end">
         <button className="flex size-9 items-center justify-center rounded-full bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-primary transition-colors">
           <span className="material-symbols-outlined text-[20px]">notifications</span>
         </button>

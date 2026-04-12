@@ -4,9 +4,19 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-12 mb-12">
           <div className="col-span-2 lg:col-span-2">
-            <div className="flex items-center gap-2 mb-6">
-              <span className="material-symbols-outlined text-primary text-3xl">hub</span>
-              <span className="text-xl font-extrabold tracking-tight">FreeCone</span>
+            <div className="flex items-center gap-2.5 mb-6 group cursor-pointer">
+              <span className="material-symbols-outlined text-primary text-4xl group-hover:rotate-12 transition-transform duration-300">hub</span>
+              <span className="text-2xl font-black tracking-tighter flex items-center">
+                {"FreeCone".split("").map((letter, i) => (
+                  <span
+                    key={i}
+                    className={`animate-jump ${(i === 0 || i === 4) ? 'text-primary' : ''}`}
+                    style={{ animationDelay: `${i * 0.1}s` }}
+                  >
+                    {letter}
+                  </span>
+                ))}
+              </span>
             </div>
             <p className="text-slate-500 max-w-sm mb-6 leading-relaxed">
               Connecting elite talent with world-class opportunities. The most secure and reliable marketplace for professional talent.

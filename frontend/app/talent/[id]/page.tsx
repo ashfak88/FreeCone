@@ -1,38 +1,56 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter, useParams, notFound } from "next/navigation";
+import { useRouter, useParams, useSearchParams, notFound } from "next/navigation";
 import Link from "next/link";
-import { useStore } from "@/lib/store";
+import { useStore, User, Review } from "@/lib/store";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function TalentProfilePage() {
   const router = useRouter();
   const params = useParams();
-  const { talent: talentList, isLoadingTalent: loading, fetchTalent } = useStore();
+  const searchParams = useSearchParams();
+  const { talent: talentList, fetchTalent, fetchUserById, fetchUserReviews, user } = useStore();
   const [showImageModal, setShowImageModal] = useState(false);
-
-  const profile = talentList.find((f) => f._id === params.id || f.id === params.id);
+  const [profile, setProfile] = useState<User | null>(null);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Only fetch if we don't have talent yet
-    if (talentList.length === 0) {
-      fetchTalent();
-    }
-  }, [talentList.length, fetchTalent]);
+    const loadProfile = async () => {
+      setLoading(true);
+      
+      // Fetch profile and reviews in parallel
+      const [userData, userReviews] = await Promise.all([
+        fetchUserById(params.id as string),
+        fetchUserReviews(params.id as string)
+      ]);
+
+      if (userData) {
+        setProfile(userData);
+      } else {
+        // Fallback to talent list if direct fetch fails
+        let found = talentList.find((f) => f._id === params.id || f.id === params.id);
+        if (found) setProfile(found);
+      }
+
+      setReviews(userReviews || []);
+      setLoading(false);
+    };
+
+    if (params.id) loadProfile();
+  }, [params.id, talentList, fetchUserById, fetchUserReviews]);
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <p>Loading profile...</p>
+      <div className="flex justify-center items-center min-h-screen bg-slate-50 dark:bg-slate-950">
+        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
 
   if (!profile) {
-    if (!loading) {
-      notFound();
-    }
-    return null;
+    notFound();
   }
 
 
@@ -48,23 +66,14 @@ export default function TalentProfilePage() {
       <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-16">
 
         {/* Navigation Bar */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-8">
           <button
             onClick={() => router.back()}
-            className="group flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 text-white px-3 py-1.5 rounded-lg hover:bg-white/20 transition-all shadow-xl"
+            className="group flex items-center justify-center rounded-full w-10 h-10 -ml-2 text-white/70 hover:text-white hover:bg-white/10 transition-all duration-300"
+            title="Go Back"
           >
-            <span className="material-symbols-outlined text-xs group-hover:-translate-x-1 transition-transform">arrow_back</span>
-            <span className="text-[10px] font-black uppercase tracking-widest">Back</span>
+            <span className="material-symbols-outlined text-[24px]">arrow_back</span>
           </button>
-
-          <div className="flex gap-2">
-            <button className="flex size-9 items-center justify-center rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 transition-all shadow-xl">
-              <span className="material-symbols-outlined text-lg">share</span>
-            </button>
-            <button className="flex size-9 items-center justify-center rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 transition-all shadow-xl">
-              <span className="material-symbols-outlined text-lg">favorite</span>
-            </button>
-          </div>
         </div>
 
         {/* Global Layout Grid */}
@@ -111,24 +120,30 @@ export default function TalentProfilePage() {
                     <div className="h-1 w-1 rounded-full bg-slate-300 hidden md:block"></div>
                     <div className="flex items-center gap-2">
                       <div className="flex items-center gap-0.5 text-yellow-500">
-                        <span className="material-symbols-outlined text-base fill-icon">star</span>
-                        <span className="text-sm font-black text-slate-900 dark:text-white">{profile.rating || '4.9'}</span>
+                        <span className="material-symbols-outlined text-base fill-icon" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+                        <span className="text-sm font-black text-slate-900 dark:text-white">{profile.rating?.toFixed(1) || '0.0'}</span>
                       </div>
-                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">({profile.reviews || '24'} Reviews)</span>
+                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">({profile.totalReviews || reviews.length || '0'} Reviews)</span>
                     </div>
                   </div>
 
-                  {/* Quick Metrics */}
-                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mt-8 max-w-sm mx-auto md:mx-0">
-                    <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
-                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Success Rate</p>
-                      <p className="text-lg font-black text-slate-900 dark:text-white">98%</p>
+                  {/* Quick Metrics (Dynamic if needed, currently removing demo values) */}
+                  {(profile as any).successRate || (profile as any).responseTime ? (
+                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mt-8 max-w-sm mx-auto md:mx-0">
+                      {(profile as any).successRate && (
+                        <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+                          <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Success Rate</p>
+                          <p className="text-lg font-black text-slate-900 dark:text-white">{(profile as any).successRate}</p>
+                        </div>
+                      )}
+                      {(profile as any).responseTime && (
+                        <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+                          <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Response</p>
+                          <p className="text-lg font-black text-slate-900 dark:text-white">{(profile as any).responseTime}</p>
+                        </div>
+                      )}
                     </div>
-                    <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
-                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Response</p>
-                      <p className="text-lg font-black text-slate-900 dark:text-white">&lt; 2h</p>
-                    </div>
-                  </div>
+                  ) : null}
                 </div>
               </div>
             </div>
@@ -142,7 +157,7 @@ export default function TalentProfilePage() {
                 Bio
               </h3>
               <p className="text-slate-600 dark:text-slate-400 leading-relaxed text-base font-medium whitespace-pre-line">
-                {profile.about || profile.description || 'Experienced professional specializing in high-impact solutions and creative execution. Committed to delivering excellence and innovative results for global clients.'}
+                {profile.about || profile.description || profile.bio || 'Professional details pending profile update.'}
               </p>
             </div>
 
@@ -197,6 +212,67 @@ export default function TalentProfilePage() {
                 </div>
               </div>
             )}
+
+            {/* Reviews Section */}
+            <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 lg:p-10 shadow-lg shadow-slate-200/20 dark:shadow-none border border-slate-100 dark:border-slate-800">
+              <div className="flex items-center justify-between mb-8">
+                <h3 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+                  <span className="size-8 rounded-lg bg-yellow-100 dark:bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 flex items-center justify-center shadow-sm">
+                    <span className="material-symbols-outlined text-lg font-bold">grade</span>
+                  </span>
+                  Reviews & Feedback
+                </h3>
+                <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-100 dark:border-slate-800">
+                  <span className="text-xs font-black text-slate-900 dark:text-white">{profile.rating?.toFixed(1) || '0.0'}</span>
+                  <div className="flex text-yellow-500">
+                     {[...Array(5)].map((_, i) => (
+                       <span key={i} className={`material-symbols-outlined text-xs ${i < Math.round(profile.rating || 0) ? 'fill-icon' : 'opacity-20'}`} style={{ fontVariationSettings: i < Math.round(profile.rating || 0) ? "'FILL' 1" : "'FILL' 0" }}>star</span>
+                     ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                {reviews.length > 0 ? (
+                  reviews.map((review, idx) => (
+                    <motion.div 
+                      key={review._id} 
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.1 }}
+                      className="p-6 bg-slate-50/50 dark:bg-slate-800/30 rounded-2xl border border-slate-100 dark:border-slate-800 relative group/review"
+                    >
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="size-10 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-700">
+                            <img 
+                              src={review.reviewer?.imageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(review.reviewer?.name || 'Client')}&background=0ea5e9&color=fff`} 
+                              alt={review.reviewer?.name} 
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <div>
+                            <h5 className="text-sm font-black text-slate-900 dark:text-white leading-tight">{review.reviewer?.name || 'Verified Client'}</h5>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">{new Date(review.createdAt).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</p>
+                          </div>
+                        </div>
+                        <div className="flex gap-0.5 text-yellow-500">
+                           {[...Array(5)].map((_, i) => (
+                             <span key={i} className={`material-symbols-outlined text-[10px] ${i < review.rating ? 'fill-icon' : 'opacity-20'}`} style={{ fontVariationSettings: i < review.rating ? "'FILL' 1" : "'FILL' 0" }}>star</span>
+                           ))}
+                        </div>
+                      </div>
+                      <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed italic">"{review.comment}"</p>
+                    </motion.div>
+                  ))
+                ) : (
+                  <div className="py-12 text-center bg-slate-50/50 dark:bg-slate-800/20 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800">
+                     <span className="material-symbols-outlined text-4xl text-slate-200 dark:text-slate-700 mb-2">rate_review</span>
+                     <p className="text-xs font-bold text-slate-400">No reviews found for this freelancer yet.</p>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* RIGHT COLUMN - Sticky Action Card (30%) */}
@@ -207,25 +283,49 @@ export default function TalentProfilePage() {
                 <div className="mb-8 text-center md:text-left">
                   <p className="text-white/40 text-[9px] font-black uppercase tracking-[0.3em] mb-2">Hourly Rate</p>
                   <div className="flex items-baseline gap-1.5 justify-center md:justify-start">
-                    <span className="text-5xl font-black bg-gradient-to-br from-white to-white/60 bg-clip-text text-transparent tracking-tighter">${profile.rate || '45'}</span>
+                    <span className="text-5xl font-black bg-gradient-to-br from-white to-white/60 bg-clip-text text-transparent tracking-tighter">${profile.rate || '0'}</span>
                     <span className="text-white/60 font-black text-lg tracking-tight">/hr</span>
                   </div>
                 </div>
 
-                <div className="space-y-3">
-                  <Link
-                    href={`/send-offer?id=${profile._id || profile.id}`}
-                    className="w-full h-14 bg-primary hover:bg-[#5a5c41] text-white flex items-center justify-center rounded-2xl font-black text-lg transition-all shadow-xl hover:shadow-primary/30 active:scale-95 group/btn"
-                  >
-                    <span>Hire Now</span>
-                    <span className="material-symbols-outlined text-base ml-1.5 group-hover:translate-x-1 transition-transform">arrow_forward</span>
-                  </Link>
+                 <div className="space-y-3">
+                  {!searchParams.get('hideHire') && (profile._id || profile.id) !== (user?._id || user?.id) && (
+                    <button
+                      onClick={() => {
+                        if (!user) {
+                          router.push(`/login?error=${encodeURIComponent("Please login to send an offer")}`);
+                        } else {
+                          router.push(`/send-offer?id=${profile._id || profile.id}`);
+                        }
+                      }}
+                      className="w-full h-14 bg-primary hover:bg-opacity-90 text-white flex items-center justify-center rounded-2xl font-black text-lg transition-all active:scale-95 shadow-xl shadow-primary/20"
+                    >
+                      Hire Now
+                    </button>
+                  )}
                   <button
                     onClick={() => router.push(`/messages?userId=${profile._id || profile.id}`)}
                     className="w-full h-14 bg-white/10 hover:bg-white/15 border border-white/10 text-white flex items-center justify-center rounded-2xl font-black text-lg transition-all active:scale-95"
                   >
                     Message
                   </button>
+
+                  {profile.resume && (
+                    <a
+                      href={profile.resume}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      download
+                      className="w-full h-14 bg-[#6a6b4c]/40 hover:bg-[#6a6b4c]/60 border border-white/10 text-white flex items-center justify-center rounded-2xl font-black text-lg transition-all active:scale-95 gap-2"
+                      onClick={(e) => {
+                        // Log for user debugging if needed
+                        console.log("Opening resume:", profile.resume);
+                      }}
+                    >
+                      <span className="material-symbols-outlined">description</span>
+                      View Resume
+                    </a>
+                  )}
                 </div>
 
                 {/* Trust Badges */}

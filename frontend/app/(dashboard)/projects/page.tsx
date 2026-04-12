@@ -9,25 +9,25 @@ import Link from "next/link";
 export default function ProjectsPage() {
   const router = useRouter();
   const { user, offers, fetchOffers, isLoadingOffers } = useStore();
-  const [activeTab, setActiveTab] = useState<"active" | "completed" | "saved">("active");
+  const [activeTab, setActiveTab] = useState<"active" | "completed" | "rejected">("active");
 
   useEffect(() => {
     fetchOffers();
   }, [fetchOffers]);
 
   const projects = useMemo(() => {
-    if (!offers) return { active: [], completed: [], saved: [] };
+    if (!offers) return { active: [], completed: [], rejected: [] };
 
-    // active = accepted AND paid
-    const active = offers.filter(o => o.status === 'accepted' && o.isPaid === true);
+    // active = accepted AND projectStatus exists and is not 'completed' or 'not_started'
+    const active = offers.filter(o => o.status === 'accepted' && ['active', 'review'].includes(o.projectStatus || ''));
     
-    // completed = currently no 'completed' status, so using empty for now or logic if we have it
-    // In many systems, status: 'completed' would be used.
-    const completed = offers.filter(o => o.status === 'accepted' && (o as any).isCompleted === true);
-    
-    const saved: any[] = []; // Currently no 'saved' logic for offers
+    // completed = status is 'completed'
+    const completed = offers.filter(o => o.projectStatus === 'completed');
 
-    return { active, completed, saved };
+    // rejected = initial offer status is rejected
+    const rejected = offers.filter(o => o.status === 'rejected');
+
+    return { active, completed, rejected };
   }, [offers]);
 
   if (!user) return null;
@@ -57,41 +57,41 @@ export default function ProjectsPage() {
       <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-8 animate-fade-in">
 
         {/* Stats Row */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4 transition-all hover:shadow-md">
-            <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-500 flex items-center justify-center">
-              <span className="material-symbols-outlined">work</span>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4 transition-all hover:shadow-md">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-500 flex items-center justify-center">
+              <span className="material-symbols-outlined text-xl">work</span>
             </div>
             <div>
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Active</p>
-              <h4 className="text-3xl font-black text-slate-900 dark:text-white">{projects.active.length}</h4>
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">Active</p>
+              <h4 className="text-2xl font-black text-slate-900 dark:text-white">{projects.active.length}</h4>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4 transition-all hover:shadow-md">
-            <div className="w-12 h-12 rounded-xl bg-green-50 dark:bg-green-900/20 text-green-500 flex items-center justify-center">
-              <span className="material-symbols-outlined">task_alt</span>
+          <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4 transition-all hover:shadow-md">
+            <div className="w-10 h-10 rounded-xl bg-green-50 dark:bg-green-900/20 text-green-500 flex items-center justify-center">
+              <span className="material-symbols-outlined text-xl">task_alt</span>
             </div>
             <div>
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Completed</p>
-              <h4 className="text-3xl font-black text-slate-900 dark:text-white">{projects.completed.length}</h4>
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">Completed</p>
+              <h4 className="text-2xl font-black text-slate-900 dark:text-white">{projects.completed.length}</h4>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4 transition-all hover:shadow-md">
-            <div className="w-12 h-12 rounded-xl bg-amber-50 dark:bg-amber-900/20 text-amber-500 flex items-center justify-center">
-              <span className="material-symbols-outlined">star</span>
+          <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4 transition-all hover:shadow-md">
+            <div className="w-10 h-10 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-500 flex items-center justify-center">
+              <span className="material-symbols-outlined text-xl">cancel</span>
             </div>
             <div>
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Saved</p>
-              <h4 className="text-3xl font-black text-slate-900 dark:text-white">{projects.saved.length}</h4>
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">Rejected</p>
+              <h4 className="text-2xl font-black text-slate-900 dark:text-white">{projects.rejected.length}</h4>
             </div>
           </div>
         </div>
 
         {/* Tab Switcher */}
         <div className="flex gap-6 border-b border-slate-200 dark:border-slate-800">
-          {(["active", "completed", "saved"] as const).map((tab) => (
+          {(["active", "completed", "rejected"] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -116,16 +116,21 @@ export default function ProjectsPage() {
         ) : currentList.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {currentList.map((project: Offer) => (
-              <div
+              <Link
                 key={project._id}
-                className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm hover:shadow-md transition-all group relative overflow-hidden"
+                href={`/projects/${project._id}`}
+                className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm hover:shadow-md transition-all group relative overflow-hidden block cursor-pointer"
               >
                 <div className="flex justify-between items-start mb-4">
                   <div className="size-12 rounded-2xl bg-slate-50 dark:bg-slate-800/80 flex items-center justify-center text-slate-400">
                     <span className="material-symbols-outlined text-2xl">rocket</span>
                   </div>
-                  <div className="px-3 py-1 bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest rounded-full">
-                    {activeTab === 'active' ? 'Ongoing' : 'Finished'}
+                  <div className={`px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-full ${
+                    activeTab === 'completed' || project.projectStatus === 'completed' 
+                    ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' 
+                    : 'bg-primary/10 text-primary'
+                  }`}>
+                    {activeTab === 'active' ? (project.projectStatus || 'Ongoing') : 'Finished'}
                   </div>
                 </div>
 
@@ -139,14 +144,17 @@ export default function ProjectsPage() {
                     <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest">Budget</p>
                     <p className="text-sm font-bold text-slate-900 dark:text-white">${project.budget.toLocaleString()}</p>
                   </div>
-                  <button 
-                    onClick={() => router.push(`/messages?conversation=${project._id}`)}
+                  <div 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      router.push(`/messages?conversation=${project._id}`);
+                    }}
                     className="size-10 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-primary hover:text-white text-slate-500 transition-all flex items-center justify-center shadow-inner"
                   >
                     <span className="material-symbols-outlined text-xl">chat_bubble</span>
-                  </button>
+                  </div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         ) : (

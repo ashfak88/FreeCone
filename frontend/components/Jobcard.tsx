@@ -62,9 +62,6 @@ export default function JobCard({ job }: JobCardProps) {
             {job.title}
           </h4>
         </div>
-        <button className="text-slate-400 transition-colors hover:text-primary group-hover:scale-110 active:scale-95">
-          <span className="material-symbols-outlined">bookmark</span>
-        </button>
       </div>
 
       <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed mb-4 line-clamp-2 italic">

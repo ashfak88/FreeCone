@@ -14,9 +14,8 @@ export default function TalentCard({ talent }: { talent: User }) {
     }
   };
 
-  // Use fallbacks for users that might not have the new fields yet
   const rating = talent.rating || 0;
-  const reviews = talent.reviews || 0;
+  const reviews = talent.totalReviews || 0;
   const skills = talent.skills || [];
   const imageUrl = talent.imageUrl || talent.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(talent.name)}&background=0ea5e9&color=fff`;
   const bio = talent.bio || talent.description || "Looking for opportunities.";

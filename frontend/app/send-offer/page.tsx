@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useStore, User } from "@/lib/store";
 import Link from "next/link";
+import RichTextEditor from "@/components/RichTextEditor";
 
 function SendOfferContent() {
   const router = useRouter();
@@ -77,148 +78,141 @@ function SendOfferContent() {
   if (!talentId || !profile) return <div className="p-8 text-center text-red-500">Talent not found.</div>;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-manrope pb-12">
-      {/* Header */}
-      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-50">
-        <div className="max-w-4xl mx-auto px-4 h-16 flex items-center gap-4">
-          <button onClick={() => router.back()} className="text-slate-600 dark:text-slate-400 hover:text-primary">
-            <span className="material-symbols-outlined">arrow_back</span>
+    <div className="min-h-screen bg-slate-50 font-display transition-colors duration-500">
+      <header className="sticky top-0 z-50 bg-white border-b border-primary/10 px-4 md:px-8 h-16 flex items-center">
+        <div className="max-w-7xl mx-auto w-full flex items-center justify-between">
+          <button
+            onClick={() => router.back()}
+            className="flex items-center justify-center rounded-full w-10 h-10 -ml-2 text-slate-500 hover:text-primary hover:bg-primary/10 transition-all duration-300"
+            title="Go Back"
+          >
+            <span className="material-symbols-outlined text-[24px]">arrow_back</span>
           </button>
-          <h1 className="text-xl font-bold">Send Offer</h1>
+
+          <div className="flex items-center gap-3">
+            <span className="material-symbols-outlined text-primary text-xl">verified_user</span>
+            <h1 className="text-sm font-black uppercase tracking-widest text-slate-800">Direct Offer</h1>
+          </div>
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-6 mt-10">
-        <div className="flex flex-col lg:flex-row gap-10 items-start">
+      <main className="max-w-2xl mx-auto px-4 py-8 md:py-12">
+        <div className="bg-white rounded-3xl border border-primary/10 shadow-sm overflow-hidden">
 
-          {/* Left Column: Offer Form */}
-          <div className="flex-1 w-full order-2 lg:order-1">
-            <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 overflow-hidden shadow-2xl shadow-slate-200/50 dark:shadow-none">
-              <div className="px-8 py-6 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="size-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-                    <span className="material-symbols-outlined">description</span>
-                  </div>
-                  <h3 className="text-xl font-black">Offer Details</h3>
-                </div>
-                <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Step 1 of 1</div>
+          {/* Compact Talent Card */}
+          <div className="px-6 py-5 bg-primary/5 flex items-center justify-between border-b border-primary/5">
+            <div className="flex items-center gap-4">
+              <div className="size-12 rounded-xl border-2 border-white bg-white overflow-hidden shadow-sm">
+                <img
+                  src={profile.imageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name)}&background=6a6b4c&color=fff`}
+                  alt={profile.name}
+                  className="w-full h-full object-cover"
+                />
               </div>
+              <div className="leading-tight">
+                <h2 className="text-base font-black text-slate-900">{profile.name}</h2>
+                <p className="text-[10px] font-bold text-primary uppercase tracking-wider">{profile.title || 'Elite Talent'}</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Rate</p>
+              <p className="text-sm font-black text-slate-900">${profile.rate || '0'}/hr</p>
+            </div>
+          </div>
 
-              <form onSubmit={handleSubmit} className="p-8 space-y-8">
-                {status && (
-                  <div className={`p-5 rounded-2xl text-sm font-bold flex items-center gap-3 ${status.type === "success" ? "bg-green-50 text-green-700 border border-green-100" : "bg-red-50 text-red-700 border border-red-100"}`}>
-                    <span className="material-symbols-outlined">{status.type === "success" ? "check_circle" : "error"}</span>
-                    {status.message}
-                  </div>
-                )}
+          <div className="p-6 md:p-8 space-y-6">
+            <div className="space-y-1">
+              <h3 className="text-xl font-black text-slate-900 tracking-tight">Project Proposal</h3>
+              <p className="text-xs font-semibold text-slate-400">Review your requirement details before sending</p>
+            </div>
 
-                <div className="space-y-3">
-                  <label className="text-sm font-black text-slate-700 dark:text-slate-300 ml-1">Project Title</label>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {status && (
+                <div className={`p-4 rounded-xl text-xs font-bold flex items-center gap-3 ${status.type === "success"
+                    ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
+                    : "bg-rose-50 text-rose-700 border border-rose-100"
+                  }`}>
+                  <span className="material-symbols-outlined text-lg">{status.type === "success" ? "check_circle" : "error"}</span>
+                  {status.message}
+                </div>
+              )}
+
+              <div className="space-y-5">
+                <div className="space-y-2">
+                  <label htmlFor="jobTitle" className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-0.5">
+                    Job Title
+                  </label>
                   <input
                     id="jobTitle"
                     required
-                    placeholder="e.g. Design a Modern Landing Page"
-                    className="w-full p-4 rounded-2xl border-2 border-slate-50 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-bold placeholder:text-slate-400"
+                    placeholder="Enter project name"
+                    className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/5 outline-none transition-all font-bold text-sm text-slate-900"
                     type="text"
                     value={formData.jobTitle}
                     onChange={handleInputChange}
                   />
                 </div>
 
-                <div className="space-y-3">
-                  <label className="text-sm font-black text-slate-700 dark:text-slate-300 ml-1">Project Description</label>
-                  <textarea
-                    id="description"
-                    required
-                    rows={8}
-                    placeholder="Describe the job, requirements, and deliverables..."
-                    className="w-full p-4 rounded-2xl border-2 border-slate-50 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium placeholder:text-slate-400 leading-relaxed"
-                    value={formData.description}
-                    onChange={handleInputChange}
-                  ></textarea>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-0.5">
+                    Description
+                  </label>
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 focus-within:bg-white focus-within:border-primary transition-all overflow-hidden">
+                    <RichTextEditor
+                      value={formData.description}
+                      onChange={(content) => setFormData({ ...formData, description: content })}
+                      placeholder="Share your goals and deliverables..."
+                    />
+                  </div>
                 </div>
 
-                <div className="space-y-3">
-                  <label className="text-sm font-black text-slate-700 dark:text-slate-300 ml-1">Total Budget</label>
+                <div className="space-y-2">
+                  <label htmlFor="budget" className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-0.5">
+                    Budget ($)
+                  </label>
                   <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-black">$</span>
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
                     <input
                       id="budget"
                       required
-                      placeholder="e.g. 500"
-                      className="w-full p-4 pl-10 rounded-2xl border-2 border-slate-50 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-black placeholder:text-slate-400 text-xl"
+                      placeholder="0.00"
+                      className="w-full h-12 pl-10 pr-4 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/5 outline-none transition-all font-bold text-sm text-slate-900"
                       type="number"
                       value={formData.budget}
                       onChange={handleInputChange}
                     />
                   </div>
                 </div>
+              </div>
 
+              <div className="pt-4">
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className={`w-full py-5 rounded-[1.5rem] font-black text-xl transition-all active:scale-95 shadow-lg ${isSubmitting ? "bg-slate-200 text-slate-500 cursor-not-allowed" : "bg-primary text-white hover:shadow-2xl hover:shadow-primary/30"
+                  className={`w-full h-14 rounded-2xl font-black text-base tracking-tight transition-all active:scale-[0.98] flex items-center justify-center gap-2 ${isSubmitting
+                      ? "bg-slate-100 text-slate-300 cursor-not-allowed"
+                      : "bg-primary text-white shadow-lg hover:shadow-primary/20 hover:-translate-y-0.5"
                     }`}
                 >
-                  {isSubmitting ? "Sending..." : "Send Job Offer"}
+                  {isSubmitting ? (
+                    <div className="size-5 border-2 border-slate-300 border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <span>Send Job Offer</span>
+                      <span className="material-symbols-outlined text-lg">send</span>
+                    </>
+                  )}
                 </button>
-
-                <div className="flex items-center justify-center gap-2 text-slate-400">
-                  <span className="material-symbols-outlined text-sm">lock</span>
-                  <p className="text-center text-[10px] font-bold uppercase tracking-widest">
-                    Secure Payment & Agreement Active
-                  </p>
-                </div>
-              </form>
-            </div>
-          </div>
-
-          {/* Right Column: Talent Summary Sidebar */}
-          <div className="w-full lg:w-80 order-1 lg:order-2 sticky top-28">
-            <div className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm text-center">
-              <div className="relative inline-block mb-6">
-                <div className="h-28 w-28 rounded-[2rem] overflow-hidden border-4 border-primary/10 bg-slate-100 mx-auto shadow-xl">
-                  <img
-                    src={profile.imageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name)}&background=6a6b4c&color=fff`}
-                    alt={profile.name}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div className="absolute -bottom-2 -right-2 bg-primary text-white size-8 rounded-xl flex items-center justify-center shadow-lg border-4 border-white dark:border-slate-900">
-                  <span className="material-symbols-outlined text-xs fill-icon">verified</span>
-                </div>
               </div>
 
-              <h2 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tighter mb-1">{profile.name}</h2>
-              <p className="text-primary font-black text-xs uppercase tracking-[0.2em] mb-4">{profile.title || profile.role || "Talent"}</p>
-
-              <div className="flex items-center justify-center gap-1.5 text-slate-500 bg-slate-50 dark:bg-slate-800/50 py-2 rounded-xl border border-slate-100 dark:border-slate-800 px-4">
-                <span className="material-symbols-outlined text-sm">location_on</span>
-                <span className="text-xs font-bold">{profile.location || 'Global'}</span>
-              </div>
-
-              <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 space-y-4">
-                <div className="flex justify-between items-center text-sm font-bold">
-                  <span className="text-slate-400">Rate</span>
-                  <span className="text-slate-900 dark:text-white">${profile.rate || '0'}/hr</span>
-                </div>
-                <div className="flex justify-between items-center text-sm font-bold">
-                  <span className="text-slate-400">Success</span>
-                  <span className="text-slate-900 dark:text-white">{profile.successRate || '100%'}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-6 p-6 bg-amber-50 dark:bg-amber-900/10 rounded-[2rem] border border-amber-100 dark:border-amber-900/20">
-              <div className="flex gap-3">
-                <span className="material-symbols-outlined text-amber-500">lightbulb</span>
-                <p className="text-[11px] font-bold text-amber-800 dark:text-amber-400 leading-relaxed">
-                  Tip: Be detailed in your description to help the talent understand exactly what you need.
+              <div className="flex items-center justify-center gap-2 pt-2">
+                <span className="material-symbols-outlined text-slate-300 text-xs">verified</span>
+                <p className="text-[9px] font-bold text-slate-300 uppercase tracking-[0.2em]">
+                  Protected by FreeCone Escrow
                 </p>
               </div>
-            </div>
+            </form>
           </div>
-
         </div>
       </main>
     </div>

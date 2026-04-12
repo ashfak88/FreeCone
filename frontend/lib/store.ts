@@ -24,9 +24,13 @@ export interface User {
   skills?: string[];
   rate?: number;
   rating?: number;
+  totalReviews?: number;
   reviews?: number;
   hoursWorked?: number;
-  successRate?: string;
+  successRate?: number;
+  completedProjects?: number;
+  totalProjectsStarted?: number;
+  resume?: string;
   portfolio?: PortfolioItem[];
   socialLinks?: {
     linkedin?: string;
@@ -34,7 +38,9 @@ export interface User {
     twitter?: string;
     website?: string;
   };
-  isProfileComplete?: boolean;
+  isProfileComplete: boolean;
+  status: "active" | "pending" | "blocked";
+  createdAt: string;
 }
 
 export interface Job {
@@ -55,6 +61,7 @@ export interface Job {
     reviewsCount: number;
     verified: boolean;
   };
+  user?: string;
   createdAt: string;
 }
 
@@ -66,7 +73,16 @@ export interface Offer {
   description: string;
   budget: number;
   status: "pending" | "viewed" | "accepted" | "rejected";
-  isPaid?: boolean;
+  projectStatus?: "not_started" | "active" | "review" | "completed" | "disputed";
+  updates?: {
+    text: string;
+    type: string;
+    createdAt: string;
+  }[];
+  isPaid: boolean;
+  isReviewed: boolean;
+  rejectionReason?: string;
+  githubRepo?: string;
   createdAt: string;
 }
 
@@ -78,11 +94,36 @@ export interface Notification {
     name: string;
     imageUrl?: string;
   };
-  type: "proposal" | "offer" | "message" | "payment" | "confirmation" | "other";
+  type: "proposal" | "offer" | "message" | "payment" | "completion_request" | "confirmation" | "other";
   relatedId?: string;
   title: string;
   message: string;
   isRead: boolean;
+  createdAt: string;
+}
+
+export interface Transaction {
+  _id: string;
+  txnId: string;
+  amount: number;
+  currency: string;
+  sender: {
+    _id: string;
+    name: string;
+    imageUrl?: string;
+  };
+  receiver: {
+    _id: string;
+    name: string;
+    imageUrl?: string;
+  };
+  status: "Success" | "Pending" | "Escrow" | "Failed";
+  type: string;
+  job?: {
+    _id: string;
+    title: string;
+  };
+  description?: string;
   createdAt: string;
 }
 
@@ -95,6 +136,20 @@ export interface Proposal {
   timeline: string;
   figmaLink?: string;
   status: "pending" | "viewed" | "accepted" | "rejected";
+  createdAt: string;
+}
+
+export interface Review {
+  _id: string;
+  offer: string;
+  reviewer: {
+    _id: string;
+    name: string;
+    imageUrl?: string;
+  };
+  reviewee: string;
+  rating: number;
+  comment: string;
   createdAt: string;
 }
 
@@ -122,6 +177,7 @@ interface AppState {
   user: User | null;
   setUser: (user: User | null) => void;
   updateUser: (updates: Partial<User>) => void;
+  fetchProfile: () => Promise<void>;
 
   jobs: Job[];
   isLoadingJobs: boolean;
@@ -140,6 +196,18 @@ interface AppState {
   setOffers: (offers: Offer[]) => void;
   fetchOffers: () => Promise<void>;
   updateOfferStatus: (id: string, status: 'accepted' | 'rejected') => Promise<void>;
+  fetchOfferById: (id: string) => Promise<Offer | null>;
+  addProjectUpdate: (id: string, text: string, type?: string) => Promise<void>;
+  completeProject: (id: string) => Promise<void>;
+  rejectProjectCompletion: (id: string, reason: string) => Promise<void>;
+  updateGithubRepo: (id: string, githubRepo: string) => Promise<void>;
+  submitReview: (reviewData: { offerId: string; rating: number; comment: string }) => Promise<boolean>;
+  fetchUserById: (id: string) => Promise<User | null>;
+  fetchUserReviews: (id: string) => Promise<Review[]>;
+
+  // Transaction State
+  transactions: Transaction[];
+  fetchTransactions: () => Promise<void>;
 
   // Notification State
   notifications: any[];
@@ -220,6 +288,26 @@ export const useStore = create<AppState>((set, get) => {
       set({ user: updatedUser });
     },
 
+    fetchProfile: async () => {
+      try {
+        const token = localStorage.getItem("accessToken");
+        if (!token) return;
+        const res = await fetch(`${API_URL}/users/profile`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          // Update local state and localStorage
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('user', JSON.stringify(data));
+          }
+          set({ user: data });
+        }
+      } catch (err) {
+        console.error("Failed to fetch profile:", err);
+      }
+    },
+
     jobs: [],
     isLoadingJobs: false,
     setJobs: (jobs) => set({ jobs }),
@@ -258,6 +346,15 @@ export const useStore = create<AppState>((set, get) => {
       } finally {
         set({ isLoadingTalent: false });
       }
+    },
+    fetchUserById: async (id: string) => {
+      try {
+        const res = await fetch(`${API_URL}/users/${id}`, { cache: "no-store" });
+        if (res.ok) return await res.json();
+      } catch (err) {
+        console.error("Error fetching user by ID:", err);
+      }
+      return null;
     },
 
     offers: [],
@@ -304,6 +401,153 @@ export const useStore = create<AppState>((set, get) => {
         }
       } catch (err) {
         console.error("Error updating offer status:", err);
+      }
+    },
+    fetchOfferById: async (id: string) => {
+      try {
+        const token = localStorage.getItem("accessToken");
+        const res = await fetch(`${API_URL}/offers/${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) return await res.json();
+      } catch (err) {
+        console.error("Failed to fetch offer:", err);
+      }
+      return null;
+    },
+    addProjectUpdate: async (id: string, text: string, type: string = "general") => {
+      try {
+        const token = localStorage.getItem("accessToken");
+        const res = await fetch(`${API_URL}/offers/${id}/updates`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ text, type }),
+        });
+        if (res.ok) {
+          const updatedOffer = await res.json();
+          const updatedOffers = get().offers.map((o) =>
+            o._id === id ? updatedOffer : o
+          );
+          set({ offers: updatedOffers });
+        }
+      } catch (err) {
+        console.error("Failed to add project update:", err);
+      }
+    },
+    completeProject: async (id: string) => {
+      try {
+        const token = localStorage.getItem("accessToken");
+        const res = await fetch(`${API_URL}/offers/${id}/complete`, {
+          method: "PUT",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const updatedOffer = await res.json();
+          const updatedOffers = get().offers.map((o) =>
+            o._id === id ? updatedOffer : o
+          );
+          set({ offers: updatedOffers });
+        }
+      } catch (err) {
+        console.error("Failed to complete project:", err);
+      }
+    },
+    rejectProjectCompletion: async (id, reason) => {
+      try {
+        const token = localStorage.getItem("accessToken");
+        const res = await fetch(`${API_URL}/offers/${id}/reject-completion`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({ reason })
+        });
+        if (res.ok) {
+          const updatedOffer = await res.json();
+          set((state) => ({
+            offers: state.offers.map((o) => (o._id === id ? updatedOffer : o)),
+          }));
+        }
+      } catch (err) {
+        console.error("Failed to reject project completion:", err);
+      }
+    },
+    updateGithubRepo: async (id: string, githubRepo: string) => {
+      try {
+        const token = localStorage.getItem("accessToken");
+        const res = await fetch(`${API_URL}/offers/${id}/github`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ githubRepo }),
+        });
+        if (res.ok) {
+          const updatedOffer = await res.json();
+          const updatedOffers = get().offers.map((o) =>
+            o._id === id ? updatedOffer : o
+          );
+          set({ offers: updatedOffers });
+        }
+      } catch (err) {
+        console.error("Failed to update GitHub repo:", err);
+      }
+    },
+    submitReview: async (reviewData) => {
+      try {
+        const token = localStorage.getItem("accessToken");
+        const res = await fetch(`${API_URL}/users/review`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(reviewData),
+        });
+
+        if (res.ok) {
+          // Update the localized offer state
+          const updatedOffers = get().offers.map((o) =>
+            o._id === reviewData.offerId ? { ...o, isReviewed: true } : o
+          );
+          set({ offers: updatedOffers });
+          return true;
+        }
+        return false;
+      } catch (err) {
+        console.error("Failed to submit review:", err);
+        return false;
+      }
+    },
+    fetchUserReviews: async (id: string) => {
+      try {
+        const res = await fetch(`${API_URL}/users/${id}/reviews`, { cache: "no-store" });
+        if (res.ok) return await res.json();
+      } catch (err) {
+        console.error("Failed to fetch user reviews:", err);
+      }
+      return [];
+    },
+
+    transactions: [],
+    fetchTransactions: async () => {
+      try {
+        const token = localStorage.getItem("accessToken");
+        if (!token) return;
+        const res = await fetch(`${API_URL}/transactions`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          set({ transactions: data });
+        }
+      } catch (err) {
+        console.error("Failed to fetch transactions:", err);
       }
     },
 
@@ -539,7 +783,7 @@ export const useStore = create<AppState>((set, get) => {
           method: "PUT",
           headers: { Authorization: `Bearer ${token}` },
         }).catch(() => console.warn("Failed to mark as read returning from API"));
-        
+
         // Optimistically clear the unread badge locally
         const { conversations, user } = get();
         if (user) {
@@ -548,8 +792,8 @@ export const useStore = create<AppState>((set, get) => {
             if (c._id === conversationId && c.lastMessage) {
               const readArray = Array.isArray(c.lastMessage.readBy) ? c.lastMessage.readBy : [];
               const isAlreadyRead = readArray.some((r: any) => {
-                 if (typeof r === 'object' && r !== null) return r._id === myId || r.id === myId;
-                 return r === myId;
+                if (typeof r === 'object' && r !== null) return r._id === myId || r.id === myId;
+                return r === myId;
               });
               if (!isAlreadyRead) {
                 return {
@@ -578,7 +822,7 @@ export const useStore = create<AppState>((set, get) => {
           method: "DELETE",
           headers: { Authorization: `Bearer ${token}` },
         });
-        
+
         const { conversations, activeConversation } = get();
         set({ conversations: conversations.filter(c => c._id !== conversationId) });
         if (activeConversation?._id === conversationId) {
@@ -636,21 +880,21 @@ export const useStore = create<AppState>((set, get) => {
           method: "PUT",
           headers: { Authorization: `Bearer ${token}` },
         });
-        
+
         if (!res.ok) {
-           // Revert if failed
-           set({ conversations });
-           console.warn("Failed to toggle favorite API response");
-           return;
+          // Revert if failed
+          set({ conversations });
+          console.warn("Failed to toggle favorite API response");
+          return;
         }
 
         const updatedConversation = await res.json();
-        
+
         // Final sync
-        set({ 
-          conversations: get().conversations.map(c => 
+        set({
+          conversations: get().conversations.map(c =>
             c._id === conversationId ? updatedConversation : c
-          ) 
+          )
         });
       } catch (err) {
         set({ conversations }); // Revert

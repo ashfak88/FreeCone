@@ -18,6 +18,7 @@ export interface IUser extends Document {
   bio?: string;
   location?: string;
   rating?: number;
+  totalReviews?: number;
   skills?: string[];
   rate?: number;
   imageUrl?: string;
@@ -30,6 +31,16 @@ export interface IUser extends Document {
   };
   isProfileComplete: boolean;
   status: "active" | "pending" | "blocked";
+  successRate?: number;
+  completedProjects?: number;
+  totalProjectsStarted?: number;
+  resume?: string;
+  loginHistory: Array<{
+    device: string;
+    location: string;
+    timestamp: Date;
+    status: "Successful" | "Blocked";
+  }>;
   createdAt: Date;
 }
 
@@ -75,6 +86,10 @@ const UserSchema: Schema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    totalReviews: {
+      type: Number,
+      default: 0,
+    },
     skills: {
       type: [String],
       default: [],
@@ -111,6 +126,30 @@ const UserSchema: Schema = new mongoose.Schema(
       enum: ["active", "pending", "blocked"],
       default: "active",
     },
+    successRate: {
+      type: Number,
+      default: 0,
+    },
+    completedProjects: {
+      type: Number,
+      default: 0,
+    },
+    totalProjectsStarted: {
+      type: Number,
+      default: 0,
+    },
+    resume: {
+      type: String,
+      default: "",
+    },
+    loginHistory: [
+      {
+        device: String,
+        location: String,
+        timestamp: { type: Date, default: Date.now },
+        status: { type: String, enum: ["Successful", "Blocked"] }
+      }
+    ],
     createdAt: {
       type: Date,
       default: Date.now,

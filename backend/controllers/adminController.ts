@@ -3,64 +3,91 @@ import mongoose from "mongoose";
 import User from "../models/User";
 import Job from "../models/Job";
 import Transaction from "../models/Transaction";
+import Complaint from "../models/Complaint";
 
 export const getDashboardStats = async (req: Request, res: Response): Promise<any> => {
   try {
-    // 1. Revenue Calculations
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    const startOfPrevMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-    
-    const todayJobs = await Job.find({ createdAt: { $gte: today } });
-    const todayRevenue = todayJobs.reduce((acc, job) => acc + (job.budget || 0), 0);
 
-    const totalRevenueResult = await Job.aggregate([
-      { $group: { _id: null, total: { $sum: "$budget" } } }
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+    const todayRevenueResult = await Transaction.aggregate([
+      { $match: { createdAt: { $gte: today }, type: "Commission", status: "Success" } },
+      { $group: { _id: null, total: { $sum: "$amount" } } }
+    ]);
+    const todayRevenue = todayRevenueResult[0]?.total || 0;
+
+    const yesterdayRevenueResult = await Transaction.aggregate([
+      { $match: { createdAt: { $gte: yesterday, $lt: today }, type: "Commission", status: "Success" } },
+      { $group: { _id: null, total: { $sum: "$amount" } } }
+    ]);
+    const yesterdayRevenue = yesterdayRevenueResult[0]?.total || 0;
+
+    const todayRevGrowth = yesterdayRevenue === 0 ? (todayRevenue > 0 ? 100 : 0) :
+      ((todayRevenue - yesterdayRevenue) / yesterdayRevenue) * 100;
+
+    const totalRevenueResult = await Transaction.aggregate([
+      { $match: { type: "Commission", status: "Success" } },
+      { $group: { _id: null, total: { $sum: "$amount" } } }
     ]);
     const totalRevenue = totalRevenueResult[0]?.total || 0;
 
-    // 2. Growth and Counts
+    const totalVolumeResult = await Transaction.aggregate([
+      { $match: { status: "Success" } },
+      { $group: { _id: null, total: { $sum: "$amount" } } }
+    ]);
+    const totalVolume = totalVolumeResult[0]?.total || 0;
+
     const totalUsers = await User.countDocuments();
     const activeUsers = await User.countDocuments({ isProfileComplete: true });
-    const totalProjects = await Job.countDocuments();
     const todaySignups = await User.countDocuments({ createdAt: { $gte: today } });
+    const yesterdaySignups = await User.countDocuments({ createdAt: { $gte: yesterday, $lt: today } });
 
-    // Calculate Growth (Month over Month)
+    const todaySignupGrowth = yesterdaySignups === 0 ? (todaySignups > 0 ? 100 : 0) :
+      ((todaySignups - yesterdaySignups) / yesterdaySignups) * 100;
+
     const currentMonthUsers = await User.countDocuments({ createdAt: { $gte: startOfMonth } });
-    const prevMonthUsers = await User.countDocuments({ 
-      createdAt: { $gte: startOfPrevMonth, $lt: startOfMonth } 
-    });
-    const userGrowth = prevMonthUsers === 0 ? (currentMonthUsers > 0 ? 100 : 0) : 
-                      ((currentMonthUsers - prevMonthUsers) / prevMonthUsers) * 100;
-
-    const currentMonthProjects = await Job.countDocuments({ createdAt: { $gte: startOfMonth } });
-    const prevMonthProjects = await Job.countDocuments({
+    const prevMonthUsers = await User.countDocuments({
       createdAt: { $gte: startOfPrevMonth, $lt: startOfMonth }
     });
-    const projectGrowth = prevMonthProjects === 0 ? (currentMonthProjects > 0 ? 100 : 0) :
-                         ((currentMonthProjects - prevMonthProjects) / prevMonthProjects) * 100;
+    const userGrowth = prevMonthUsers === 0 ? (currentMonthUsers > 0 ? 100 : 0) :
+      ((currentMonthUsers - prevMonthUsers) / prevMonthUsers) * 100;
 
-    // 3. Monthly Aggregate for Chart
-    const sixMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 5, 1);
-    const monthlyStats = await Job.aggregate([
-      { $match: { createdAt: { $gte: sixMonthsAgo } } },
-      { $group: {
-        _id: { month: { $month: "$createdAt" }, year: { $year: "$createdAt" } },
-        revenue: { $sum: "$budget" }
-      }},
+    const currentMonthRevenueResult = await Transaction.aggregate([
+      { $match: { createdAt: { $gte: startOfMonth }, type: "Commission", status: "Success" } },
+      { $group: { _id: null, total: { $sum: "$amount" } } }
+    ]);
+    const prevMonthRevenueResult = await Transaction.aggregate([
+      { $match: { createdAt: { $gte: startOfPrevMonth, $lt: startOfMonth }, type: "Commission", status: "Success" } },
+      { $group: { _id: null, total: { $sum: "$amount" } } }
+    ]);
+
+    const currentMonthRevenue = currentMonthRevenueResult[0]?.total || 0;
+    const prevMonthRevenue = prevMonthRevenueResult[0]?.total || 0;
+    const revenueGrowth = prevMonthRevenue === 0 ? (currentMonthRevenue > 0 ? 100 : 0) :
+      ((currentMonthRevenue - prevMonthRevenue) / prevMonthRevenue) * 100;
+
+    const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+    const monthlyStats = await Transaction.aggregate([
+      { $match: { createdAt: { $gte: sixMonthsAgo }, type: "Commission", status: "Success" } },
+      {
+        $group: {
+          _id: { month: { $month: "$createdAt" }, year: { $year: "$createdAt" } },
+          revenue: { $sum: "$amount" }
+        }
+      },
       { $sort: { "_id.year": 1, "_id.month": 1 } }
     ]);
 
     const monthNames = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
-    interface GrowthDataItem {
-      month: string;
-      year: number;
-      revenue: number;
-    }
-    const growthData: GrowthDataItem[] = [];
+    const growthData: { month: string; year: number; revenue: number }[] = [];
     for (let i = 0; i < 6; i++) {
-      const d = new Date(today.getFullYear(), today.getMonth() - 5 + i, 1);
+      const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
       growthData.push({
         month: monthNames[d.getMonth()],
         year: d.getFullYear(),
@@ -72,9 +99,7 @@ export const getDashboardStats = async (req: Request, res: Response): Promise<an
       const monthName = monthNames[s._id.month - 1];
       const year = s._id.year;
       const target = growthData.find(g => g.month === monthName && g.year === year);
-      if (target) {
-        target.revenue = s.revenue;
-      }
+      if (target) target.revenue = s.revenue;
     });
 
     // 4. Activity Logs
@@ -100,12 +125,14 @@ export const getDashboardStats = async (req: Request, res: Response): Promise<an
 
     res.json({
       todayRevenue,
+      todayRevGrowth: Math.round(todayRevGrowth),
       todaySignups,
+      todaySignupGrowth: Math.round(todaySignupGrowth),
       totalRevenue,
+      totalVolume: Math.round(totalVolume),
       activeUsers,
-      totalProjects,
       userGrowth: Math.round(userGrowth),
-      projectGrowth: Math.round(projectGrowth),
+      revenueGrowth: Math.round(revenueGrowth),
       growthData: growthData.slice(-6),
       activities
     });
@@ -118,22 +145,19 @@ export const getDashboardStats = async (req: Request, res: Response): Promise<an
 export const getUsers = async (req: Request, res: Response): Promise<any> => {
   try {
     const { role, status, search } = req.query;
-    
+
     let query: any = {};
-    
-    // Filtering by role
+
     if (role === "freelancer") {
       query.role = "talent";
     } else if (role === "client") {
       query.role = "client";
     }
-    
-    // Filtering by status
+
     if (status) {
       query.status = status;
     }
-    
-    // Search by name or email
+
     if (search) {
       query.$or = [
         { name: { $regex: search, $options: "i" } },
@@ -141,17 +165,57 @@ export const getUsers = async (req: Request, res: Response): Promise<any> => {
       ];
     }
 
-    const users = await User.find(query).sort({ createdAt: -1 });
-    res.json(users);
+    const users = await User.find(query).sort({ createdAt: -1 })
+    res.json(users)
   } catch (error: any) {
     console.error("Error fetching admin users:", error.message);
     res.status(500).json({ message: "Server Error" });
   }
 };
 
+export const getUserDetail = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const id = req.params.id as string;
+
+    // Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid User ID format" });
+    }
+
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const jobsCount = await Job.countDocuments({
+      $or: [{ user: id }, { freelancer: id }]
+    });
+
+    const transactions = await Transaction.find({
+      $or: [{ sender: id }, { receiver: id }]
+    }).sort({ createdAt: -1 }).limit(10);
+
+    const totalVolumeResult = await Transaction.aggregate([
+      { $match: { $or: [{ sender: new mongoose.Types.ObjectId(id) }, { receiver: new mongoose.Types.ObjectId(id) }], status: "Success" } },
+      { $group: { _id: null, total: { $sum: "$amount" } } }
+    ]);
+    const totalVolume = totalVolumeResult[0]?.total || 0;
+
+    res.json({
+      user,
+      stats: {
+        jobsCount,
+        totalVolume
+      },
+      recentTransactions: transactions
+    });
+  } catch (error: any) {
+    console.error("Error fetching admin user detail:", error.message);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
 export const updateUserStatus = async (req: Request, res: Response): Promise<any> => {
-  // Existing updateUserStatus logic ...
-  // (Assuming it was correct in line 107-127)
   try {
     const { id } = req.params;
     const { status } = req.body;
@@ -159,6 +223,23 @@ export const updateUserStatus = async (req: Request, res: Response): Promise<any
       return res.status(400).json({ message: "Invalid status" });
     }
     const user = await User.findByIdAndUpdate(id, { status }, { new: true });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.json(user);
+  } catch (error: any) {
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+export const updateUserRole = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const { id } = req.params;
+    const { role } = req.body;
+    if (!["admin", "user", "client", "talent"].includes(role)) {
+      return res.status(400).json({ message: "Invalid role" });
+    }
+    const user = await User.findByIdAndUpdate(id, { role }, { new: true });
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -223,10 +304,11 @@ export const getAdminProjects = async (req: Request, res: Response): Promise<any
     }
 
     if (search) {
+      const searchStr = search as string;
       query.$or = [
-        { title: { $regex: search, $options: "i" } },
-        { category: { $regex: search, $options: "i" } },
-        { _id: mongoose.isValidObjectId(search) ? search : undefined }
+        { title: { $regex: searchStr, $options: "i" } },
+        { category: { $regex: searchStr, $options: "i" } },
+        { _id: mongoose.isValidObjectId(searchStr) ? searchStr : undefined }
       ].filter(q => q._id !== undefined || !q._id);
     }
 
@@ -238,6 +320,51 @@ export const getAdminProjects = async (req: Request, res: Response): Promise<any
     res.json(projects);
   } catch (error: any) {
     console.error("Error fetching admin projects:", error.message);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+export const getAdminComplaints = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const { status, category } = req.query;
+    let query: any = {};
+
+    if (status && status !== "All") query.status = status;
+    if (category && category !== "All") query.category = category;
+
+    const complaints = await Complaint.find(query)
+      .populate("user", "name email imageUrl")
+      .populate("reportedUser", "name email imageUrl")
+      .sort({ createdAt: -1 });
+
+    res.json(complaints);
+  } catch (error: any) {
+    console.error("Error fetching admin complaints:", error.message);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+export const updateComplaintStatus = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const validStatuses = ["pending", "investigating", "resolved", "dismissed"];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ message: "Invalid status" });
+    }
+
+    const complaint = await Complaint.findByIdAndUpdate(id, { status }, { new: true })
+      .populate("user", "name email")
+      .populate("reportedUser", "name email");
+
+    if (!complaint) {
+      return res.status(404).json({ message: "Complaint not found" });
+    }
+
+    res.json(complaint);
+  } catch (error: any) {
+    console.error("Error updating complaint status:", error.message);
     res.status(500).json({ message: "Server Error" });
   }
 };

@@ -12,7 +12,7 @@ import { sendSystemMessage } from "../utils/messageUtils";
 export const createOffer = async (req: Request, res: Response): Promise<any> => {
   console.log("   >>> [DEBUG] CREATE OFFER HIT! <<<");
   try {
-    const { freelancerId, talentId, jobTitle, description, budget } = req.body;
+    const { freelancerId, talentId, jobId, jobTitle, description, budget } = req.body;
     const clientId = (req as any).user?.id || (req as any).user?._id;
 
     if (!clientId) {
@@ -28,6 +28,7 @@ export const createOffer = async (req: Request, res: Response): Promise<any> => 
     const offer = new Offer({
       client: clientId,
       freelancer: recipientId,
+      job: jobId,
       jobTitle,
       description,
       budget,
@@ -250,7 +251,40 @@ export const payOffer = async (req: Request, res: Response): Promise<any> => {
     }
 
     offer.isPaid = true;
+    offer.projectStatus = "active";
+    offer.updates.push({
+      text: "Project started! Funds are now in escrow.",
+      type: "status_change",
+    });
     await offer.save();
+
+    // Increment projects started count for both parties
+    const User = (await import("../models/User")).default;
+    await User.findByIdAndUpdate(userId, { $inc: { totalProjectsStarted: 1 } });
+    await User.findByIdAndUpdate(offer.freelancer._id || offer.freelancer, { $inc: { totalProjectsStarted: 1 } });
+
+    // Update associated job or create one for standalone offers
+    const Job = (await import("../models/Job")).default;
+    if (offer.job) {
+      await Job.findByIdAndUpdate(offer.job, {
+        freelancer: offer.freelancer._id || offer.freelancer,
+        status: "active"
+      });
+    } else {
+      // Create a NEW Job document so it appears in Admin/Client projects
+      const newJob = new Job({
+        user: userId,
+        freelancer: offer.freelancer._id || offer.freelancer,
+        title: offer.jobTitle,
+        description: offer.description,
+        budget: offer.budget,
+        status: "active"
+      });
+      await newJob.save();
+      // Link the offer to the new job
+      offer.job = newJob._id;
+      await offer.save();
+    }
 
     // Create an Escrow transaction record
     const txnId = `TXN-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
@@ -338,6 +372,222 @@ export const getEscrowSummary = async (req: Request, res: Response): Promise<any
     });
   } catch (error: any) {
     console.error("   [ERROR] GET ESCROW SUMMARY:", error.message);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+// @desc    Add update/milestone to an offer/project
+// @route   POST /api/offers/:id/updates
+// @access  Private
+export const addOfferUpdate = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const { id } = req.params;
+    const { text, type } = req.body;
+    const userId = (req as any).user?.id || (req as any).user?._id;
+
+    const offer = await Offer.findById(id);
+    if (!offer) return res.status(404).json({ message: "Offer not found" });
+
+    // Check if user is participant
+    if (offer.client.toString() !== userId.toString() && offer.freelancer.toString() !== userId.toString()) {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    offer.updates.push({ text, type: type || "general" });
+    await offer.save();
+
+    res.status(200).json(offer);
+  } catch (error: any) {
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+// @desc    Complete an offer/project
+// @route   PUT /api/offers/:id/complete
+// @access  Private
+export const completeOffer = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const { id } = req.params;
+    const userId = (req as any).user?.id || (req as any).user?._id;
+
+    const offer = await Offer.findById(id);
+    if (!offer) return res.status(404).json({ message: "Offer not found" });
+
+    if (offer.client.toString() !== userId.toString() && offer.freelancer.toString() !== userId.toString()) {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    const isFreelancer = userId.toString() === offer.freelancer.toString();
+
+    if (isFreelancer) {
+      // Freelancer requests review
+      offer.projectStatus = "review";
+      offer.updates.push({
+        text: "Freelancer requested project completion - Waiting for client approval.",
+        type: "status_change",
+      });
+
+      // Notify Client
+      const notif = await Notification.create({
+        recipient: offer.client,
+        sender: offer.freelancer,
+        type: "completion_request",
+        relatedId: offer._id,
+        title: "Completion Requested",
+        message: `Freelancer has requested completion for "${offer.jobTitle}". Please review and approve.`,
+      });
+      emitToUser(offer.client.toString(), "newNotification", notif);
+
+    } else {
+      // Client accepts completion
+      offer.projectStatus = "completed";
+      offer.updates.push({
+        text: "Project completion approved by client!",
+        type: "status_change",
+      });
+
+      // Release Escrow -> Success
+      const Transaction = (await import("../models/Transaction")).default;
+      const transaction = await Transaction.findOneAndUpdate(
+        { 
+          sender: offer.client, 
+          receiver: offer.freelancer, 
+          status: "Escrow" 
+        }, 
+        { status: "Success", type: "Payout", description: `Released funds for completed project: ${offer.jobTitle}` },
+        { sort: { createdAt: -1 } }
+      );
+
+      // Update Freelancer stats
+      const User = (await import("../models/User")).default;
+      const freelancer = await User.findById(offer.freelancer);
+      if (freelancer) {
+        freelancer.completedProjects = (freelancer.completedProjects || 0) + 1;
+        const totalStarted = freelancer.totalProjectsStarted || 1;
+        freelancer.successRate = Math.min(100, Math.round((freelancer.completedProjects / totalStarted) * 100));
+        await freelancer.save();
+      }
+
+      // Update Client stats (optional but consistent)
+      const client = await User.findById(offer.client);
+      if (client) {
+        client.completedProjects = (client.completedProjects || 0) + 1;
+        const totalStarted = client.totalProjectsStarted || 1;
+        client.successRate = Math.min(100, Math.round((client.completedProjects / totalStarted) * 100));
+        await client.save();
+      }
+
+      // Also update associated Job if exists
+      if (offer.job) {
+        const Job = (await import("../models/Job")).default;
+        await Job.findByIdAndUpdate(offer.job, { status: "completed" });
+      }
+
+      // Notify Freelancer
+      const notif = await Notification.create({
+        recipient: offer.freelancer,
+        sender: offer.client,
+        type: "other",
+        relatedId: offer._id,
+        title: "Project Completed",
+        message: `Client approved the completion of "${offer.jobTitle}". Funds are now released.`,
+      });
+      emitToUser(offer.freelancer.toString(), "newNotification", notif);
+      emitToUser(offer.freelancer.toString(), "escrowUpdate", { offerId: offer._id });
+      emitToUser(offer.client.toString(), "escrowUpdate", { offerId: offer._id });
+    }
+
+    await offer.save();
+    res.status(200).json(offer);
+  } catch (error: any) {
+    console.error("   [ERROR] COMPLETE PROJECT:", error.message);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+// @desc    Reject project completion review
+// @route   PUT /api/offers/:id/reject-completion
+// @access  Private
+export const rejectCompletion = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const { id } = req.params;
+    const { reason = "No specific reason provided." } = req.body;
+    const userId = (req as any).user?.id || (req as any).user?._id;
+
+    const offer = await Offer.findById(id);
+    if (!offer) return res.status(404).json({ message: "Offer not found" });
+
+    // Only client can reject completion
+    if (offer.client.toString() !== userId.toString()) {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    offer.projectStatus = "active";
+    offer.rejectionReason = reason;
+    offer.updates.push({
+      text: `Client rejected the completion request. Reason: ${reason}`,
+      type: "status_change",
+    });
+
+    // Notify Freelancer
+    const notif = await Notification.create({
+      recipient: offer.freelancer,
+      sender: offer.client,
+      type: "other", // Using 'other' or a custom type if desired
+      relatedId: offer._id,
+      title: "Revision Required",
+      message: `Project "${offer.jobTitle}" needs revision. Reason: ${reason}`,
+    });
+
+    // Use standard event name 'newNotification'
+    emitToUser(offer.freelancer.toString(), "newNotification", notif);
+    
+    // Internal event for project page sync
+    emitToUser(offer.freelancer.toString(), "projectUpdate", { 
+      offerId: offer._id, 
+      status: 'active', 
+      reason 
+    });
+
+    await offer.save();
+    res.status(200).json(offer);
+  } catch (error: any) {
+    console.error("   [ERROR] REJECT COMPLETION:", error.message);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+// @desc    Update GitHub repository link for an offer
+// @route   PUT /api/offers/:id/github
+// @access  Private
+export const updateOfferGithub = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const { id } = req.params;
+    const { githubRepo } = req.body;
+    const userId = (req as any).user?.id || (req as any).user?._id;
+
+    const offer = await Offer.findById(id);
+    if (!offer) return res.status(404).json({ message: "Offer not found" });
+
+    // Check if user is participant
+    if (offer.client.toString() !== userId.toString() && offer.freelancer.toString() !== userId.toString()) {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    // Update the link
+    offer.githubRepo = githubRepo;
+    
+    // Add a timeline update
+    offer.updates.push({
+      text: `GitHub repository link updated: ${githubRepo}`,
+      type: "general",
+    });
+
+    await offer.save();
+
+    res.status(200).json(offer);
+  } catch (error: any) {
+    console.error("   [ERROR] UPDATE GITHUB REPO:", error.message);
     res.status(500).json({ message: "Server Error" });
   }
 };

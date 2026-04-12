@@ -1,5 +1,5 @@
 import express from "express";
-import { createOffer, getMyOffers, updateOfferStatus, getOfferById, payOffer, getEscrowSummary } from "../controllers/offerController";
+import { createOffer, getMyOffers, updateOfferStatus, getOfferById, payOffer, getEscrowSummary, addOfferUpdate, completeOffer, updateOfferGithub, rejectCompletion } from "../controllers/offerController";
 import { protect } from "../middleware/auth";
 
 const router = express.Router();
@@ -27,5 +27,20 @@ router.route("/:id/status")
 // @route   PUT /api/offers/:id/pay
 router.route("/:id/pay")
   .put(protect, payOffer);
+
+// @route   POST /api/offers/:id/updates
+router.route("/:id/updates")
+  .post(protect, addOfferUpdate);
+
+// @route   PUT /api/offers/:id/complete
+router.route("/:id/complete")
+  .put(protect, completeOffer);
+
+router.route("/:id/reject-completion")
+  .put(protect, rejectCompletion);
+
+// @route   PUT /api/offers/:id/github
+router.route("/:id/github")
+  .put(protect, updateOfferGithub);
 
 export default router;

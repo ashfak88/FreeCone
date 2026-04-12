@@ -37,7 +37,7 @@ export default function Navbar() {
       senderId = senderId._id || senderId.id;
     }
     if (senderId === myId) return false;
-    
+
     const readArray = Array.isArray(c.lastMessage.readBy) ? c.lastMessage.readBy : [];
     const isRead = readArray.some((r: any) => {
       if (typeof r === 'object' && r !== null) return r._id === myId || r.id === myId;
@@ -94,9 +94,19 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
           {/* Left: Brand */}
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => router.push("/")}>
-            <span className="material-symbols-outlined text-primary text-3xl">hub</span>
-            <span className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">FreeCone</span>
+          <div className="flex items-center gap-2.5 cursor-pointer group" onClick={() => router.push("/")}>
+            <span className="material-symbols-outlined text-primary text-4xl group-hover:rotate-12 transition-transform duration-300">hub</span>
+            <span className="text-2xl font-black tracking-tighter text-slate-900 dark:text-slate-100 flex items-center">
+              {"FreeCone".split("").map((letter, i) => (
+                <span
+                  key={i}
+                  className={`animate-jump ${(i === 0 || i === 4) ? 'text-primary' : ''}`}
+                  style={{ animationDelay: `${i * 0.1}s` }}
+                >
+                  {letter}
+                </span>
+              ))}
+            </span>
           </div>
 
           {/* Right: Nav Links + Icons */}

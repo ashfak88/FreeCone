@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
 import User from "../models/User";
+import Offer from "../models/Offer";
+import Review from "../models/Review";
 
 // @desc    Get all users (displaying as freelancers)
 // @route   GET /api/users/freelancers
@@ -13,7 +15,15 @@ export const getFreelancers = async (req: Request, res: Response): Promise<any> 
 
     console.log(`[DEBUG] Received Params - search: "${search}", rateRange: "${rateRange}", rating: "${rating}"`);
 
-    let query: any = { role: { $in: ["talent", "user"] } };
+    // Find freelancers who are currently busy (active or review status)
+    const busyOffers = await Offer.find({
+      projectStatus: { $in: ["active", "review"] }
+    }).distinct("freelancer");
+
+    let query: any = {
+      role: { $in: ["talent", "user"] },
+      _id: { $nin: busyOffers }
+    };
 
     // Search filter
     if (search !== "") {
@@ -62,7 +72,7 @@ export const updateProfile = async (req: Request, res: Response): Promise<any> =
 
     // Capture fields from request body
     const updates: any = {};
-    const allowedFields = ['name', 'title', 'bio', 'location', 'skills', 'rate', 'imageUrl', 'portfolio', 'socialLinks'];
+    const allowedFields = ['name', 'title', 'bio', 'location', 'skills', 'rate', 'imageUrl', 'portfolio', 'socialLinks', 'resume', 'age'];
 
     allowedFields.forEach(field => {
       if (req.body[field] !== undefined) {
@@ -128,5 +138,110 @@ export const getTestUsers = async (req: Request, res: Response): Promise<any> =>
     res.json({ count: users.length, users });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
+  }
+};
+// @desc    Get specific user profile by ID
+// @route   GET /api/users/:id
+// @access  Public
+export const getUserById = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const id = req.params.id as string;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid User ID" });
+    }
+
+    const user = await User.findById(id).select("-password");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json(user);
+  } catch (error: any) {
+    console.error("   [ERROR] GET USER BY ID:", error.message);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+// @desc    Submit a review for a freelancer
+// @route   POST /api/users/review
+// @access  Private (Client only)
+export const submitReview = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const { offerId, rating, comment } = req.body;
+    const clientId = (req as any).user?.id || (req as any).user?._id;
+
+    if (!offerId || !rating || !comment) {
+      return res.status(400).json({ message: "Please provide offerId, rating, and comment" });
+    }
+
+    const offer = await Offer.findById(offerId);
+    if (!offer) return res.status(404).json({ message: "Project not found" });
+
+    // 1. Verify only client can review
+    if (offer.client.toString() !== clientId.toString()) {
+      return res.status(403).json({ message: "Only the client can review this project" });
+    }
+
+    // 2. Verify project is completed
+    if (offer.projectStatus !== 'completed') {
+      return res.status(400).json({ message: "Project must be completed before reviewing" });
+    }
+
+    // 3. Verify not already reviewed
+    if (offer.isReviewed) {
+      return res.status(400).json({ message: "This project has already been reviewed" });
+    }
+
+    // 4. Create Review
+    const review = new Review({
+      offer: offerId,
+      reviewer: clientId,
+      reviewee: offer.freelancer,
+      rating,
+      comment,
+    });
+    await review.save();
+
+    // 5. Update Freelancer Rating
+    const freelancer = await User.findById(offer.freelancer);
+    if (freelancer) {
+      const currentRating = freelancer.rating || 0;
+      const totalReviews = freelancer.totalReviews || 0;
+
+      const newRating = ((currentRating * totalReviews) + rating) / (totalReviews + 1);
+
+      freelancer.rating = Number(newRating.toFixed(1));
+      freelancer.totalReviews = totalReviews + 1;
+      await freelancer.save();
+    }
+
+    // 6. Mark Offer as reviewed
+    offer.isReviewed = true;
+    await offer.save();
+
+    res.status(201).json({ message: "Review submitted successfully", review });
+  } catch (error: any) {
+    console.error("   [ERROR] SUBMIT REVIEW:", error.message);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+// @desc    Get reviews for a specific user
+// @route   GET /api/users/:id/reviews
+// @access  Public
+export const getUserReviews = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id as any)) {
+      return res.status(400).json({ message: "Invalid User ID" });
+    }
+
+    const reviews = await Review.find({ reviewee: id })
+      .populate("reviewer", "name imageUrl")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json(reviews);
+  } catch (error: any) {
+    console.error("   [ERROR] GET USER REVIEWS:", error.message);
+    res.status(500).json({ message: "Server Error" });
   }
 };

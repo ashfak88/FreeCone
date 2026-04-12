@@ -3,10 +3,11 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useStore, Offer } from "@/lib/store";
+import Swal from "sweetalert2";
 
 interface Notification {
   id: string;
-  type: "proposal" | "offer" | "payment" | "other";
+  type: "proposal" | "offer" | "payment" | "completion_request" | "other";
   direction?: "sent" | "received";
   title: string;
   message: string;
@@ -38,7 +39,9 @@ export default function NotificationsPage() {
     updateOfferStatus,
     isLoadingNotifications,
     isLoadingOffers,
-    user
+    user,
+    rejectProjectCompletion,
+    completeProject
   } = useStore();
 
   useEffect(() => {
@@ -80,6 +83,8 @@ export default function NotificationsPage() {
         // Either freelancer side OR client side already paid: show receipt modal
         setSelectedPaymentReceipt(notif);
       }
+    } else if (notif.type === "completion_request") {
+      router.push(`/projects/${notif.relatedId}`);
     }
   };
 
@@ -272,7 +277,28 @@ export default function NotificationsPage() {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                if (window.confirm("Are you sure you want to accept this proposal?")) {
+                                const talentId = proposal.talent._id || proposal.talent.id;
+                                router.push(`/talent/${talentId}`);
+                              }}
+                              className="bg-primary/5 text-primary hover:bg-primary/10 px-3 py-1 rounded-lg text-[10px] font-bold border border-primary/20 transition-colors"
+                            >
+                              Profile
+                            </button>
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                const result = await Swal.fire({
+                                  title: 'Accept Proposal?',
+                                  text: "Are you sure you want to accept this proposal?",
+                                  icon: 'question',
+                                  showCancelButton: true,
+                                  confirmButtonColor: '#10b981',
+                                  cancelButtonColor: '#94a3b8',
+                                  confirmButtonText: 'Yes, accept it!',
+                                  background: document.documentElement.classList.contains('dark') ? '#0f172a' : '#fff',
+                                  color: document.documentElement.classList.contains('dark') ? '#fff' : '#000',
+                                });
+                                if (result.isConfirmed) {
                                   updateProposalStatus(proposal._id, 'accepted');
                                 }
                               }}
@@ -281,9 +307,20 @@ export default function NotificationsPage() {
                               Accept
                             </button>
                             <button
-                              onClick={(e) => {
+                              onClick={async (e) => {
                                 e.stopPropagation();
-                                if (window.confirm("Are you sure you want to reject this proposal?")) {
+                                const result = await Swal.fire({
+                                  title: 'Reject Proposal?',
+                                  text: "Are you sure you want to reject this proposal?",
+                                  icon: 'warning',
+                                  showCancelButton: true,
+                                  confirmButtonColor: '#ef4444',
+                                  cancelButtonColor: '#94a3b8',
+                                  confirmButtonText: 'Yes, reject it',
+                                  background: document.documentElement.classList.contains('dark') ? '#0f172a' : '#fff',
+                                  color: document.documentElement.classList.contains('dark') ? '#fff' : '#000',
+                                });
+                                if (result.isConfirmed) {
                                   updateProposalStatus(proposal._id, 'rejected');
                                 }
                               }}
@@ -302,9 +339,20 @@ export default function NotificationsPage() {
                         return (
                           <div className="flex items-center gap-2">
                             <button
-                              onClick={(e) => {
+                              onClick={async (e) => {
                                 e.stopPropagation();
-                                if (window.confirm("Are you sure you want to accept this offer?")) {
+                                const result = await Swal.fire({
+                                  title: 'Accept Offer?',
+                                  text: "Are you sure you want to accept this offer?",
+                                  icon: 'question',
+                                  showCancelButton: true,
+                                  confirmButtonColor: '#10b981',
+                                  cancelButtonColor: '#94a3b8',
+                                  confirmButtonText: 'Yes, accept it!',
+                                  background: document.documentElement.classList.contains('dark') ? '#0f172a' : '#fff',
+                                  color: document.documentElement.classList.contains('dark') ? '#fff' : '#000',
+                                });
+                                if (result.isConfirmed) {
                                   updateOfferStatus(offer._id, 'accepted');
                                 }
                               }}
@@ -313,10 +361,75 @@ export default function NotificationsPage() {
                               Accept
                             </button>
                             <button
-                              onClick={(e) => {
+                              onClick={async (e) => {
                                 e.stopPropagation();
-                                if (window.confirm("Are you sure you want to reject this offer?")) {
+                                const result = await Swal.fire({
+                                  title: 'Reject Offer?',
+                                  text: "Are you sure you want to reject this offer?",
+                                  icon: 'warning',
+                                  showCancelButton: true,
+                                  confirmButtonColor: '#ef4444',
+                                  cancelButtonColor: '#94a3b8',
+                                  confirmButtonText: 'Yes, reject it',
+                                  background: document.documentElement.classList.contains('dark') ? '#0f172a' : '#fff',
+                                  color: document.documentElement.classList.contains('dark') ? '#fff' : '#000',
+                                });
+                                if (result.isConfirmed) {
                                   updateOfferStatus(offer._id, 'rejected');
+                                }
+                              }}
+                              className="bg-red-50 text-red-600 hover:bg-red-100 px-3 py-1 rounded-lg text-[10px] font-bold border border-red-100 transition-colors"
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
+                    {notif.type === 'completion_request' && notif.direction === 'received' && (() => {
+                      const offer = offers.find(o => o._id === notif.relatedId);
+                      if (offer && offer.projectStatus === 'review') {
+                        return (
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                const result = await Swal.fire({
+                                  title: 'Approve Completion?',
+                                  text: "Are you sure you want to approve this project completion?",
+                                  icon: 'question',
+                                  showCancelButton: true,
+                                  confirmButtonColor: '#10b981',
+                                  cancelButtonColor: '#94a3b8',
+                                  confirmButtonText: 'Yes, approve',
+                                  background: document.documentElement.classList.contains('dark') ? '#0f172a' : '#fff',
+                                  color: document.documentElement.classList.contains('dark') ? '#fff' : '#000',
+                                });
+                                if (result.isConfirmed) {
+                                  completeProject(offer._id);
+                                }
+                              }}
+                              className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 px-3 py-1 rounded-lg text-[10px] font-bold border border-emerald-100 transition-colors"
+                            >
+                              Approve
+                            </button>
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                const result = await Swal.fire({
+                                  title: 'Reject Request?',
+                                  text: "Are you sure you want to reject this completion request?",
+                                  icon: 'warning',
+                                  showCancelButton: true,
+                                  confirmButtonColor: '#ef4444',
+                                  cancelButtonColor: '#94a3b8',
+                                  confirmButtonText: 'Yes, reject',
+                                  background: document.documentElement.classList.contains('dark') ? '#0f172a' : '#fff',
+                                  color: document.documentElement.classList.contains('dark') ? '#fff' : '#000',
+                                });
+                                if (result.isConfirmed) {
+                                  rejectProjectCompletion(offer._id);
                                 }
                               }}
                               className="bg-red-50 text-red-600 hover:bg-red-100 px-3 py-1 rounded-lg text-[10px] font-bold border border-red-100 transition-colors"
@@ -452,9 +565,10 @@ export default function NotificationsPage() {
               {/* Description */}
               <div className="space-y-2">
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Description</p>
-                <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed bg-slate-50 dark:bg-white/5 p-4 rounded-xl border border-slate-100 dark:border-white/5">
-                  {selectedOffer.description}
-                </p>
+                <div 
+                  className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed font-bold border border-slate-100 dark:border-white/5 p-4 rounded-xl prose dark:prose-invert max-w-none"
+                  dangerouslySetInnerHTML={{ __html: selectedOffer.description }}
+                />
               </div>
 
               {/* Status & Date */}
@@ -570,16 +684,30 @@ export default function NotificationsPage() {
                       <div>
                         <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Sender Profile</p>
                         <p className="text-sm font-bold text-slate-900 dark:text-white">{proposalDetail.talent.name}</p>
-                        <p className="text-xs text-slate-500">{proposalDetail.talent.email}</p>
+                        <p className="text-xs text-slate-500 mb-2">{proposalDetail.talent.email}</p>
+                        {proposalDetail.talent.title && (
+                          <p className="text-[10px] font-bold text-primary uppercase tracking-tighter mb-2">{proposalDetail.talent.title}</p>
+                        )}
+                        <button 
+                          onClick={() => {
+                            const talentId = proposalDetail.talent._id || proposalDetail.talent.id;
+                            router.push(`/talent/${talentId}`);
+                          }}
+                          className="px-3 py-1 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-[10px] font-bold border border-primary/20 transition-all flex items-center gap-1"
+                        >
+                          <span className="material-symbols-outlined text-[14px]">visibility</span>
+                          View Full Profile
+                        </button>
                       </div>
                     </div>
                   )}
                   {proposalDetail && (
                     <div className="mt-4 pt-4 border-t border-slate-200 dark:border-white/10">
-                      <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Cover Letter Snippet</p>
-                      <p className="text-sm text-slate-600 dark:text-slate-400 italic line-clamp-3">
-                        "{proposalDetail.coverLetter}"
-                      </p>
+                      <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Cover Letter</p>
+                      <div 
+                        className="text-sm text-slate-600 dark:text-slate-400 italic prose dark:prose-invert max-w-none"
+                        dangerouslySetInnerHTML={{ __html: proposalDetail.coverLetter }}
+                      />
                     </div>
                   )}
                 </div>

@@ -21,6 +21,11 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
         return res.status(401).json({ message: "User no longer exists" });
       }
 
+      if (req.user.status === "blocked") {
+        console.warn(`   [AUTH] Access denied: User ${req.user.email} is suspended`);
+        return res.status(403).json({ message: "Your account is suspended. Please contact support." });
+      }
+
       return next();
     } catch (error: any) {
       console.error("   [AUTH] Token verification failed:", error.message);

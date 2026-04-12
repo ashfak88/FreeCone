@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useStore } from "@/lib/store";
 import DashboardHeader from "@/components/DashboardHeader";
 import { socketService } from "@/lib/socket";
+import HistoryModal from "@/components/HistoryModal";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
@@ -29,11 +30,19 @@ export default function DashboardPage() {
     offers,
     receivedProposals,
     myProposals,
-    myJobs
+    myJobs,
+    transactions,
+    fetchTransactions,
+    fetchProfile
   } = useStore();
 
   const [escrow, setEscrow] = useState<EscrowSummary | null>(null);
   const [loadingEscrow, setLoadingEscrow] = useState(true);
+  const [historyModal, setHistoryModal] = useState<{ isOpen: boolean; title: string; type: "earnings" | "spending" | "escrow" }>({
+    isOpen: false,
+    title: "",
+    type: "earnings"
+  });
 
   const fetchEscrow = useCallback(async () => {
     try {
@@ -56,9 +65,9 @@ export default function DashboardPage() {
   useEffect(() => {
     fetchOffers();
     fetchMyJobs();
-    fetchMyProposals();
     fetchReceivedProposals();
     fetchEscrow();
+    fetchTransactions();
 
     // Socket.io Real-time Listeners
     const socket = socketService.getSocket();
@@ -68,9 +77,12 @@ export default function DashboardPage() {
         fetchMyJobs();
         fetchMyProposals();
         fetchReceivedProposals();
+        fetchProfile();
       };
       const handleEscrowUpdate = () => {
         fetchEscrow();
+        fetchTransactions();
+        fetchProfile();
       };
 
       socket.on("newNotification", handleUpdate);
@@ -143,18 +155,20 @@ export default function DashboardPage() {
         </button>
       </DashboardHeader>
 
-      <main className="max-w-[1240px] mx-auto p-6 md:p-8 space-y-10">
+      <main className="max-w-[1240px] mx-auto p-6 md:p-8 space-y-10 pt-24">
 
         {/* Stats Row */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 
-          {/* Card 1 — Earnings / Spend */}
-          <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between">
+          <button 
+            onClick={() => setHistoryModal({ isOpen: true, title: isClientRole ? "Spending History" : "Total Earnings", type: isClientRole ? "spending" : "earnings" })}
+            className="bg-white hover:bg-slate-50 transition-all cursor-pointer rounded-xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between text-left group"
+          >
             <div className="flex justify-between items-start mb-4">
               <p className="text-sm font-semibold text-slate-500">
                 {isClientRole ? "Total Spend" : "Total Earnings"}
               </p>
-              <span className="material-symbols-outlined text-slate-400 text-xl">payments</span>
+              <span className="material-symbols-outlined text-slate-400 text-xl group-hover:text-primary transition-colors">payments</span>
             </div>
             <div>
               <h2 className="text-2xl font-bold text-slate-900">
@@ -162,19 +176,22 @@ export default function DashboardPage() {
               </h2>
               <div className="flex items-center gap-1 mt-2 text-slate-400 font-medium text-xs">
                 <span>{totalFinancial > 0 ? `${isClientRole ? "Paid out" : "Earned"} so far` : "No activity yet"}</span>
+                <span className="material-symbols-outlined text-[10px] ml-1">arrow_forward</span>
               </div>
             </div>
-          </div>
+          </button>
 
           {/* Card 2 — Escrow Balance */}
-          <div className={`rounded-xl border p-6 shadow-sm flex flex-col justify-between ${
+          <button 
+            onClick={() => setHistoryModal({ isOpen: true, title: "Escrow History", type: "escrow" })}
+            className={`rounded-xl border p-6 shadow-sm flex flex-col justify-between text-left group transition-all cursor-pointer ${
             escrowBalance > 0
-              ? "bg-gradient-to-br from-amber-50 to-yellow-50 border-amber-200"
-              : "bg-white border-slate-200"
+              ? "bg-gradient-to-br from-amber-50 to-yellow-50 border-amber-200 hover:shadow-lg hover:shadow-amber-100"
+              : "bg-white border-slate-200 hover:border-slate-300"
           }`}>
             <div className="flex justify-between items-start mb-4">
               <p className="text-sm font-semibold text-slate-500">In Escrow</p>
-              <span className={`material-symbols-outlined text-xl ${escrowBalance > 0 ? "text-amber-500" : "text-slate-400"}`}>
+              <span className={`material-symbols-outlined text-xl group-hover:scale-110 transition-transform ${escrowBalance > 0 ? "text-amber-500" : "text-slate-400"}`}>
                 lock
               </span>
             </div>
@@ -188,8 +205,9 @@ export default function DashboardPage() {
                   </h2>
                   <div className="flex items-center gap-1.5 mt-2">
                     {escrowBalance > 0 ? (
-                      <span className="text-[11px] font-bold text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">
+                      <span className="text-[11px] font-bold text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full flex items-center gap-1">
                         🔒 {escrowCount} payment{escrowCount > 1 ? "s" : ""} held
+                        <span className="material-symbols-outlined text-[10px]">arrow_forward</span>
                       </span>
                     ) : (
                       <span className="text-xs text-slate-400 font-medium">No funds in escrow</span>
@@ -198,7 +216,7 @@ export default function DashboardPage() {
                 </>
               )}
             </div>
-          </div>
+          </button>
 
           {/* Card 3 — Active Projects */}
           <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between">
@@ -223,9 +241,9 @@ export default function DashboardPage() {
               <span className="material-symbols-outlined text-slate-400 text-xl">verified</span>
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-slate-900">0%</h2>
+              <h2 className="text-2xl font-bold text-slate-900">{user?.successRate || 0}%</h2>
               <div className="flex items-center gap-1 mt-2 text-slate-400 font-medium text-xs">
-                <span>New account</span>
+                <span>{user?.completedProjects || 0} projects completed</span>
               </div>
             </div>
           </div>
@@ -485,6 +503,18 @@ export default function DashboardPage() {
         </div>
 
       </main>
+
+      <HistoryModal
+        isOpen={historyModal.isOpen}
+        onClose={() => setHistoryModal({ ...historyModal, isOpen: false })}
+        title={historyModal.title}
+        type={historyModal.type}
+        transactions={
+          historyModal.type === 'escrow' 
+            ? transactions.filter(t => t.status === 'Escrow')
+            : transactions.filter(t => t.status === 'Success')
+        }
+      />
     </div>
   );
 }

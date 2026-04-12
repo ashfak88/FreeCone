@@ -128,7 +128,7 @@ export default function ProposalsPage() {
                       </td>
                       <td className="px-6 py-5">
                         <p className="text-xs text-slate-500 mt-1 line-clamp-1 max-w-[200px]">
-                          {proposal.proposedRate ? `$${proposal.proposedRate}` : ''} • {proposal.coverLetter}
+                          {proposal.proposedRate ? `$${proposal.proposedRate}` : ''} • {proposal.coverLetter?.replace(/<[^>]*>/g, ' ')}
                         </p>
                       </td>
                       <td className="px-6 py-5">

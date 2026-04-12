@@ -1,8 +1,10 @@
 import { Request, Response } from "express";
 import Job from "../models/Job";
+import User from "../models/User";
 import Proposal from "../models/Proposal";
 import Notification from "../models/Notification";
 import Transaction from "../models/Transaction";
+import Offer from "../models/Offer";
 import Message from "../models/Message";
 import { emitToUser } from "../config/socket";
 import { sendSystemMessage } from "../utils/messageUtils";
@@ -10,7 +12,7 @@ import { sendSystemMessage } from "../utils/messageUtils";
 
 export const getJobs = async (req: Request, res: Response): Promise<void> => {
   try {
-    const jobs = await Job.find().sort({ createdAt: -1 });
+    const jobs = await Job.find({ status: "pending" }).sort({ createdAt: -1 });
     res.status(200).json(jobs);
   } catch (error: any) {
     console.error("Error fetching jobs:", error);
@@ -72,6 +74,9 @@ export const applyForJob = async (req: any, res: Response): Promise<void> => {
       return;
     }
 
+    const userData = await User.findById(talentId);
+    const finalResume = resume || userData?.resume;
+
     const job = await Job.findById(id);
     if (!job) {
       res.status(404).json({ message: "Job not found" });
@@ -85,7 +90,7 @@ export const applyForJob = async (req: any, res: Response): Promise<void> => {
       proposedRate,
       timeline,
       figmaLink,
-      resume,
+      resume: finalResume,
     });
     const savedProposal = await newProposal.save();
 
@@ -151,7 +156,7 @@ export const getReceivedProposals = async (req: any, res: Response): Promise<voi
 
     const proposals = await Proposal.find({ job: { $in: myJobIds } })
       .populate("job")
-      .populate("talent", "name email imageUrl")
+      .populate("talent", "name email imageUrl title skills")
       .sort({ createdAt: -1 });
 
     res.status(200).json(proposals);
@@ -171,7 +176,7 @@ export const getProposalById = async (req: any, res: Response): Promise<any> => 
 
     const proposal = await Proposal.findById(id)
       .populate("job")
-      .populate("talent", "name email imageUrl")
+      .populate("talent", "name email imageUrl title skills")
       .populate({
         path: "job",
         populate: { path: "user", select: "name email imageUrl" }
@@ -220,15 +225,37 @@ export const updateProposalStatus = async (req: any, res: Response): Promise<voi
     proposal.status = status;
     await proposal.save();
 
-    // Send automated chat message if accepted
-      // 1. Handshake / Confirmation message to freelancer
-      // This will show "Accept" and "Reject" buttons for the freelancer to finalize.
-      const confirmationMsg = `The client has accepted your proposal for '${job.title}'. Please confirm if you are ready to start.`;
+    // Send automated chat message ONLY if accepted
+    if (status === 'accepted') {
+      const freelancerId = (proposal.talent._id || proposal.talent).toString();
+      const jobTitle = job.title;
+
+      // Ensure an Offer document is created for this project to show up in the projects dashboard
+      // Just check if one already exists first
+      const existingOffer = await Offer.findOne({ job: job._id, freelancer: freelancerId });
+      if (!existingOffer) {
+        const newOffer = new Offer({
+          client: clientId,
+          freelancer: freelancerId,
+          job: job._id,
+          jobTitle: jobTitle,
+          description: proposal.coverLetter || job.description,
+          budget: proposal.proposedRate,
+          status: 'accepted'
+        });
+        await newOffer.save();
+      } else {
+        existingOffer.status = 'accepted';
+        await existingOffer.save();
+      }
+
+      // 1. Handshake / Confirmation message to freelancer (This is the ONLY one needed for acceptance)
+      const confirmationMsg = `The client has accepted your proposal for '${jobTitle}'. Please confirm if you are ready to start.`;
       await sendSystemMessage(clientId, freelancerId, confirmationMsg, 'confirmation', {
         proposalId: proposal._id,
-        jobTitle: job.title,
+        jobTitle: jobTitle,
         amount: proposal.proposedRate,
-        freelancerId: (proposal.talent._id || proposal.talent).toString()
+        freelancerId: freelancerId
       });
     }
 
@@ -290,7 +317,7 @@ export const confirmProposalHandshake = async (req: any, res: Response): Promise
 
     if (action === 'confirm') {
       const clientId = job.user._id || job.user;
-      
+
       // 1. Send Payment card to client
       const paymentMsg = `I'm ready to start! Please proceed with the payment of $${proposal.proposedRate}.`;
       await sendSystemMessage(freelancerId, clientId, paymentMsg, 'payment', {
@@ -321,7 +348,7 @@ export const confirmProposalHandshake = async (req: any, res: Response): Promise
             msgToUpdate.metadata.status = "confirmed";
             msgToUpdate.markModified("metadata");
             await msgToUpdate.save();
-            
+
             const populatedMsg = await Message.findById(messageId).populate("sender", "name imageUrl");
             if (populatedMsg) {
               emitToUser(freelancerId.toString(), "messageUpdate", populatedMsg);
@@ -337,7 +364,7 @@ export const confirmProposalHandshake = async (req: any, res: Response): Promise
     } else {
       proposal.status = 'rejected';
       await proposal.save();
-      
+
       // Notify client about rejection if needed
       const clientId = job.user._id || job.user;
       const rejectMsg = `I'm sorry, I cannot proceed with this project at this time.`;
@@ -354,7 +381,7 @@ export const confirmProposalHandshake = async (req: any, res: Response): Promise
             msgToUpdate.metadata.status = "rejected";
             msgToUpdate.markModified("metadata");
             await msgToUpdate.save();
-            
+
             const populatedMsg = await Message.findById(messageId).populate("sender", "name imageUrl");
             if (populatedMsg) {
               emitToUser(freelancerId.toString(), "messageUpdate", populatedMsg);
@@ -399,6 +426,25 @@ export const payProposal = async (req: Request, res: Response): Promise<any> => 
 
     proposal.isPaid = true;
     await proposal.save();
+
+    // Link the freelancer to the job and set it to active
+    if (job) {
+      job.freelancer = proposal.talent;
+      job.status = "active";
+      await job.save();
+    }
+
+    // ACTIVATE THE ASSOCIATED OFFER/PROJECT
+    const associatedOffer = await Offer.findOne({ job: job._id, freelancer: proposal.talent._id || proposal.talent });
+    if (associatedOffer) {
+      associatedOffer.isPaid = true;
+      associatedOffer.projectStatus = "active";
+      associatedOffer.updates.push({
+        text: "Project started! Funds are now in escrow.",
+        type: "status_change",
+      });
+      await associatedOffer.save();
+    }
 
     // Create an Escrow transaction record
     const txnId = `TXN-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;

@@ -95,3 +95,27 @@
 custom-scrollbar::-webkit-scrollbar-track {
   background: transparent;
 }
+
+@keyframes logo-jump {
+
+  0%,
+  15%,
+  100% {
+    transform: translateY(0);
+  }
+
+  7.5% {
+    transform: translateY(-3px);
+  }
+}
+
+.animate-jump {
+  display: inline-block;
+  animation: logo-jump 3s ease-in-out infinite;
+}
+
+.animate-jump-delayed {
+  display: inline-block;
+  animation: logo-jump 3s ease-in-out infinite;
+  animation-delay: 0.2s;
+}

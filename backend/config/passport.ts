@@ -18,6 +18,9 @@ passport.use(
         let user = await User.findOne({ googleId: profile.id });
 
         if (user) {
+          if (user.status === "blocked") {
+            return done(null, false, { message: "Account suspended" });
+          }
           return done(null, user);
         }
 
@@ -25,6 +28,9 @@ passport.use(
         user = await User.findOne({ email: profile.emails?.[0].value });
 
         if (user) {
+          if (user.status === "blocked") {
+            return done(null, false, { message: "Account suspended" });
+          }
           // Update user with googleId
           user.googleId = profile.id;
           await user.save();
@@ -55,6 +61,9 @@ passport.serializeUser((user: any, done) => {
 passport.deserializeUser(async (id: any, done) => {
   try {
     const user = await User.findById(id);
+    if (user && user.status === "blocked") {
+      return done(null, false);
+    }
     done(null, user);
   } catch (err: any) {
     done(err, null);

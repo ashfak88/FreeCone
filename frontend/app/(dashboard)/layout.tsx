@@ -54,6 +54,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     router.push("/login");
   };
 
+  const pathname = usePathname();
+  const isProjectDetails = pathname.startsWith('/projects/') && pathname !== '/projects';
+
   if (!isHydrated || !user) {
     return (
       <div className="flex items-center justify-center h-screen bg-slate-50 dark:bg-slate-900">
@@ -64,11 +67,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-display">
-      <Sidebar user={user} onLogout={handleLogout} />
+      {!isProjectDetails && <Sidebar user={user} onLogout={handleLogout} />}
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {user.role === "user" && !user.isProfileComplete && <ProfileCompletionBanner />}
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto pt-20 lg:pt-0">
           {children}
         </main>
       </div>

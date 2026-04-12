@@ -65,19 +65,16 @@ export default function ProjectDetailsPage() {
   return (
     <div className="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 antialiased font-display">
       {/* Header / TopAppBar */}
-      <div className="flex items-center bg-background-light dark:bg-background-dark p-4 pb-2 justify-between sticky top-0 z-10 border-b border-primary/10 backdrop-blur-md bg-opacity-80">
-        <div 
+      <div className="flex items-center h-16 bg-background-light dark:bg-background-dark px-4 md:px-8 justify-between sticky top-0 z-10 border-b border-primary/10 backdrop-blur-md bg-opacity-80">
+        <button 
           onClick={() => router.back()}
-          className="text-primary flex size-10 shrink-0 items-center justify-center cursor-pointer hover:bg-primary/10 rounded-full transition-colors"
+          className="flex items-center justify-center rounded-full w-10 h-10 -ml-2 text-primary hover:bg-primary/10 transition-all duration-300"
+          title="Go Back"
         >
-          <span className="material-symbols-outlined">arrow_back</span>
-        </div>
-        <h2 className="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-tight flex-1 text-center">Project Details</h2>
-        <div className="flex w-10 items-center justify-end">
-          <button className="flex size-10 cursor-pointer items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors hover:bg-primary/20">
-            <span className="material-symbols-outlined">bookmark</span>
-          </button>
-        </div>
+          <span className="material-symbols-outlined text-[24px]">arrow_back</span>
+        </button>
+        <h2 className="text-slate-900 dark:text-slate-100 text-lg font-black leading-tight tracking-tight flex-1 text-center">Project Details</h2>
+        <div className="flex w-10 items-center justify-end"></div>
       </div>
 
       {/* Project Hero Header */}
@@ -112,15 +109,7 @@ export default function ProjectDetailsPage() {
           <a className="flex flex-col items-center justify-center border-b-[3px] border-primary text-primary pb-3 pt-4 shrink-0 transition-all hover:opacity-80" href="#">
             <p className="text-sm font-bold leading-normal tracking-wide">Overview</p>
           </a>
-          <a className="flex flex-col items-center justify-center border-b-[3px] border-transparent text-slate-500 dark:text-slate-400 pb-3 pt-4 shrink-0 transition-all hover:text-primary" href="#">
-            <p className="text-sm font-bold leading-normal tracking-wide">Milestones</p>
-          </a>
-          <a className="flex flex-col items-center justify-center border-b-[3px] border-transparent text-slate-500 dark:text-slate-400 pb-3 pt-4 shrink-0 transition-all hover:text-primary" href="#">
-            <p className="text-sm font-bold leading-normal tracking-wide">Escrow & Funds</p>
-          </a>
-          <a className="flex flex-col items-center justify-center border-b-[3px] border-transparent text-slate-500 dark:text-slate-400 pb-3 pt-4 shrink-0 transition-all hover:text-primary" href="#">
-            <p className="text-sm font-bold leading-normal tracking-wide">Files</p>
-          </a>
+
         </div>
       </div>
 
@@ -156,43 +145,6 @@ export default function ProjectDetailsPage() {
           </div>
         </section>
 
-        {/* Project Timeline Section */}
-        <section className="flex flex-col gap-6 bg-white dark:bg-slate-900/40 p-6 md:p-8 rounded-2xl border border-primary/5 shadow-sm">
-          <h3 className="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-tight">Timeline & Milestones</h3>
-          <div className="flex flex-col gap-6 relative ml-2">
-            <div className="absolute left-6 top-2 bottom-8 w-0.5 bg-primary/10"></div>
-            
-            <div className="flex gap-6 relative z-10 transition-transform hover:translate-x-1">
-              <div className="size-12 rounded-full bg-primary flex items-center justify-center shrink-0 border-4 border-background-light dark:border-background-dark shadow-lg shadow-primary/20">
-                <span className="material-symbols-outlined text-white text-sm">check</span>
-              </div>
-              <div className="flex flex-col justify-center">
-                <p className="text-slate-900 dark:text-slate-100 text-sm font-bold">Discovery & Research</p>
-                <p className="text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-tighter">Phase 1 • Completed</p>
-              </div>
-            </div>
-
-            <div className="flex gap-6 relative z-10 transition-transform hover:translate-x-1">
-              <div className="size-12 rounded-full bg-primary/20 flex items-center justify-center shrink-0 border-4 border-background-light dark:border-background-dark shadow-sm">
-                <div className="size-3 rounded-full bg-primary animate-pulse"></div>
-              </div>
-              <div className="flex flex-col justify-center">
-                <p className="text-slate-900 dark:text-slate-100 text-sm font-bold">Initial Concept Drafts</p>
-                <p className="text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-tighter">Phase 2 • In Progress</p>
-              </div>
-            </div>
-
-            <div className="flex gap-6 relative z-10 transition-transform hover:translate-x-1">
-              <div className="size-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0 border-4 border-background-light dark:border-background-dark transition-colors group">
-                <span className="material-symbols-outlined text-slate-400 group-hover:text-primary text-sm transition-colors">lock</span>
-              </div>
-              <div className="flex flex-col justify-center">
-                <p className="text-slate-500 dark:text-slate-400 text-sm font-bold">Final Assets & Handover</p>
-                <p className="text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-tighter">Phase 3 • Upcoming</p>
-              </div>
-            </div>
-          </div>
-        </section>
 
         {/* Client Info Card */}
         <section className="bg-primary/5 dark:bg-primary/10 p-6 md:p-8 rounded-3xl border border-primary/10 shadow-inner">

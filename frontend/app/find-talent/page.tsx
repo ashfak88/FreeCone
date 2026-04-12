@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useStore, User } from "@/lib/store";
 import TalentCard from "@/components/TalentCard";
 import { useRouter } from "next/navigation";
-import Navbar from "@/components/Navbar";
+import CompactNavbar from "@/components/CompactNavbar";
 
 export default function FindTalentPage() {
   const router = useRouter();
@@ -54,7 +54,7 @@ export default function FindTalentPage() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
-      <Navbar />
+      <CompactNavbar title="Find Talent" />
 
       <main className="max-w-5xl mx-auto px-4 py-8 space-y-8">
         {/* Simple Filter Row */}

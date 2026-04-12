@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useStore } from "@/lib/store";
 import DashboardHeader from "@/components/DashboardHeader";
 import ImageCropperModal from "@/components/ImageCropperModal";
+import Swal from "sweetalert2";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -22,6 +23,7 @@ export default function ProfilePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<null | "success" | "error">(null);
   const [serverError, setServerError] = useState("");
+  const [isResumeLoading, setIsResumeLoading] = useState(false);
   const skillInputRef = useRef<HTMLInputElement>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [showCropper, setShowCropper] = useState(false);
@@ -116,7 +118,19 @@ export default function ProfilePage() {
   };
 
   const handleRemovePhoto = async () => {
-    if (!confirm("Are you sure you want to remove your profile photo?")) return;
+    const result = await Swal.fire({
+      title: 'Remove Photo?',
+      text: "Are you sure you want to remove your profile photo?",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#94a3b8',
+      confirmButtonText: 'Yes, remove it',
+      background: document.documentElement.classList.contains('dark') ? '#0f172a' : '#fff',
+      color: document.documentElement.classList.contains('dark') ? '#fff' : '#000',
+    });
+
+    if (!result.isConfirmed) return;
 
     setIsSaving(true);
     setSaveStatus(null);
@@ -167,6 +181,94 @@ export default function ProfilePage() {
       setSkills(user.skills || []);
       setSkillInput("");
       setSaveStatus(null);
+    }
+  };
+
+  const handleResumeUpload = async (file: File) => {
+    setIsResumeLoading(true);
+    setSaveStatus(null);
+    try {
+      const token = localStorage.getItem("accessToken");
+      const formData = new FormData();
+      formData.append("resume", file);
+
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
+      const response = await fetch(`${API_URL}/upload/resume`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Upload failed");
+
+      if (user) {
+        updateUser({
+          ...user,
+          resume: data.resumeUrl
+        });
+      }
+
+      setSaveStatus("success");
+      setTimeout(() => setSaveStatus(null), 3000);
+    } catch (err: any) {
+      console.error("Resume upload error:", err);
+      setServerError(err.message || "Failed to upload resume");
+      setSaveStatus("error");
+    } finally {
+      setIsResumeLoading(false);
+    }
+  };
+
+  const handleResumeDelete = async () => {
+    const result = await Swal.fire({
+      title: 'Remove Resume?',
+      text: "Are you sure you want to remove your resume?",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#94a3b8',
+      confirmButtonText: 'Yes, remove it',
+      background: document.documentElement.classList.contains('dark') ? '#0f172a' : '#fff',
+      color: document.documentElement.classList.contains('dark') ? '#fff' : '#000',
+    });
+
+    if (!result.isConfirmed) return;
+
+    setIsResumeLoading(true);
+    setSaveStatus(null);
+    try {
+      const token = localStorage.getItem("accessToken");
+      if (!token) throw new Error("Not logged in");
+
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
+      const response = await fetch(`${API_URL}/upload/resume`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Removal failed");
+
+      if (user) {
+        updateUser({
+          ...user,
+          resume: ""
+        });
+      }
+
+      setSaveStatus("success");
+      setTimeout(() => setSaveStatus(null), 3000);
+    } catch (err: any) {
+      console.error("Remove resume error:", err);
+      setServerError(err.message || "Failed to remove resume");
+      setSaveStatus("error");
+    } finally {
+      setIsResumeLoading(false);
     }
   };
 
@@ -417,31 +519,85 @@ export default function ProfilePage() {
               </p>
             </div>
           </div>
+        </div>
 
-          {/* Hourly Rate */}
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
-            <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 flex items-center gap-2">
-              <span className="material-symbols-outlined text-primary">monetization_on</span>
-              <h3 className="font-bold text-lg">Hourly Rate</h3>
-            </div>
-            <div className="p-6 space-y-4">
-              <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-black">$</span>
-                <input
-                  id="rate"
-                  className="w-full pl-10 p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-black text-xl"
-                  type="number"
-                  value={formData.rate}
-                  onChange={handleInputChange}
-                />
-                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-bold">/ hr</span>
+        {/* Resume Management Section */}
+        <section className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+          <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 flex items-center gap-2">
+            <span className="material-symbols-outlined text-primary">description</span>
+            <h3 className="font-bold text-lg">Resume / CV</h3>
+          </div>
+          <div className="p-6">
+            <div className="flex flex-col md:flex-row items-center gap-8">
+              <div className="size-20 rounded-2xl bg-primary/5 dark:bg-primary/20 flex items-center justify-center border border-primary/10">
+                <span className="material-symbols-outlined text-4xl text-primary font-bold">
+                  {user.resume ? "article" : "upload_file"}
+                </span>
               </div>
-              <p className="text-xs text-slate-400 leading-relaxed italic">
-                Clients will see this rate on your profile. Our platform fee is included.
-              </p>
+              
+              <div className="flex-1 text-center md:text-left space-y-2">
+                <h4 className="font-black text-slate-900 dark:text-slate-100">
+                  {user.resume ? "Professional Resume Uploaded" : "No Resume Uploaded"}
+                </h4>
+                <p className="text-sm text-slate-500 max-w-md italic">
+                  {user.resume 
+                    ? "Your professional resume is currently saved and visible to clients when you apply for projects." 
+                    : "Upload your professional resume or CV to stand out from other freelancers. We support PDF, DOC, and DOCX."}
+                </p>
+                {user.resume && (
+                  <div className="pt-2">
+                    <a 
+                      href={user.resume} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="text-primary text-xs font-black uppercase tracking-widest hover:underline flex items-center justify-center md:justify-start gap-1"
+                    >
+                      <span className="material-symbols-outlined text-sm">open_in_new</span>
+                      View Current Resume
+                    </a>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center gap-3">
+                <input
+                  type="file"
+                  id="resume-upload"
+                  className="hidden"
+                  accept=".pdf,.doc,.docx"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleResumeUpload(file);
+                    e.target.value = "";
+                  }}
+                />
+                <label
+                  htmlFor="resume-upload"
+                  className={`px-6 py-3 ${isResumeLoading ? "opacity-50 cursor-not-allowed" : "hover:bg-primary/95 cursor-pointer"} bg-primary text-white text-sm font-black rounded-xl transition-all shadow-md flex items-center gap-2`}
+                >
+                  {isResumeLoading ? (
+                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                  ) : (
+                    <span className="material-symbols-outlined text-lg">upload</span>
+                  )}
+                  {user.resume ? "Replace Resume" : "Upload Resume"}
+                </label>
+
+                {user.resume && (
+                  <button
+                    type="button"
+                    onClick={handleResumeDelete}
+                    disabled={isResumeLoading}
+                    className="px-6 py-3 bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 text-sm font-black rounded-xl hover:bg-red-100 dark:hover:bg-red-900/20 transition-all disabled:opacity-50 flex items-center gap-2"
+                  >
+                    <span className="material-symbols-outlined text-lg">delete</span>
+                    Remove
+                  </button>
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        </section>
       </div>
 
       {/* Image Cropper Modal */}

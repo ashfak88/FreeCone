@@ -9,13 +9,19 @@ import LoadingScreen from "@/components/LoadingScreen";
 
 export default function LoginPage() {
   const router = useRouter();
-  const setUser = useStore((state) => state.setUser);
+  const { user, setUser } = useStore();
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showLoader, setShowLoader] = useState(false);
   const [redirectPath, setRedirectPath] = useState("/");
+
+  useEffect(() => {
+    if (user) {
+      router.replace("/dashboard");
+    }
+  }, [user, router]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -136,10 +142,7 @@ export default function LoginPage() {
 
               {/* Password Field */}
               <div className="flex flex-col space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label htmlFor="password" className="text-sm font-medium text-slate-700">Password</label>
-                  <Link href="#" className="text-xs font-semibold text-primary hover:underline">Forgot password?</Link>
-                </div>
+                <label htmlFor="password" className="text-sm font-medium text-slate-700">Password</label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                   <input

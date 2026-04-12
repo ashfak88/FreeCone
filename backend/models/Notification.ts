@@ -3,7 +3,7 @@ import mongoose, { Document, Schema } from "mongoose";
 export interface INotification extends Document {
   recipient: mongoose.Types.ObjectId;
   sender: mongoose.Types.ObjectId;
-  type: "proposal" | "offer" | "message" | "payment" | "other";
+  type: "proposal" | "offer" | "message" | "payment" | "completion_request" | "other";
   relatedId?: mongoose.Types.ObjectId; // ID of Proposal or Offer
   title: string;
   message: string;
@@ -25,7 +25,7 @@ const NotificationSchema: Schema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ["proposal", "offer", "message", "payment", "other"],
+      enum: ["proposal", "offer", "message", "payment", "completion_request", "other"],
       required: true,
     },
     relatedId: {

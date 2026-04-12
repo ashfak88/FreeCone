@@ -9,6 +9,7 @@ export default function LoadingScreen({ destination = "/" }: { destination?: str
   const [progress, setProgress] = useState(0);
   const textRef = useRef<HTMLDivElement>(null);
   const controls = useAnimation();
+  const logoControls = useAnimation();
   const barControls = useAnimation();
   const bgControls = useAnimation();
   const navControls = useAnimation();
@@ -40,6 +41,7 @@ export default function LoadingScreen({ destination = "/" }: { destination?: str
       // Calculate exact navbar position dynamically for any screen size
       // Navbar uses: max-w-7xl (1280px max width) with mx-auto
       const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
       const maxWidth = 1280;
       const marginX = Math.max(0, (viewportWidth - maxWidth) / 2);
 
@@ -67,8 +69,18 @@ export default function LoadingScreen({ destination = "/" }: { destination?: str
       // Scale from text-5xl to text-xl is exactly 20px/48px = ~0.416
       const targetScale = 0.416;
 
+      // Icon target position
+      const iconTargetX = marginX + paddingX + 15 - (viewportWidth / 2);
+      const iconTargetY = navLogoY - (viewportHeight / 2);
+
+      // Icon rotation
+      const iconRotation = 360 * 3; // 3 full rotations
+
       // 1. Fade out progress bar
       await barControls.start({ opacity: 0, transition: { duration: 0.15 } });
+
+      // Set initial position for logo - horizontally off-screen to the left, but vertically aligned with target
+      logoControls.set({ x: -viewportWidth, y: iconTargetY, opacity: 0, rotate: 0 });
 
       // 2. Fly the text, fade the white background out, and fade the simulated Navbar IN
       // The background fades to 0 revealing the #f6f7f8 grey backdrop and the fake Navbar!
@@ -78,12 +90,22 @@ export default function LoadingScreen({ destination = "/" }: { destination?: str
           y: targetY,
           scale: targetScale,
           transition: {
-            duration: 0.7,
+            duration: 1.3,
             ease: [0.4, 0.0, 0.2, 1],
           },
         }),
-        bgControls.start({ opacity: 0, transition: { duration: 0.7, ease: "easeOut" } }),
-        navControls.start({ opacity: 1, transition: { duration: 0.7, ease: "easeOut" } })
+        logoControls.start({
+          x: iconTargetX,
+          y: iconTargetY,
+          rotate: iconRotation,
+          opacity: 1,
+          transition: {
+            duration: 1.3,
+            ease: "easeOut",
+          },
+        }),
+        bgControls.start({ opacity: 0, transition: { duration: 1.3, ease: "easeOut" } }),
+        navControls.start({ opacity: 1, transition: { duration: 1.3, ease: "easeOut" } })
       ]);
 
       // 3. The exact millisecond the text lands, we trigger navigation!
@@ -114,7 +136,7 @@ export default function LoadingScreen({ destination = "/" }: { destination?: str
             <div className="flex justify-between h-16 items-center">
               {/* Logo area */}
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-primary text-3xl">hub</span>
+                <span className="material-symbols-outlined text-primary text-3xl opacity-0">hub</span>
                 {/* Invisible text where the flying text will land */}
                 <span className="text-xl font-extrabold tracking-tight opacity-0">FreeCone</span>
               </div>
@@ -159,6 +181,16 @@ export default function LoadingScreen({ destination = "/" }: { destination?: str
               {char}
             </motion.span>
           ))}
+        </motion.div>
+
+        {/* The Rolling Icon (Tyre) */}
+        <motion.div
+          initial={{ x: -1000, y: -32, rotate: 0, opacity: 0 }}
+          animate={logoControls}
+          className="fixed left-1/2 top-1/2 z-[10000]"
+          style={{ marginLeft: -15, marginTop: -15 }} // Half of text-3xl (30px)
+        >
+          <span className="material-symbols-outlined text-primary text-3xl font-bold">hub</span>
         </motion.div>
 
         {/* Progress bar — same width as text */}

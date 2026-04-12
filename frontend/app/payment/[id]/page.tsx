@@ -85,48 +85,110 @@ export default function PaymentPage() {
     if (id) fetchPaymentData();
   }, [id, searchParams]);
 
+  const loadRazorpay = () => {
+    return new Promise((resolve) => {
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
   const handlePayment = async (e: React.FormEvent) => {
     e.preventDefault();
     setProcessing(true);
     setPayError("");
 
     try {
+      const resRazorpay = await loadRazorpay();
+      if (!resRazorpay) {
+        setPayError("Razorpay SDK failed to load. Are you online?");
+        setProcessing(false);
+        return;
+      }
+
       const token = localStorage.getItem("accessToken");
       const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
-      await new Promise((resolve) => setTimeout(resolve, 2500));
-
-      const type = searchParams.get("type");
-      let endpoint = `${API_URL}/offers/${id}/pay`;
-      if (type === "proposal") {
-        endpoint = `${API_URL}/jobs/proposals/${id}/pay`;
-      }
-
-      const res = await fetch(endpoint, {
-        method: "PUT",
+      // 1. Create Order
+      const orderRes = await fetch(`${API_URL}/payments/order`, {
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
+        body: JSON.stringify({
+          offerId: id,
+          amount: offer.budget,
+          type: searchParams.get("type") || "advance_payment",
+        }),
       });
 
-      const data = await res.json();
-
-      if (res.ok) {
-        setSuccess(true);
-        setOffer((prev: any) => ({ ...prev, isPaid: true }));
-      } else if (res.status === 404) {
-
-        setPayError(
-          "Payment endpoint not found. Please restart the backend server and try again. " +
-          "(The /api/offers/:id/pay route needs to be registered.)"
-        );
-      } else {
-        setPayError(data.message || "Payment failed. Please try again.");
+      const orderData = await orderRes.json();
+      if (!orderRes.ok) {
+        throw new Error(orderData.message || "Failed to create order");
       }
+
+      // 2. Open Razorpay
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: "FreeCone",
+        description: `Payment for ${offer.jobTitle}`,
+        image: "https://your-logo-url.com/logo.png",
+        order_id: orderData.order_id,
+        handler: async function (response: any) {
+          // 3. Verify Payment
+          try {
+            const verifyRes = await fetch(`${API_URL}/payments/verify`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                ...response,
+                offerId: id,
+              }),
+            });
+
+            const verifyData = await verifyRes.json();
+            if (verifyRes.ok) {
+              setSuccess(true);
+              setOffer((prev: any) => ({ ...prev, isPaid: true }));
+            } else {
+              setPayError(verifyData.message || "Payment verification failed.");
+            }
+          } catch (err: any) {
+            setPayError("Verification connection error. Please contact support.");
+          } finally {
+            setProcessing(false);
+          }
+        },
+        prefill: {
+          name: user?.name || "",
+          email: user?.email || "",
+        },
+        theme: {
+          color: "#0F172A",
+        },
+        modal: {
+          ondismiss: function () {
+            setProcessing(false);
+          },
+        },
+      };
+
+      const rzp = (window as any).Razorpay(options);
+      rzp.on("payment.failed", function (response: any) {
+        setPayError(response.error.description || "Payment failed");
+        setProcessing(false);
+      });
+      rzp.open();
     } catch (err: any) {
-      setPayError("Connection error. Please check your network and try again.");
-    } finally {
+      setPayError(err.message || "Something went wrong. Please try again.");
       setProcessing(false);
     }
   };
@@ -194,75 +256,30 @@ export default function PaymentPage() {
                     </div>
                   </div>
 
-                  <form onSubmit={handlePayment} className="space-y-6">
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-bold flex items-center gap-2">
-                        <CreditCard className="w-5 h-5 text-primary" />
-                        Card Details
-                      </h3>
-
-                      <div className="space-y-4">
-                        <div className="grid grid-cols-1 gap-1.5">
-                          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Cardholder Name</label>
-                          <input
-                            type="text"
-                            required
-                            value={formData.name}
-                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            className="w-full h-14 bg-slate-50 border border-slate-200 rounded-xl px-5 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none font-medium"
-                            placeholder="John Doe"
-                          />
+                  <div className="space-y-6">
+                    <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200 space-y-4">
+                      <div className="flex items-center gap-3 text-slate-700">
+                        <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm border border-slate-100">
+                          <ShieldCheck className="w-5 h-5 text-green-500" />
                         </div>
+                        <div>
+                          <p className="text-sm font-bold">Secure Payment Gateway</p>
+                          <p className="text-xs text-slate-500">Fast and encrypted checkout via Razorpay</p>
+                        </div>
+                      </div>
 
-                        <div className="grid grid-cols-1 gap-1.5">
-                          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Card Number</label>
-                          <div className="relative">
+                      <div className="pt-4 border-t border-slate-200">
+                        <div className="grid grid-cols-1 gap-4">
+                          <div className="space-y-1.5">
+                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Confirm Your Name</label>
                             <input
                               type="text"
                               required
-                              value={formData.cardNumber}
-                              onChange={(e) => setFormData({ ...formData, cardNumber: e.target.value })}
-                              maxLength={19}
-                              className="w-full h-14 bg-slate-50 border border-slate-200 rounded-xl px-5 pr-12 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none font-mono"
-                              placeholder="0000 0000 0000 0000"
+                              value={formData.name}
+                              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                              className="w-full h-12 bg-white border border-slate-200 rounded-xl px-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none font-medium"
+                              placeholder="John Doe"
                             />
-                            <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                              <img
-                                src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Visa_Inc._logo.svg/2560px-Visa_Inc._logo.svg.png"
-                                className="h-4 opacity-80"
-                                alt="visa"
-                              />
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-1.5">
-                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Expiry Date</label>
-                            <input
-                              type="text"
-                              required
-                              value={formData.expiry}
-                              onChange={(e) => setFormData({ ...formData, expiry: e.target.value })}
-                              maxLength={5}
-                              className="w-full h-14 bg-slate-50 border border-slate-200 rounded-xl px-5 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none font-mono"
-                              placeholder="MM/YY"
-                            />
-                          </div>
-                          <div className="space-y-1.5">
-                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">CVC / CVV</label>
-                            <div className="relative">
-                              <input
-                                type="text"
-                                required
-                                value={formData.cvc}
-                                onChange={(e) => setFormData({ ...formData, cvc: e.target.value })}
-                                maxLength={4}
-                                className="w-full h-14 bg-slate-50 border border-slate-200 rounded-xl px-5 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none font-mono"
-                                placeholder="123"
-                              />
-                              <Lock className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                            </div>
                           </div>
                         </div>
                       </div>
@@ -276,7 +293,7 @@ export default function PaymentPage() {
                     )}
 
                     <button
-                      type="submit"
+                      onClick={handlePayment}
                       disabled={processing}
                       className={`w-full h-16 rounded-2xl font-bold text-lg transition-all flex items-center justify-center gap-3 ${processing
                           ? "bg-slate-100 text-slate-400 cursor-not-allowed"
@@ -286,18 +303,18 @@ export default function PaymentPage() {
                       {processing ? (
                         <>
                           <div className="w-5 h-5 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin"></div>
-                          Verifying Payment...
+                          Processing...
                         </>
                       ) : (
-                        `Pay $${(offer.budget || 0).toLocaleString()}`
+                        `Pay $${(offer.budget || 0).toLocaleString()} via Razorpay`
                       )}
                     </button>
 
                     <p className="text-center text-xs text-slate-400 flex items-center justify-center gap-2">
                       <Lock className="w-3 h-3" />
-                      Payments are encrypted and secured. No data is stored on our servers.
+                      Secure payment with 128-bit encryption
                     </p>
-                  </form>
+                  </div>
                 </div>
               </div>
 

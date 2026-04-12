@@ -3,6 +3,8 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Job } from "@/lib/store";
+import RichTextEditor from "@/components/RichTextEditor";
+import Swal from "sweetalert2";
 
 export default function ApplyForProjectPage() {
   const params = useParams();
@@ -15,7 +17,6 @@ export default function ApplyForProjectPage() {
     timeline: "",
     figmaLink: "",
   });
-  const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -49,7 +50,6 @@ export default function ApplyForProjectPage() {
       submitData.append("proposedRate", formData.proposedRate);
       submitData.append("timeline", formData.timeline);
       if (formData.figmaLink) submitData.append("figmaLink", formData.figmaLink);
-      if (resumeFile) submitData.append("resume", resumeFile);
 
       const response = await fetch(`${API_URL}/jobs/${params.id}/apply`, {
         method: "POST",
@@ -64,11 +64,25 @@ export default function ApplyForProjectPage() {
         throw new Error(errorData.message || "Failed to submit proposal");
       }
 
-      alert("Application sent successfully!");
+      await Swal.fire({
+        title: 'Success!',
+        text: 'Application sent successfully!',
+        icon: 'success',
+        confirmButtonColor: '#6a6b4c',
+        background: document.documentElement.classList.contains('dark') ? '#0f172a' : '#fff',
+        color: document.documentElement.classList.contains('dark') ? '#fff' : '#000',
+      });
       router.push(`/jobs/${params.id}`);
     } catch (error: any) {
       console.error("Error submitting proposal:", error);
-      alert(error.message || "Something went wrong. Please try again.");
+      Swal.fire({
+        title: 'Error',
+        text: error.message || "Something went wrong. Please try again.",
+        icon: 'error',
+        confirmButtonColor: '#6a6b4c',
+        background: document.documentElement.classList.contains('dark') ? '#0f172a' : '#fff',
+        color: document.documentElement.classList.contains('dark') ? '#fff' : '#000',
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -182,13 +196,11 @@ export default function ApplyForProjectPage() {
                       Cover Letter
                       <span className="text-[10px] font-bold text-primary/60 bg-primary/5 px-2 py-0.5 rounded-full lowercase italic">Recommended</span>
                     </label>
-                    <textarea 
-                      required
+                    <RichTextEditor 
                       value={formData.coverLetter}
-                      onChange={(e) => setFormData({...formData, coverLetter: e.target.value})}
-                      className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-[2rem] text-slate-900 dark:text-slate-100 focus:ring-4 focus:ring-primary/10 focus:border-primary border border-primary/10 bg-white/50 dark:bg-slate-800/50 min-h-64 placeholder:text-slate-400 p-6 text-base font-medium leading-relaxed transition-all shadow-inner" 
+                      onChange={(content) => setFormData({...formData, coverLetter: content})}
                       placeholder="Explain why you are the best fit for this project, your relevant experience, and your approach to the requirements..."
-                    ></textarea>
+                    />
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -227,58 +239,8 @@ export default function ApplyForProjectPage() {
                         <span className="material-symbols-outlined absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 group-focus-within:text-primary transition-colors">expand_more</span>
                       </div>
                     </div>
-                  </div>
-
-                  {/* Resume Section */}
-                  <div className="pt-8 border-t border-primary/5">
-                    <div className="mb-8">
-                      <h3 className="text-slate-900 dark:text-slate-100 text-2xl font-black tracking-tight mb-2">Resume / CV</h3>
-                      <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Upload your professional resume or CV to stand out.</p>
                     </div>
-
-                    <div className="space-y-8">
-                      <div className="flex flex-col w-full">
-                        <label className="text-slate-700 dark:text-slate-200 text-xs font-black uppercase tracking-[0.15em] pb-3 flex justify-between">
-                          Public Portfolio Link <span className="text-[10px] font-bold text-slate-400 italic font-medium tracking-normal">(Optional)</span>
-                        </label>
-                        <div className="relative group">
-                          <span className="material-symbols-outlined absolute left-6 top-1/2 -translate-y-1/2 text-primary/40 group-focus-within:text-primary text-2xl transition-all">link</span>
-                          <input 
-                            type="url"
-                            value={formData.figmaLink}
-                            onChange={(e) => setFormData({...formData, figmaLink: e.target.value})}
-                            className="form-input flex w-full rounded-2xl text-slate-900 dark:text-slate-100 focus:ring-4 focus:ring-primary/10 focus:border-primary border border-primary/10 bg-white/50 dark:bg-slate-800/50 p-6 pl-16 text-base font-medium leading-normal placeholder:text-slate-400 transition-all shadow-inner" 
-                            placeholder="https://behance.net/yourprofile..." 
-                          />
-                        </div>
-                      </div>
-
-                      <label className="border-4 border-dashed border-primary/10 rounded-[2.5rem] p-12 flex flex-col items-center justify-center bg-primary/5 hover:bg-primary/10 hover:border-primary/40 transition-all cursor-pointer group shadow-inner relative overflow-hidden">
-                        <input 
-                          type="file" 
-                          accept=".pdf,.doc,.docx" 
-                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
-                          onChange={(e) => {
-                            if (e.target.files && e.target.files.length > 0) {
-                              setResumeFile(e.target.files[0]);
-                            }
-                          }}
-                        />
-                        <div className="size-20 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center mb-6 shadow-xl group-hover:scale-110 transition-transform relative z-10">
-                          <span className="material-symbols-outlined text-primary text-4xl">
-                            {resumeFile ? 'check_circle' : 'article'}
-                          </span>
-                        </div>
-                        <p className="text-slate-900 dark:text-slate-100 font-black text-xl mb-1 relative z-10 text-center max-w-full truncate px-4">
-                          {resumeFile ? resumeFile.name : 'Upload your Resume'}
-                        </p>
-                        <p className="text-slate-400 text-xs font-bold uppercase tracking-widest relative z-10 text-center">
-                          {resumeFile ? 'Ready to upload' : 'PDF, DOCX up to 10MB'}
-                        </p>
-                      </label>
-                    </div>
-                  </div>
-
+  
                   {/* Submit Button */}
                   <div className="pt-12 pb-4">
                     <button 
