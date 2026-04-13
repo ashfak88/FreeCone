@@ -11,7 +11,7 @@ export default function SecurityPage() {
   const [isPublicProfile, setIsPublicProfile] = useState(false);
 
   // Simulated handlers for UI interaction
-  const handleAction = (title: string, text: string, icon: "success" | "warning" | "info" = "info") => {
+  const handleAction = (title: string, text: string, icon: "success" | "warning" | "info" | "error" = "info") => {
     Swal.fire({
       title,
       text,
