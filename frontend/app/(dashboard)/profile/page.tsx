@@ -275,7 +275,7 @@ export default function ProfilePage() {
   if (!user) return null;
 
   return (
-    <div className="flex-1 overflow-y-auto">
+    <div>
       <DashboardHeader
         user={user}
         title="Profile Management"
@@ -309,7 +309,7 @@ export default function ProfilePage() {
         </div>
       </DashboardHeader>
 
-      <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-8">
+      <div className="p-4 md:p-8 max-w-[1240px] mx-auto space-y-8">
         {saveStatus === "success" && (
           <div className="bg-green-500 text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-2">
             <span className="material-symbols-outlined">check_circle</span>

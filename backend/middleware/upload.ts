@@ -10,6 +10,8 @@ const profileStorage = new CloudinaryStorage({
       folder: "profile_photos",
       allowed_formats: ["jpg", "png", "jpeg", "webp"],
       public_id: `user_${req.user?.id || req.user?._id || Date.now()}`,
+      access_mode: "public",
+      type: "upload",
     };
   },
 });
@@ -18,10 +20,19 @@ const profileStorage = new CloudinaryStorage({
 const resumeStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: async (req: any, file: any) => {
+    // Sanitize filename: remove extension and special characters
+    const cleanName = file.originalname
+      .split('.')
+      .slice(0, -1)
+      .join('.')
+      .replace(/[^a-zA-Z0-9]/g, '_');
+      
     return {
       folder: "resumes",
-      resource_type: "raw", // important for PDF/DOC files
-      public_id: `resume_${req.user?.id || req.user?._id || Date.now()}_${file.originalname}`,
+      resource_type: "auto", // Better for various doc types
+      public_id: `resume_${req.user?.id || req.user?._id || Date.now()}_${cleanName}`,
+      access_mode: "public",
+      type: "upload",
     };
   },
 });

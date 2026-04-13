@@ -141,7 +141,7 @@ export default function DashboardPage() {
     : (escrow?.totalEarned ?? 0);
 
   return (
-    <div className="flex-1 overflow-y-auto">
+    <div>
       <DashboardHeader
         user={user}
         title="Dashboard"
@@ -155,7 +155,7 @@ export default function DashboardPage() {
         </button>
       </DashboardHeader>
 
-      <main className="max-w-[1240px] mx-auto p-6 md:p-8 space-y-10 pt-24">
+      <main className="max-w-[1240px] mx-auto p-6 md:p-8 space-y-10">
 
         {/* Stats Row */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

@@ -94,17 +94,28 @@ export default function TalentCard({ talent }: { talent: User }) {
           </div>
         </div>
         <div className="flex gap-3">
+          {talent.resume && (
+            <a
+              href={talent.resume}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-3 text-primary font-bold border-2 border-primary/10 rounded-2xl hover:bg-primary/5 transition-all flex items-center justify-center"
+              title="View Resume"
+            >
+              <span className="material-symbols-outlined text-xl">description</span>
+            </a>
+          )}
           <a
             href={`/talent/${talent._id || talent.id}`}
             onClick={(e) => handleAuthRedirect(e, `/talent/${talent._id || talent.id}`)}
-            className="px-6 py-3 text-slate-700 dark:text-slate-300 font-bold text-sm border-2 border-slate-100 dark:border-slate-800 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-all text-center cursor-pointer"
+            className="px-6 py-3 text-slate-700 dark:text-slate-300 font-bold text-sm border-2 border-slate-100 dark:border-slate-800 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-all text-center cursor-pointer flex items-center"
           >
             Profile
           </a>
           <a
             href={`/send-offer?id=${talent._id || talent.id}`}
             onClick={(e) => handleAuthRedirect(e, `/send-offer?id=${talent._id || talent.id}`)}
-            className="px-8 py-3 bg-primary text-white font-extrabold text-sm rounded-2xl hover:shadow-xl hover:shadow-primary/30 transition-all active:scale-95 text-center cursor-pointer"
+            className="px-8 py-3 bg-primary text-white font-extrabold text-sm rounded-2xl hover:shadow-xl hover:shadow-primary/30 transition-all active:scale-95 text-center cursor-pointer flex items-center"
           >
             Hire
           </a>

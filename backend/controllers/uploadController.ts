@@ -68,7 +68,7 @@ export const resumeUpload = async (req: Request, res: Response): Promise<any> =>
     }
 
     const resumeUrl = reqAny.file.path; 
-
+    console.log(`[DEBUG] Resume uploaded: Original name: "${reqAny.file.originalname}", Cloudinary URL: ${resumeUrl}`);
     const updatedUser = await User.findByIdAndUpdate(
       userId,
       { $set: { resume: resumeUrl } },

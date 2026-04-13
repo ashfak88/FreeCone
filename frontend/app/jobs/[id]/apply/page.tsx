@@ -2,15 +2,17 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Job } from "@/lib/store";
+import { Job, useStore } from "@/lib/store";
 import RichTextEditor from "@/components/RichTextEditor";
 import Swal from "sweetalert2";
 
 export default function ApplyForProjectPage() {
   const params = useParams();
   const router = useRouter();
+  const { user } = useStore();
   const [job, setJob] = useState<Job | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [formData, setFormData] = useState({
     coverLetter: "",
     proposedRate: "",
@@ -50,6 +52,7 @@ export default function ApplyForProjectPage() {
       submitData.append("proposedRate", formData.proposedRate);
       submitData.append("timeline", formData.timeline);
       if (formData.figmaLink) submitData.append("figmaLink", formData.figmaLink);
+      if (resumeFile) submitData.append("resume", resumeFile);
 
       const response = await fetch(`${API_URL}/jobs/${params.id}/apply`, {
         method: "POST",
@@ -239,7 +242,72 @@ export default function ApplyForProjectPage() {
                         <span className="material-symbols-outlined absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 group-focus-within:text-primary transition-colors">expand_more</span>
                       </div>
                     </div>
+                  </div>
+
+                  {/* Resume Selection Section */}
+                  <div className="flex flex-col gap-6 p-8 rounded-3xl bg-primary/5 border border-primary/10 relative overflow-hidden group/resume">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-primary/10 rounded-full -mr-12 -mt-12 transition-transform group-hover/resume:scale-125"></div>
+                    
+                    <div className="flex items-center gap-4 relative">
+                      <div className="size-12 rounded-2xl bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm border border-primary/5">
+                        <span className="material-symbols-outlined text-primary text-2xl">description</span>
+                      </div>
+                      <div>
+                        <h4 className="font-black text-slate-900 dark:text-slate-100 uppercase tracking-tighter">Project Resume</h4>
+                        <p className="text-[10px] font-bold text-slate-400">PDF, DOC, DOCX • Max 5MB</p>
+                      </div>
                     </div>
+
+                    <div className="space-y-4 relative">
+                      {user?.resume && !resumeFile ? (
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-white/60 dark:bg-slate-800/60 border border-white transition-all hover:bg-white dark:hover:bg-slate-800">
+                          <div className="flex items-center gap-3">
+                            <span className="material-symbols-outlined text-emerald-500 fill-icon">check_circle</span>
+                            <div>
+                              <p className="text-xs font-black text-slate-900 dark:text-slate-100">Using Profile Resume</p>
+                              <p className="text-[10px] text-slate-500 line-clamp-1 max-w-[200px] italic">Your standard CV will be shared.</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                             <a href={user.resume} target="_blank" rel="noopener noreferrer" className="text-[10px] font-black uppercase text-primary hover:underline">Preview</a>
+                             <span className="text-slate-200">|</span>
+                             <label htmlFor="project-resume" className="text-[10px] font-black uppercase text-slate-500 hover:text-primary cursor-pointer transition-colors">Change</label>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-primary/20 rounded-2xl bg-white/40 group-hover/resume:bg-white/60 transition-all">
+                          {resumeFile ? (
+                            <div className="flex flex-col items-center gap-2">
+                              <span className="text-xs font-black text-slate-900 dark:text-slate-100">{resumeFile.name}</span>
+                              <button 
+                                type="button" 
+                                onClick={() => setResumeFile(null)}
+                                className="text-[10px] font-black uppercase text-red-500 hover:underline"
+                              >
+                                Remove & Use Default
+                              </button>
+                            </div>
+                          ) : (
+                            <label htmlFor="project-resume" className="flex flex-col items-center gap-2 cursor-pointer group/label">
+                              <span className="material-symbols-outlined text-3xl text-primary/40 group-hover/label:text-primary transition-colors">cloud_upload</span>
+                              <p className="text-xs font-bold text-slate-500 tracking-tight">Click to upload a custom resume for this job</p>
+                            </label>
+                          )}
+                        </div>
+                      )}
+                      
+                      <input 
+                        type="file" 
+                        id="project-resume" 
+                        className="hidden" 
+                        accept=".pdf,.doc,.docx" 
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) setResumeFile(file);
+                        }}
+                      />
+                    </div>
+                  </div>
   
                   {/* Submit Button */}
                   <div className="pt-12 pb-4">

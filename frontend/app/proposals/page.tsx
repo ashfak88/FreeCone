@@ -53,7 +53,7 @@ export default function ProposalsPage() {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto bg-slate-50/50">
+    <div>
       <DashboardHeader
         user={user}
         title="Proposals Management"
@@ -145,6 +145,17 @@ export default function ProposalsPage() {
                         <div className="flex items-center justify-end gap-2">
                           {proposal.direction === 'received' && (proposal.status === 'pending' || proposal.status === 'viewed') ? (
                             <div className="flex items-center gap-2">
+                              {proposal.resume && (
+                                <a 
+                                  href={proposal.resume} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-primary hover:bg-primary/5 p-1.5 rounded-lg transition-colors border border-primary/20 flex items-center justify-center"
+                                  title="View Resume"
+                                >
+                                  <span className="material-symbols-outlined text-sm">description</span>
+                                </a>
+                              )}
                               <button 
                                 onClick={() => handleStatusUpdate(proposal._id, 'accepted')}
                                 className="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1 rounded-lg text-xs font-bold transition-colors shadow-sm"
@@ -159,12 +170,25 @@ export default function ProposalsPage() {
                               </button>
                             </div>
                           ) : (
-                            <button 
-                              onClick={() => router.push(`/jobs/${proposal.job?._id || proposal.job}`)}
-                              className="text-primary font-bold text-xs hover:bg-primary/5 px-3 py-1.5 rounded-lg transition-colors border border-primary/20"
-                            >
-                              Details
-                            </button>
+                            <div className="flex items-center gap-2">
+                              {proposal.resume && (
+                                <a 
+                                  href={proposal.resume} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-primary hover:bg-primary/5 p-1.5 rounded-lg transition-colors border border-primary/20 flex items-center justify-center"
+                                  title="View Resume"
+                                >
+                                  <span className="material-symbols-outlined text-sm">description</span>
+                                </a>
+                              )}
+                              <button 
+                                onClick={() => router.push(`/jobs/${proposal.job?._id || proposal.job}`)}
+                                className="text-primary font-bold text-xs hover:bg-primary/5 px-3 py-1.5 rounded-lg transition-colors border border-primary/20"
+                              >
+                                Details
+                              </button>
+                            </div>
                           )}
                         </div>
                       </td>

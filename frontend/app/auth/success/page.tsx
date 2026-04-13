@@ -28,8 +28,6 @@ function AuthSuccessContent() {
           (window as any).isLoggingInAnimation = true;
         }
 
-        setUser(user);
-
         // Determine redirect path based on role (case-insensitive)
         const role = user.role?.toLowerCase();
         if (role === "admin") {
@@ -37,6 +35,7 @@ function AuthSuccessContent() {
         } else {
           setRedirectPath("/");
           setShowLoader(true);
+          setUser(user);
         }
       } catch (err) {
         console.error("Failed to parse user from Google Auth:", err);

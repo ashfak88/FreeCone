@@ -35,7 +35,7 @@ export default function ProjectsPage() {
   const currentList = projects[activeTab];
 
   return (
-    <div className="flex-1 overflow-y-auto min-h-full">
+    <div>
       <DashboardHeader
         user={user}
         title="My Projects"
@@ -54,7 +54,7 @@ export default function ProjectsPage() {
         </button>
       </DashboardHeader>
 
-      <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-8 animate-fade-in">
+      <div className="p-4 md:p-8 max-w-[1240px] mx-auto space-y-8 animate-fade-in">
 
         {/* Stats Row */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">

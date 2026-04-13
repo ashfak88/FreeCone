@@ -2,12 +2,11 @@
 
 import React, { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import Navbar from "@/components/Navbar";
 import ChatSidebar from "@/components/chat/ChatSidebar";
 import ChatWindow from "@/components/chat/ChatWindow";
+import DashboardHeader from "@/components/DashboardHeader";
 import { useStore } from "@/lib/store";
 import { socketService } from "@/lib/socket";
-import ProtectedRoute from "@/components/ProtectedRoute";
 
 function MessagesContent() {
   const { 
@@ -79,8 +78,6 @@ function MessagesContent() {
         const targetUser = talent.find(t => t._id === targetUserId || t.id === targetUserId);
         if (targetUser) {
           setTempParticipant(targetUser);
-        } else {
-            // If talent not loaded yet, wait or do nothing
         }
       }
     }
@@ -96,16 +93,16 @@ function MessagesContent() {
   }, [activeConversation]);
 
   return (
-    <div className="flex flex-col h-[100dvh] bg-slate-100 dark:bg-[#0a1014] overflow-hidden sm:p-4 lg:p-6 xl:px-24">
-      <main className="flex-1 flex overflow-hidden sm:rounded-[24px] shadow-2xl border-none sm:border sm:border-slate-200 dark:sm:border-slate-800/50 relative">
-        <div className="flex w-full h-full bg-wa-bg-sidebar overflow-hidden">
+    <div className="h-screen flex flex-col bg-slate-50 dark:bg-slate-950 overflow-hidden">
+      <main className="flex-1 w-full flex items-center justify-center overflow-hidden">
+        <div className="flex w-full h-full bg-white dark:bg-slate-900 overflow-hidden relative animate-in fade-in duration-500">
           {/* Sidebar */}
-          <div className={`${isSidebarVisible ? "flex" : "hidden"} md:flex w-full md:w-80 lg:w-[400px] h-full shrink-0 border-r border-wa-bg-search/50`}>
+          <div className={`${isSidebarVisible ? "flex" : "hidden"} md:flex w-full md:w-80 lg:w-[380px] h-full shrink-0 border-r border-slate-100 dark:border-slate-800`}>
             <ChatSidebar />
           </div>
 
           {/* Main Chat Area */}
-          <div className={`${!isSidebarVisible ? "flex" : "hidden"} md:flex flex-1 h-full bg-wa-bg-main relative`}>
+          <div className={`${!isSidebarVisible ? "flex" : "hidden"} md:flex flex-1 h-full bg-slate-50 dark:bg-[#0a1014] relative`}>
             <ChatWindow />
           </div>
         </div>
@@ -116,14 +113,12 @@ function MessagesContent() {
 
 export default function MessagesPage() {
   return (
-    <ProtectedRoute>
-      <Suspense fallback={
-        <div className="flex items-center justify-center h-screen bg-wa-bg-sidebar">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-wa-check-blue"></div>
-        </div>
-      }>
-        <MessagesContent />
-      </Suspense>
-    </ProtectedRoute>
+    <Suspense fallback={
+      <div className="flex items-center justify-center h-screen bg-slate-50 dark:bg-slate-950">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    }>
+      <MessagesContent />
+    </Suspense>
   );
 }

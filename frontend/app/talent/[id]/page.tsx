@@ -315,14 +315,12 @@ export default function TalentProfilePage() {
                       href={profile.resume}
                       target="_blank"
                       rel="noopener noreferrer"
-                      download
-                      className="w-full h-14 bg-[#6a6b4c]/40 hover:bg-[#6a6b4c]/60 border border-white/10 text-white flex items-center justify-center rounded-2xl font-black text-lg transition-all active:scale-95 gap-2"
+                      className="w-full h-14 bg-emerald-500 hover:bg-emerald-600 text-white flex items-center justify-center rounded-2xl font-black text-lg transition-all active:scale-95 gap-2 shadow-lg shadow-emerald-500/20"
                       onClick={(e) => {
-                        // Log for user debugging if needed
                         console.log("Opening resume:", profile.resume);
                       }}
                     >
-                      <span className="material-symbols-outlined">description</span>
+                      <span className="material-symbols-outlined text-2xl">description</span>
                       View Resume
                     </a>
                   )}

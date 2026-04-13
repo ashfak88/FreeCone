@@ -6,14 +6,16 @@ import { useStore } from "@/lib/store";
 import Sidebar from "@/components/Sidebar";
 import ProfileCompletionBanner from "@/components/ProfileCompletionBanner";
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+import { DashboardProvider, useDashboard } from "@/context/DashboardContext";
+
+function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { user, setUser, updateUser } = useStore();
   const [isHydrated, setIsHydrated] = useState(false);
+  const { isMobileSidebarOpen, closeMobileSidebar } = useDashboard();
 
   useEffect(() => {
     setIsHydrated(true);
-    // ProtectedRoute now handles authentication redirects globally
 
     const fetchProfile = async () => {
       try {
@@ -67,14 +69,37 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-display">
-      {!isProjectDetails && <Sidebar user={user} onLogout={handleLogout} />}
+      {/* Sidebar Overlay for Mobile */}
+      {isMobileSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[45] lg:hidden animate-in fade-in duration-300"
+          onClick={closeMobileSidebar}
+        />
+      )}
 
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      {!isProjectDetails && (
+        <Sidebar 
+          user={user} 
+          onLogout={handleLogout} 
+          isMobileOpen={isMobileSidebarOpen}
+          onClose={closeMobileSidebar}
+        />
+      )}
+
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
         {user.role === "user" && !user.isProfileComplete && <ProfileCompletionBanner />}
-        <main className="flex-1 overflow-y-auto pt-20 lg:pt-0">
+        <main className="flex-1 overflow-y-auto pt-24 md:pt-28 lg:pt-24 px-0">
           {children}
         </main>
       </div>
     </div>
+  );
+}
+
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <DashboardProvider>
+      <DashboardLayoutContent>{children}</DashboardLayoutContent>
+    </DashboardProvider>
   );
 }

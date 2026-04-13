@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useStore, Offer } from "@/lib/store";
+import DashboardHeader from "@/components/DashboardHeader";
+import Navbar from "@/components/Navbar";
 import Swal from "sweetalert2";
 
 interface Notification {
@@ -121,377 +123,189 @@ export default function NotificationsPage() {
   });
 
   return (
-    <>
-    <div className="relative flex h-auto min-h-screen w-full flex-col bg-background-light dark:bg-background-dark overflow-x-hidden font-display text-slate-900 dark:text-slate-100">
-
-      {/* Header */}
-      <div className="flex items-center bg-background-light dark:bg-background-dark p-4 pb-2 justify-between sticky top-0 z-10 border-b border-primary/10">
-        <div
+    <div className="min-h-screen bg-background-light dark:bg-background-dark font-display">
+      {/* Header Section */}
+      <header className="flex items-center bg-background-light/90 dark:bg-background-dark/90 backdrop-blur-md p-4 pb-2 justify-between sticky top-0 z-30 border-b border-primary/10">
+        <button 
           onClick={() => router.back()}
-          className="text-primary flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-primary/10 cursor-pointer"
+          className="text-primary flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-primary/10 cursor-pointer transition-colors"
         >
-          <span className="material-symbols-outlined">arrow_back</span>
-        </div>
+          <span className="material-symbols-outlined text-2xl">arrow_back</span>
+        </button>
+        <h2 className="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-tight flex-1 px-4">Notifications</h2>
+        <button 
+          onClick={() => useStore.getState().markAllNotificationsAsRead()}
+          className="text-primary text-sm font-bold leading-normal tracking-wide shrink-0 hover:bg-primary/5 px-3 py-1.5 rounded-lg active:scale-95 transition-all"
+        >
+          Mark all as read
+        </button>
+      </header>
 
-        <h2 className="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-tight flex-1 px-4">
-          Notifications
-        </h2>
-
-        <div className="flex items-center justify-end gap-2">
-          <button
-            onClick={() => useStore.getState().markAllNotificationsAsRead()}
-            className="text-primary text-xs font-bold leading-normal tracking-wide shrink-0 hover:bg-primary/10 px-3 py-1.5 rounded-xl transition-colors border border-primary/20"
-          >
-            Mark all as read
-          </button>
-          <button
-            onClick={() => useStore.getState().markAllNotificationsAsUnread()}
-            className="text-slate-500 dark:text-slate-400 text-xs font-bold leading-normal tracking-wide shrink-0 hover:bg-slate-100 dark:hover:bg-white/5 px-3 py-1.5 rounded-xl transition-colors border border-slate-200 dark:border-white/10"
-          >
-            Mark all as unread
-          </button>
-        </div>
-      </div>
-
-      {/* Main Tabs */}
-      <div className="pb-1 bg-background-light dark:bg-background-dark">
-        <div className="flex border-b border-primary/10 px-4 gap-6 overflow-x-auto no-scrollbar">
+      {/* Filter Tabs */}
+      <nav className="bg-background-light dark:bg-background-dark sticky top-[61px] z-20 border-b border-primary/10 transition-all duration-300">
+        <div className="flex px-4 gap-6 overflow-x-auto no-scrollbar">
           {["all", "proposals", "offers", "payments"].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`flex flex-col items-center justify-center border-b-[3px] pb-[10px] pt-4 whitespace-nowrap transition-all ${activeTab === tab
                   ? "border-primary text-slate-900 dark:text-slate-100 font-bold"
-                  : "border-transparent text-slate-500 dark:text-slate-400"
+                  : "border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300 font-bold"
                 }`}
             >
-              <p className="text-sm font-bold uppercase tracking-wide">{tab}</p>
+              <p className="text-sm capitalize">{tab}</p>
             </button>
           ))}
         </div>
-      </div>
+      </nav>
 
-      {/* Proposal Sub-Tabs */}
-      {activeTab === "proposals" && (
-        <div className="bg-slate-50 dark:bg-white/5 px-4 py-2 border-b border-primary/5 flex gap-2 overflow-x-auto no-scrollbar">
-          {["received", "sent"].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setProposalTab(tab as any)}
-              className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all ${proposalTab === tab
-                  ? "bg-primary text-white shadow-sm"
-                  : "bg-white dark:bg-white/5 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-white/10"
-                }`}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
-      )}
+      <main className="max-w-3xl mx-auto w-full pb-20">
+        {/* Sub-Tabs for Filtering */}
+        {(activeTab === "proposals" || activeTab === "offers") && (
+          <div className="bg-slate-100/50 dark:bg-slate-800/30 p-1 rounded-xl w-fit mx-auto mt-6 flex gap-1 border border-slate-200 dark:border-slate-800 shadow-sm">
+            {["received", "sent"].map((sub) => {
+              const isActive = activeTab === "proposals" ? proposalTab === sub : offerTab === sub;
+              return (
+                <button
+                  key={sub}
+                  onClick={() => activeTab === "proposals" ? setProposalTab(sub as any) : setOfferTab(sub as any)}
+                  className={`px-6 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                    isActive 
+                    ? "bg-white dark:bg-slate-900 text-primary shadow-sm" 
+                    : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                  }`}
+                >
+                  {sub}
+                </button>
+              );
+            })}
+          </div>
+        )}
 
-      {/* Offer Sub-Tabs (shown only when 'offers' is selected) */}
-      {activeTab === "offers" && (
-        <div className="bg-slate-50 dark:bg-white/5 px-4 py-2 border-b border-primary/5 flex gap-2 overflow-x-auto no-scrollbar">
-          {["received", "sent"].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setOfferTab(tab as any)}
-              className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all ${offerTab === tab
-                  ? "bg-primary text-white shadow-sm"
-                  : "bg-white dark:bg-white/5 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-white/10"
-                }`}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
-      )}
-
-      <div className="flex-1 max-w-3xl mx-auto w-full px-4 py-4 space-y-1">
-        {(isLoadingNotifications || isLoadingOffers) ? (
-          <div className="flex justify-center py-20">
-            <div className="size-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+        {isLoadingNotifications ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-4">
+             <div className="w-10 h-10 border-[3px] border-primary border-t-transparent rounded-full animate-spin"></div>
+             <p className="text-slate-400 font-bold text-xs uppercase tracking-[0.2em] animate-pulse">Syncing Feed...</p>
           </div>
         ) : filteredNotifications.length > 0 ? (
-          filteredNotifications.map((notif) => (
-            <div
-              key={notif.id}
-              onClick={() => handleNotificationClick(notif)}
-              className={`p-4 border-b border-primary/5 hover:bg-primary/5 transition-colors cursor-pointer ${!notif.isRead ? "bg-primary/5" : ""
-                }`}
-            >
-              <div className="flex justify-between items-start">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className={`text-sm ${!notif.isRead ? "font-bold text-slate-900 dark:text-white" : "font-medium text-slate-700 dark:text-slate-300"}`}>
-                      {notif.type === 'payment' && offers.find(o => o._id === notif.relatedId)?.isPaid 
-                        ? "Payment Successful" 
-                        : notif.title}
-                    </h3>
-                    {notif.type === 'proposal' && (() => {
-                      const proposal = [...myProposals, ...receivedProposals].find(p => p._id === notif.relatedId);
-                      if (!proposal) return null;
+          (() => {
+            const groups: { [key: string]: typeof filteredNotifications } = {};
+            const today = new Date().toLocaleDateString();
+            const yesterday = new Date(Date.now() - 86400000).toLocaleDateString();
 
-                      const statusMap: any = {
-                        pending: { label: 'Pending', color: 'bg-amber-100 text-amber-600 border-amber-200' },
-                        viewed: { label: 'Viewed', color: 'bg-blue-100 text-blue-600 border-blue-200' },
-                        accepted: { label: 'Accepted', color: 'bg-emerald-100 text-emerald-600 border-emerald-200' },
-                        rejected: { label: 'Rejected', color: 'bg-red-100 text-red-600 border-red-200' }
-                      };
-                      const s = statusMap[proposal.status] || { label: proposal.status, color: 'bg-slate-100 text-slate-600' };
+            filteredNotifications.forEach(n => {
+              const d = new Date(n.time).toLocaleDateString();
+              let groupName = d;
+              if (d === today) groupName = "Recent";
+              else if (d === yesterday) groupName = "Yesterday";
+              else groupName = "Earlier";
+              
+              if (!groups[groupName]) groups[groupName] = [];
+              groups[groupName].push(n);
+            });
 
-                      return (
-                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border ${s.color}`}>
-                          {s.label}
-                        </span>
-                      );
-                    })()}
-                    {notif.type === 'offer' && (() => {
-                      const offer = offers.find(o => o._id === notif.relatedId || o._id === notif.id);
-                      if (!offer) return null;
+            return Object.entries(groups).map(([groupName, items]) => (
+              <div key={groupName} className="flex flex-col pt-4">
+                <h3 className="text-slate-900 dark:text-slate-100 text-sm font-bold uppercase tracking-widest px-4 pb-3 pt-4 opacity-60">
+                  {groupName}
+                </h3>
+                
+                <div className="flex flex-col space-y-3 px-4">
+                  {items.map((notif) => {
+                    const icons: any = {
+                      offer: { icon: "work", color: "text-primary", bg: "bg-primary/10" },
+                      proposal: { icon: "description", color: "text-primary", bg: "bg-primary/10" },
+                      payment: { icon: "payments", color: "text-primary", bg: "bg-primary/10" },
+                      completion_request: { icon: "verified", color: "text-green-600", bg: "bg-green-500/10" },
+                      other: { icon: "notifications", color: "text-slate-500", bg: "bg-slate-500/10" }
+                    };
+                    const typeStyle = icons[notif.type] || icons.other;
 
-                      const statusMap: any = {
-                        pending: { label: 'Pending', color: 'bg-amber-100 text-amber-600 border-amber-200' },
-                        accepted: { label: 'Accepted', color: 'bg-emerald-100 text-emerald-600 border-emerald-200' },
-                        rejected: { label: 'Rejected', color: 'bg-red-100 text-red-600 border-red-200' }
-                      };
-                      const s = statusMap[offer.status] || { label: offer.status, color: 'bg-slate-100 text-slate-600' };
-
-                      return (
-                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border ${s.color}`}>
-                          {s.label}
-                        </span>
-                      );
-                    })()}
-                  </div>
-                  <p className="text-slate-500 dark:text-slate-400 text-xs line-clamp-2">
-                    {notif.message}
-                  </p>
-                  <div className="flex items-center justify-between mt-2">
-                    <p className="text-slate-400 text-[10px] font-medium">{notif.time}</p>
-                    {notif.type === 'proposal' && notif.direction === 'received' && (() => {
-                      const proposal = receivedProposals.find(p => p._id === notif.relatedId);
-                      if (proposal && (proposal.status === 'pending' || proposal.status === 'viewed')) {
-                        return (
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const talentId = proposal.talent._id || proposal.talent.id;
-                                router.push(`/talent/${talentId}`);
-                              }}
-                              className="bg-primary/5 text-primary hover:bg-primary/10 px-3 py-1 rounded-lg text-[10px] font-bold border border-primary/20 transition-colors"
-                            >
-                              Profile
-                            </button>
-                            <button
-                              onClick={async (e) => {
-                                e.stopPropagation();
-                                const result = await Swal.fire({
-                                  title: 'Accept Proposal?',
-                                  text: "Are you sure you want to accept this proposal?",
-                                  icon: 'question',
-                                  showCancelButton: true,
-                                  confirmButtonColor: '#10b981',
-                                  cancelButtonColor: '#94a3b8',
-                                  confirmButtonText: 'Yes, accept it!',
-                                  background: document.documentElement.classList.contains('dark') ? '#0f172a' : '#fff',
-                                  color: document.documentElement.classList.contains('dark') ? '#fff' : '#000',
-                                });
-                                if (result.isConfirmed) {
-                                  updateProposalStatus(proposal._id, 'accepted');
-                                }
-                              }}
-                              className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 px-3 py-1 rounded-lg text-[10px] font-bold border border-emerald-100 transition-colors"
-                            >
-                              Accept
-                            </button>
-                            <button
-                              onClick={async (e) => {
-                                e.stopPropagation();
-                                const result = await Swal.fire({
-                                  title: 'Reject Proposal?',
-                                  text: "Are you sure you want to reject this proposal?",
-                                  icon: 'warning',
-                                  showCancelButton: true,
-                                  confirmButtonColor: '#ef4444',
-                                  cancelButtonColor: '#94a3b8',
-                                  confirmButtonText: 'Yes, reject it',
-                                  background: document.documentElement.classList.contains('dark') ? '#0f172a' : '#fff',
-                                  color: document.documentElement.classList.contains('dark') ? '#fff' : '#000',
-                                });
-                                if (result.isConfirmed) {
-                                  updateProposalStatus(proposal._id, 'rejected');
-                                }
-                              }}
-                              className="bg-red-50 text-red-600 hover:bg-red-100 px-3 py-1 rounded-lg text-[10px] font-bold border border-red-100 transition-colors"
-                            >
-                              Reject
-                            </button>
+                    return (
+                      <div
+                        key={notif.id}
+                        onClick={() => handleNotificationClick(notif)}
+                        className={`flex items-start gap-4 p-4 rounded-xl border transition-all cursor-pointer relative shadow-sm hover:shadow-md ${
+                          !notif.isRead 
+                          ? "bg-white dark:bg-white/5 border-primary/20" 
+                          : "bg-transparent border-primary/10 opacity-80"
+                        }`}
+                      >
+                        <div className={`${typeStyle.color} flex items-center justify-center rounded-lg ${typeStyle.bg} shrink-0 size-12 shadow-inner group-hover:scale-110 transition-transform duration-300`}>
+                          <span className="material-symbols-outlined text-2xl">{typeStyle.icon}</span>
+                        </div>
+                        
+                        <div className="flex flex-col justify-center flex-1">
+                          <div className="flex justify-between items-start">
+                            <p className="text-slate-900 dark:text-slate-100 text-[15px] font-semibold leading-snug tracking-tight">
+                              {notif.title}
+                              <span className="text-slate-500 font-medium block mt-0.5 text-sm line-clamp-2">
+                                {notif.message}
+                              </span>
+                            </p>
+                            {!notif.isRead && (
+                              <div className="shrink-0 ml-2 mt-1.5">
+                                <div className="size-2 rounded-full bg-primary animate-pulse"></div>
+                              </div>
+                            )}
                           </div>
-                        );
-                      }
-                      return null;
-                    })()}
-                    {notif.type === 'offer' && notif.direction === 'received' && (() => {
-                      const offer = offers.find(o => o._id === notif.relatedId || o._id === notif.id);
-                      if (offer && offer.status === 'pending') {
-                        return (
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={async (e) => {
-                                e.stopPropagation();
-                                const result = await Swal.fire({
-                                  title: 'Accept Offer?',
-                                  text: "Are you sure you want to accept this offer?",
-                                  icon: 'question',
-                                  showCancelButton: true,
-                                  confirmButtonColor: '#10b981',
-                                  cancelButtonColor: '#94a3b8',
-                                  confirmButtonText: 'Yes, accept it!',
-                                  background: document.documentElement.classList.contains('dark') ? '#0f172a' : '#fff',
-                                  color: document.documentElement.classList.contains('dark') ? '#fff' : '#000',
-                                });
-                                if (result.isConfirmed) {
-                                  updateOfferStatus(offer._id, 'accepted');
-                                }
-                              }}
-                              className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 px-3 py-1 rounded-lg text-[10px] font-bold border border-emerald-100 transition-colors"
-                            >
-                              Accept
-                            </button>
-                            <button
-                              onClick={async (e) => {
-                                e.stopPropagation();
-                                const result = await Swal.fire({
-                                  title: 'Reject Offer?',
-                                  text: "Are you sure you want to reject this offer?",
-                                  icon: 'warning',
-                                  showCancelButton: true,
-                                  confirmButtonColor: '#ef4444',
-                                  cancelButtonColor: '#94a3b8',
-                                  confirmButtonText: 'Yes, reject it',
-                                  background: document.documentElement.classList.contains('dark') ? '#0f172a' : '#fff',
-                                  color: document.documentElement.classList.contains('dark') ? '#fff' : '#000',
-                                });
-                                if (result.isConfirmed) {
-                                  updateOfferStatus(offer._id, 'rejected');
-                                }
-                              }}
-                              className="bg-red-50 text-red-600 hover:bg-red-100 px-3 py-1 rounded-lg text-[10px] font-bold border border-red-100 transition-colors"
-                            >
-                              Reject
-                            </button>
+                          <p className="text-slate-400 font-medium text-[11px] mt-2 flex items-center gap-1.5 uppercase tracking-wider">
+                            <span className="material-symbols-outlined text-sm">schedule</span>
+                            {notif.time}
+                          </p>
+
+                          {/* Quick Actions if any */}
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {notif.type === 'proposal' && notif.direction === 'received' && (() => {
+                              const proposal = receivedProposals.find(p => p._id === notif.relatedId);
+                              if (proposal && (proposal.status === 'pending' || proposal.status === 'viewed')) {
+                                return (
+                                  <>
+                                    <button
+                                      onClick={async (e) => {
+                                        e.stopPropagation();
+                                        updateProposalStatus(proposal._id, 'accepted');
+                                      }}
+                                      className="px-4 py-1.5 bg-green-500 text-white rounded-lg text-[10px] font-black uppercase tracking-widest shadow-sm hover:bg-green-600 transition-all"
+                                    >
+                                      Accept
+                                    </button>
+                                    <button
+                                      onClick={async (e) => {
+                                        e.stopPropagation();
+                                        updateProposalStatus(proposal._id, 'rejected');
+                                      }}
+                                      className="px-4 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all"
+                                    >
+                                      Reject
+                                    </button>
+                                  </>
+                                );
+                              }
+                            })()}
                           </div>
-                        );
-                      }
-                      return null;
-                    })()}
-                    {notif.type === 'completion_request' && notif.direction === 'received' && (() => {
-                      const offer = offers.find(o => o._id === notif.relatedId);
-                      if (offer && offer.projectStatus === 'review') {
-                        return (
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={async (e) => {
-                                e.stopPropagation();
-                                const result = await Swal.fire({
-                                  title: 'Approve Completion?',
-                                  text: "Are you sure you want to approve this project completion?",
-                                  icon: 'question',
-                                  showCancelButton: true,
-                                  confirmButtonColor: '#10b981',
-                                  cancelButtonColor: '#94a3b8',
-                                  confirmButtonText: 'Yes, approve',
-                                  background: document.documentElement.classList.contains('dark') ? '#0f172a' : '#fff',
-                                  color: document.documentElement.classList.contains('dark') ? '#fff' : '#000',
-                                });
-                                if (result.isConfirmed) {
-                                  completeProject(offer._id);
-                                }
-                              }}
-                              className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 px-3 py-1 rounded-lg text-[10px] font-bold border border-emerald-100 transition-colors"
-                            >
-                              Approve
-                            </button>
-                            <button
-                              onClick={async (e) => {
-                                e.stopPropagation();
-                                const result = await Swal.fire({
-                                  title: 'Reject Request?',
-                                  text: "Are you sure you want to reject this completion request?",
-                                  icon: 'warning',
-                                  showCancelButton: true,
-                                  confirmButtonColor: '#ef4444',
-                                  cancelButtonColor: '#94a3b8',
-                                  confirmButtonText: 'Yes, reject',
-                                  background: document.documentElement.classList.contains('dark') ? '#0f172a' : '#fff',
-                                  color: document.documentElement.classList.contains('dark') ? '#fff' : '#000',
-                                });
-                                if (result.isConfirmed) {
-                                  rejectProjectCompletion(offer._id);
-                                }
-                              }}
-                              className="bg-red-50 text-red-600 hover:bg-red-100 px-3 py-1 rounded-lg text-[10px] font-bold border border-red-100 transition-colors"
-                            >
-                              Reject
-                            </button>
-                          </div>
-                        );
-                      }
-                      return null;
-                    })()}
-                    {notif.type === 'payment' && (() => {
-                      const relatedOffer = offers.find(o => o._id === notif.relatedId);
-                      const isPaid = relatedOffer?.isPaid === true;
-                      
-                      // Only show Pay Now for the CLIENT side if NOT YET paid
-                      const isPaymentRequired = notif.title?.toLowerCase().includes("required");
-                      
-                      if (!isPaymentRequired || isPaid) {
-                        // Freelancer side OR client side already paid — show "View Receipt" hint
-                        return (
-                          <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-3 py-1.5 rounded-lg flex items-center gap-1">
-                            <span className="material-symbols-outlined text-[12px]">receipt_long</span>
-                            {isPaid ? "View Receipt" : "View Receipt"}
-                          </span>
-                        );
-                      }
-                      
-                      return (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleNotificationClick(notif);
-                          }}
-                          className="bg-primary text-white hover:bg-opacity-90 px-4 py-1.5 rounded-lg text-[10px] font-bold shadow-md shadow-primary/20 transition-all ml-auto"
-                        >
-                          Pay Now
-                        </button>
-                      );
-                    })()}
-                  </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-                {!notif.isRead && (
-                  <div className="size-2 bg-primary rounded-full mt-1.5 ml-2"></div>
-                )}
               </div>
-            </div>
-          ))
+            ));
+          })()
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center py-20 text-center space-y-6">
-            <div className="size-20 bg-slate-50 dark:bg-white/5 rounded-full flex items-center justify-center ring-8 ring-slate-50/50 dark:ring-white/5">
-              <span className="material-symbols-outlined text-4xl text-slate-300 dark:text-slate-600">notifications_off</span>
+          <div className="flex-1 flex flex-col items-center justify-center py-24 text-center space-y-4 px-10">
+            <div className="size-16 bg-slate-50 dark:bg-white/5 rounded-full flex items-center justify-center">
+              <span className="material-symbols-outlined text-3xl text-slate-300 dark:text-slate-600">notifications_off</span>
             </div>
-            <div className="space-y-2">
-              <h3 className="text-slate-900 dark:text-slate-100 text-xl font-bold">No {activeTab} {activeTab === 'offers' ? offerTab : ''} yet</h3>
-              <p className="text-slate-500 dark:text-slate-400 text-sm max-w-xs mx-auto">
-                We'll let you know when you receive new {activeTab === 'all' ? 'notifications' : activeTab}.
+            <div className="space-y-1">
+              <h3 className="text-slate-900 dark:text-slate-100 text-lg font-bold">No notifications yet</h3>
+              <p className="text-slate-500 dark:text-slate-400 text-sm">
+                We'll let you know when you receive new updates.
               </p>
             </div>
           </div>
         )}
-      </div>
+      </main>
 
       {/* Offer Details Modal */}
       {selectedOffer && (
@@ -741,88 +555,70 @@ export default function NotificationsPage() {
         );
       })()}
 
-      <div className="h-10"></div>
-    </div>
-
-    {/* Payment Receipt Modal — shown on freelancer side when clicking Payment Received */}
-    {selectedPaymentReceipt && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-        <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-
-          {/* Receipt Header */}
-          <div className="bg-gradient-to-br from-emerald-500 to-green-600 p-8 text-white text-center relative overflow-hidden">
-            <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.3) 10px, rgba(255,255,255,0.3) 11px)' }}></div>
-            <div className="relative z-10">
-              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 ring-4 ring-white/30">
-                <span className="material-symbols-outlined text-3xl">check_circle</span>
+      {/* Payment Receipt Modal */}
+      {selectedPaymentReceipt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="bg-gradient-to-br from-emerald-500 to-green-600 p-8 text-white text-center relative overflow-hidden">
+              <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.3) 10px, rgba(255,255,255,0.3) 11px)' }}></div>
+              <div className="relative z-10">
+                <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 ring-4 ring-white/30">
+                  <span className="material-symbols-outlined text-3xl">check_circle</span>
+                </div>
+                <h3 className="text-xl font-bold mb-1">Payment Received!</h3>
+                <p className="text-emerald-100 text-sm">Your funds are safely held in escrow</p>
               </div>
-              <h3 className="text-xl font-bold mb-1">Payment Received!</h3>
-              <p className="text-emerald-100 text-sm">Your funds are safely held in escrow</p>
             </div>
-          </div>
-
-          {/* Receipt Body */}
-          <div className="p-6 space-y-4">
-            {/* Receipt ID */}
-            <div className="flex justify-between items-center text-xs">
-              <span className="text-slate-400 font-medium uppercase tracking-wider">Receipt ID</span>
-              <span className="font-mono font-bold text-slate-600">
-                #{String(selectedPaymentReceipt.relatedId || selectedPaymentReceipt.id).slice(-10).toUpperCase()}
-              </span>
-            </div>
-
-            <div className="border-t border-dashed border-slate-200"></div>
-
-            <div className="space-y-3">
-              <div>
-                <p className="text-xs text-slate-400 font-medium uppercase tracking-wider mb-1">Details</p>
-                <p className="text-sm font-medium text-slate-700 leading-snug">{selectedPaymentReceipt.message}</p>
-              </div>
-
-              {/* Amount highlight */}
-              <div className="flex justify-between items-center bg-emerald-50 rounded-xl px-4 py-3 border border-emerald-100">
-                <span className="text-sm font-bold text-slate-700">Amount in Escrow</span>
-                <span className="text-xl font-extrabold text-emerald-600">
-                  {selectedPaymentReceipt.message?.match(/\$[\d,]+/)?.[0] || '—'}
+            <div className="p-6 space-y-4">
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-slate-400 font-medium uppercase tracking-wider">Receipt ID</span>
+                <span className="font-mono font-bold text-slate-600">
+                  #{String(selectedPaymentReceipt.relatedId || selectedPaymentReceipt.id).slice(-10).toUpperCase()}
                 </span>
               </div>
-
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-slate-500">Status</span>
-                <span className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-[13px]">lock</span>
-                  In Escrow
-                </span>
+              <div className="border-t border-dashed border-slate-200"></div>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-xs text-slate-400 font-medium uppercase tracking-wider mb-1">Details</p>
+                  <p className="text-sm font-medium text-slate-700 leading-snug">{selectedPaymentReceipt.message}</p>
+                </div>
+                <div className="flex justify-between items-center bg-emerald-50 rounded-xl px-4 py-3 border border-emerald-100">
+                  <span className="text-sm font-bold text-slate-700">Amount in Escrow</span>
+                  <span className="text-xl font-extrabold text-emerald-600">
+                    {selectedPaymentReceipt.message?.match(/\$[\d,]+/)?.[0] || '—'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-slate-500">Status</span>
+                  <span className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-[13px]">lock</span>
+                    In Escrow
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-slate-500">Date</span>
+                  <span className="font-medium text-slate-700">{selectedPaymentReceipt.time}</span>
+                </div>
               </div>
-
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-slate-500">Date</span>
-                <span className="font-medium text-slate-700">{selectedPaymentReceipt.time}</span>
+              <div className="border-t border-dashed border-slate-200"></div>
+              <div className="bg-slate-50 rounded-xl p-4 flex gap-3">
+                <span className="material-symbols-outlined text-amber-500 text-[18px] mt-0.5 shrink-0">info</span>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  Funds will be released to your account once the client approves the completed work milestones.
+                </p>
               </div>
             </div>
-
-            <div className="border-t border-dashed border-slate-200"></div>
-
-            <div className="bg-slate-50 rounded-xl p-4 flex gap-3">
-              <span className="material-symbols-outlined text-amber-500 text-[18px] mt-0.5 shrink-0">info</span>
-              <p className="text-xs text-slate-500 leading-relaxed">
-                Funds will be released to your account once the client approves the completed work milestones.
-              </p>
+            <div className="px-6 pb-6">
+              <button
+                onClick={() => setSelectedPaymentReceipt(null)}
+                className="w-full py-3 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-slate-800 transition-all"
+              >
+                Close Receipt
+              </button>
             </div>
-          </div>
-
-          {/* Receipt Footer */}
-          <div className="px-6 pb-6">
-            <button
-              onClick={() => setSelectedPaymentReceipt(null)}
-              className="w-full py-3 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-slate-800 transition-all"
-            >
-              Close Receipt
-            </button>
           </div>
         </div>
-      </div>
-    )}
-    </>
+      )}
+    </div>
   );
 }

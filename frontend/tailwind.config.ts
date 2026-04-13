@@ -10,8 +10,8 @@ const config: Config = {
     extend: {
       colors: {
         primary: "#6A6B4C",
-        "background-light": "#f6f7f8",
-        "background-dark": "#101922",
+        "background-light": "#f8f9f5",
+        "background-dark": "#1a1b14",
         "on-surface": "#0f172a",
         "on-surface-variant": "#475569",
         "surface-dim": "#f6f7f8",

@@ -147,6 +147,7 @@ export default function ProjectDetailsPage() {
         title={project.jobTitle}
         subtitle="Track progress, view updates, and manage your project."
         showBack={true}
+        isStandalone={true}
       >
         <div className="flex items-center gap-3">
           {isFreelancer && project.projectStatus === "active" && (

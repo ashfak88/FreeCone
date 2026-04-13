@@ -18,8 +18,9 @@ export default function LoginPage() {
   const [redirectPath, setRedirectPath] = useState("/");
 
   useEffect(() => {
-    if (user) {
-      router.replace("/dashboard");
+    const isLoggingIn = typeof window !== 'undefined' ? (window as any).isLoggingInAnimation : false;
+    if (user && !isLoggingIn) {
+      router.replace("/");
     }
   }, [user, router]);
 
@@ -59,17 +60,13 @@ export default function LoginPage() {
         (window as any).isLoggingInAnimation = true;
       }
 
-
-      setUser(data.user);
-
-      // Determine redirect path based on role (case-insensitive)
       const role = data.user.role?.toLowerCase();
-
       if (role === "admin") {
         router.push("/admin/dashboard");
       } else {
         setRedirectPath("/");
         setShowLoader(true);
+        setUser(data.user);
       }
     } catch (err: any) {
       setError(err.message);

@@ -110,6 +110,9 @@ export default function LoadingScreen({ destination = "/" }: { destination?: str
 
       // 3. The exact millisecond the text lands, we trigger navigation!
       // The real dashboard will snap into place seamlessly.
+      if (typeof window !== 'undefined') {
+        (window as any).isLoggingInAnimation = false;
+      }
       router.push(destination);
     };
 
