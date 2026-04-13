@@ -1,15 +1,68 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import AdminHeader from "@/components/AdminHeader";
 import BottomNavbar from "@/components/BottomNavbar";
 
 export default function AdminConfigPage() {
-  const [commission, setCommission] = useState(12.5);
+  const [commission, setCommission] = useState<number>(0);
   const [securityLevel, setSecurityLevel] = useState("enhanced");
   const [maintenanceMode, setMaintenanceMode] = useState(false);
-  const [emailNotifications, setEmailNotifications] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const token = localStorage.getItem("accessToken");
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
+        const res = await fetch(`${API_URL}/admin/system-settings`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setCommission(data.platformCommission);
+          setMaintenanceMode(data.maintenanceMode);
+        }
+      } catch (error) {
+        console.error("Failed to fetch settings:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchSettings();
+  }, []);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      const token = localStorage.getItem("accessToken");
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
+      const res = await fetch(`${API_URL}/admin/system-settings`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ 
+          platformCommission: commission,
+          maintenanceMode: maintenanceMode
+        })
+      });
+      if (res.ok) {
+        alert("Settings updated successfully!");
+      } else {
+        const data = await res.json();
+        alert(`Failed to update settings: ${data.message || res.statusText}`);
+      }
+    } catch (error) {
+      console.error("Failed to save settings:", error);
+      alert("Error saving settings.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display">
@@ -42,8 +95,11 @@ export default function AdminConfigPage() {
                   className="w-full rounded-2xl border-primary/10 bg-white dark:bg-slate-800 dark:border-slate-700 focus:border-primary focus:ring-4 focus:ring-primary/10 h-16 px-6 text-lg font-bold transition-all outline-none"
                   placeholder="10.0"
                   type="number"
-                  value={commission}
-                  onChange={(e) => setCommission(parseFloat(e.target.value))}
+                  value={isNaN(commission) ? "" : commission}
+                  onChange={(e) => {
+                    const val = parseFloat(e.target.value);
+                    setCommission(isNaN(val) ? 0 : val);
+                  }}
                 />
                 <span className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xl opacity-50 group-focus-within:opacity-100 transition-opacity">%</span>
               </div>
@@ -89,33 +145,37 @@ export default function AdminConfigPage() {
                 </div>
               </div>
               <button
-                onClick={() => setMaintenanceMode(!maintenanceMode)}
-                className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-300 focus:outline-none ${maintenanceMode ? "bg-primary" : "bg-slate-200 dark:bg-slate-700"}`}
+                onClick={async () => {
+                  const newState = !maintenanceMode;
+                  if (newState) {
+                    const confirm = window.confirm("Are you sure you want to enable Maintenance Mode? This will block access for all regular users.");
+                    if (!confirm) return;
+                  }
+                  
+                  // Optimistic update
+                  setMaintenanceMode(newState);
+                  
+                  // Immediate save for maintenance mode
+                  try {
+                    const token = localStorage.getItem("accessToken");
+                    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
+                    await fetch(`${API_URL}/admin/system-settings`, {
+                      method: "PUT",
+                      headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`
+                      },
+                      body: JSON.stringify({ maintenanceMode: newState })
+                    });
+                  } catch (err) {
+                    console.error("Failed to toggle maintenance mode:", err);
+                    setMaintenanceMode(!newState); // revert
+                  }
+                }}
+                className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-300 focus:outline-none ${maintenanceMode ? "bg-red-500" : "bg-slate-200 dark:bg-slate-700"}`}
               >
                 <motion.span
                   animate={{ x: maintenanceMode ? 24 : 4 }}
-                  className="inline-block h-5 w-5 rounded-full bg-white shadow-md transition-transform"
-                />
-              </button>
-            </div>
-
-            {/* Email Notifications Toggle */}
-            <div className="flex items-center justify-between p-5 bg-white dark:bg-slate-800 rounded-2xl border border-primary/5 shadow-sm hover:border-primary/20 transition-all group">
-              <div className="flex items-center gap-4">
-                <div className="bg-primary/10 p-3 rounded-xl text-primary group-hover:scale-110 transition-transform">
-                  <span className="material-symbols-outlined text-2xl">notifications_active</span>
-                </div>
-                <div>
-                  <p className="font-extrabold text-slate-800 dark:text-slate-200">Email Notifications</p>
-                  <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">System-wide transactional alerts</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setEmailNotifications(!emailNotifications)}
-                className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-300 focus:outline-none ${emailNotifications ? "bg-primary" : "bg-slate-200 dark:bg-slate-700"}`}
-              >
-                <motion.span
-                  animate={{ x: emailNotifications ? 24 : 4 }}
                   className="inline-block h-5 w-5 rounded-full bg-white shadow-md transition-transform"
                 />
               </button>
@@ -128,7 +188,6 @@ export default function AdminConfigPage() {
           whileHover={{ scale: 1.02 }}
           className="mx-4 mt-12 p-8 rounded-3xl bg-gradient-to-br from-[#6A6B4C] to-[#454632] text-white shadow-2xl shadow-primary/20 relative overflow-hidden group"
         >
-          {/* Decorative background circle */}
           <div className="absolute -right-8 -top-8 w-32 h-32 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700" />
 
           <div className="flex items-center gap-3 mb-6">
@@ -154,10 +213,16 @@ export default function AdminConfigPage() {
         <div className="px-4 mt-10">
           <motion.button
             whileTap={{ scale: 0.95 }}
-            className="w-full h-16 bg-primary text-white rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all flex items-center justify-center gap-3"
+            onClick={handleSave}
+            disabled={isSaving || isLoading}
+            className="w-full h-16 bg-primary text-white rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
           >
-            <span className="material-symbols-outlined">save</span>
-            Save System Config
+            {isSaving ? (
+              <span className="material-symbols-outlined animate-spin">refresh</span>
+            ) : (
+              <span className="material-symbols-outlined">save</span>
+            )}
+            {isSaving ? "Saving..." : "Save System Config"}
           </motion.button>
         </div>
       </main>

@@ -283,13 +283,7 @@ export default function ProfilePage() {
         showSearch={false}
       >
         <div className="flex items-center gap-3">
-          <button 
-            type="button"
-            onClick={() => router.push("/notifications")}
-            className="text-slate-500 hover:text-slate-800 transition-colors relative"
-          >
-            <span className="material-symbols-outlined">notifications</span>
-          </button>
+
           
           <button
             type="button"

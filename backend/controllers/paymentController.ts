@@ -3,6 +3,7 @@ import Razorpay from "razorpay";
 import crypto from "crypto";
 import Offer from "../models/Offer";
 import Transaction from "../models/Transaction";
+import SystemConfig from "../models/Config";
 import Notification from "../models/Notification";
 import { emitToUser } from "../config/socket";
 
@@ -10,6 +11,8 @@ const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID || "",
   key_secret: process.env.RAZORPAY_KEY_SECRET || "",
 });
+
+const EXCHANGE_RATE = 83.5;
 
 // @desc    Create Razorpay Order
 // @route   POST /api/payments/order
@@ -23,9 +26,17 @@ export const createOrder = async (req: Request, res: Response): Promise<any> => 
       return res.status(400).json({ message: "Offer ID and amount are required" });
     }
 
-    // Convert USD to INR Paise (approx conversion for testing)
-    // 1 USD = 83 INR = 8300 Paise
-    const amountInPaise = Math.round(amount * 83 * 100);
+    // 0. Fetch Dynamic Platform Commission
+    const config = await SystemConfig.findOne({ key: "platformCommission" });
+    const platformFeePercent = config ? config.value / 100 : 0.05;
+
+    // 1. Calculate Platform Commission
+    const platformFeeUSD = Math.round(amount * platformFeePercent * 100) / 100;
+    const totalUSD = amount + platformFeeUSD;
+
+    // 2. Convert Total USD to INR Paise
+    // 1 USD = 83.5 INR = 8350 Paise
+    const amountInPaise = Math.round(totalUSD * EXCHANGE_RATE * 100);
 
     const options = {
       amount: amountInPaise,
@@ -45,6 +56,8 @@ export const createOrder = async (req: Request, res: Response): Promise<any> => 
       order_id: order.id,
       amount: order.amount,
       currency: order.currency,
+      platformFeeUSD,
+      platformFeePercent: platformFeePercent * 100
     });
   } catch (error: any) {
     console.error("   [ERROR] CREATE RAZORPAY ORDER:", error.message);
@@ -121,7 +134,7 @@ export const verifyPayment = async (req: Request, res: Response): Promise<any> =
       await offer.save();
     }
 
-    // Create Transaction Record
+    // Create Transaction Record for Escrow (THE BUDGET)
     const transaction = new Transaction({
       txnId: razorpay_payment_id,
       amount: offer.budget,
@@ -134,6 +147,25 @@ export const verifyPayment = async (req: Request, res: Response): Promise<any> =
       job: offer.job
     });
     await transaction.save();
+
+    // Calculate the fee based on the stored project budget
+    const config = await SystemConfig.findOne({ key: "platformCommission" });
+    const platformFeePercent = config ? config.value / 100 : 0.05;
+
+    // Create Transaction Record for Platform Commission (THE FEE)
+    const commissionAmount = Math.round(offer.budget * platformFeePercent * 100) / 100;
+    const commissionTxn = new Transaction({
+      txnId: `${razorpay_payment_id}_fee`,
+      amount: commissionAmount,
+      currency: "USD",
+      sender: userId,
+      receiver: userId, // Sender is the source, it goes to "us" (system)
+      status: "Pending",
+      type: "Commission",
+      description: `Platform Commission for '${offer.jobTitle}'`,
+      job: offer.job
+    });
+    await commissionTxn.save();
 
     // Notifications
     const paymentConfirmNotif = new Notification({

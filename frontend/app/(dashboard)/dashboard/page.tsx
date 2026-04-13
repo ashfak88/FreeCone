@@ -101,27 +101,7 @@ export default function DashboardPage() {
     }
   }, [fetchOffers, fetchMyJobs, fetchMyProposals, fetchReceivedProposals, fetchEscrow]);
 
-  // Format activity message
-  const getActivityMessage = (activity: any) => {
-    if (activity.type === 'proposal') {
-      const isClient = user?.id === activity.job?.user || user?._id === activity.job?.user;
-      if (isClient) {
-        return `Received proposal from ${activity.talent?.name || 'Talent'} for ${activity.job?.title}`;
-      } else {
-        return `Sent proposal for ${activity.job?.title}`;
-      }
-    }
 
-    const isClient = user?.id === activity.client?._id || user?.id === activity.client?.id;
-    const otherUser = isClient ? activity.freelancer : activity.client;
-    const name = otherUser?.name || "Someone";
-    
-    if (isClient) {
-      return `Sent offer to ${name} for ${activity.jobTitle}`;
-    } else {
-      return `Received offer from ${name} for ${activity.jobTitle}`;
-    }
-  };
 
   const isClientRole = user?.role === "client";
 
@@ -147,12 +127,7 @@ export default function DashboardPage() {
         title="Dashboard"
         subtitle={`Welcome back, ${user?.name}!`}
       >
-        <button 
-          onClick={() => router.push("/notifications")}
-          className="text-slate-500 hover:text-slate-800 transition-colors relative"
-        >
-          <span className="material-symbols-outlined">notifications</span>
-        </button>
+
       </DashboardHeader>
 
       <main className="max-w-[1240px] mx-auto p-6 md:p-8 space-y-10">
@@ -433,57 +408,7 @@ export default function DashboardPage() {
           {/* Right Column */}
           <div className="lg:col-span-1 space-y-8">
 
-            {/* Recent Activity */}
-            <div>
-              <h3 className="text-lg font-bold text-slate-900 mb-5">Recent Activity</h3>
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                {isLoadingOffers || isLoadingMyData ? (
-                  <div className="p-10 flex flex-col items-center justify-center text-center">
-                    <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
-                    <p className="text-sm text-slate-500">Loading activity...</p>
-                  </div>
-                ) : ([...offers, ...receivedProposals, ...myProposals].length > 0) ? (
-                  <div className="divide-y divide-slate-100">
-                    {[...offers, ...receivedProposals, ...myProposals]
-                      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-                      .slice(0, 5)
-                      .map((activity: any) => (
-                      <div key={activity._id} className="p-4 hover:bg-slate-50 transition-colors">
-                        <div className="flex gap-3">
-                          <div className="size-8 rounded-full bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
-                            <span className="material-symbols-outlined text-sm">
-                              {activity.type === 'proposal' ? 'description' : (user?.id === activity.client?._id || user?.id === activity.client?.id ? "send" : "mail")}
-                            </span>
-                          </div>
-                          <div>
-                            <p className="text-sm text-slate-900 font-medium">
-                              {getActivityMessage(activity)}
-                            </p>
-                            <p className="text-xs text-slate-400 mt-1">
-                              {new Date(activity.createdAt).toLocaleDateString()} at {new Date(activity.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="p-10 flex flex-col items-center justify-center text-center">
-                    <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mb-4">
-                      <span className="material-symbols-outlined text-slate-300">history</span>
-                    </div>
-                    <p className="font-bold text-slate-900 text-sm mb-1">No activity yet</p>
-                    <p className="text-xs text-slate-500">Your recent activities will appear here.</p>
-                  </div>
-                )}
 
-                <div className="border-t border-slate-100 p-4 text-center">
-                  <span className={`text-sm font-bold ${offers.length > 0 ? 'text-primary hover:underline cursor-pointer' : 'text-slate-300 cursor-not-allowed'}`}>
-                    View All Activity
-                  </span>
-                </div>
-              </div>
-            </div>
 
             {/* Dashboard Tip */}
             <div className="bg-[#f8faf4] border border-[#e8efe0] rounded-xl p-6 shadow-sm">

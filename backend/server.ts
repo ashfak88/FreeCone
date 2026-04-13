@@ -9,6 +9,7 @@ import "./config/passport";
 import connectDB from "./config/db";
 import { initSocket } from "./config/socket";
 import { loggerMiddleware } from "./middleware/loggerMiddleware";
+import { checkMaintenance } from "./middleware/maintenanceMiddleware";
 import { notFoundHandler, errorHandler } from "./middleware/errorMiddleware";
 import authRoutes from "./routes/auth";
 import userRoutes from "./routes/userRoutes";
@@ -21,6 +22,7 @@ import miscRoutes from "./routes/miscRoutes";
 import adminRoutes from "./routes/adminRoutes";
 import transactionRoutes from "./routes/transactionRoutes";
 import paymentRoutes from "./routes/paymentRoutes";
+import configRoutes from "./routes/configRoutes";
 
 
 dotenv.config();
@@ -55,8 +57,9 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 app.use(loggerMiddleware);
+app.use(checkMaintenance);
 
-app.use("/api", miscRoutes);
+app.use("/api/admin", adminRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/jobs", jobRoutes);
@@ -64,9 +67,13 @@ app.use("/api/offers", offerRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/messages", messageRoutes);
-app.use("/api/admin", adminRoutes);
+app.use("/api", miscRoutes);
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/payments", paymentRoutes);
+app.use("/api/config", configRoutes);
+
+// Test route to debug 404
+app.get("/api/test-admin", (req, res) => res.json({ message: "Admin space is reachable" }));
 
 
 

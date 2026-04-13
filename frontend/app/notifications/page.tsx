@@ -54,7 +54,6 @@ export default function NotificationsPage() {
     fetchReceivedProposals();
   }, [fetchNotifications, fetchOffers, fetchMyProposals, fetchReceivedProposals]);
 
-  // Handle notification click
   const handleNotificationClick = async (notif: any) => {
     if (!notif.isRead) {
       await markNotificationAsRead(notif.id);
@@ -76,13 +75,11 @@ export default function NotificationsPage() {
       const isPaid = relatedOffer?.isPaid === true;
 
       const isPaymentRequired = notif.title?.toLowerCase().includes("required") || notif.title?.toLowerCase().includes("payment required");
-      
+
       if (isPaymentRequired && !isPaid) {
-        // Client side, not yet paid: redirect to payment page
         const isProposal = notif.title?.toLowerCase().includes("proposal");
         router.push(`/payment/${notif.relatedId}${isProposal ? "?type=proposal" : ""}`);
       } else {
-        // Either freelancer side OR client side already paid: show receipt modal
         setSelectedPaymentReceipt(notif);
       }
     } else if (notif.type === "completion_request") {
@@ -90,7 +87,6 @@ export default function NotificationsPage() {
     }
   };
 
-  // Map real backend notifications to UI format
   const mappedNotifications = useMemo(() => {
     const allNotifs = [
       ...(Array.isArray(realNotifications) ? realNotifications : []).map(n => ({ ...n, direction: 'received' })),
@@ -115,7 +111,7 @@ export default function NotificationsPage() {
   }, [realNotifications, sentNotifications]);
 
   const filteredNotifications = mappedNotifications.filter((n) => {
-    if (activeTab === "all") return true; // Show all notifications
+    if (activeTab === "all") return true;
     if (activeTab === "proposals") return n.type === "proposal" && n.direction === proposalTab;
     if (activeTab === "offers") return n.type === "offer" && n.direction === offerTab;
     if (activeTab === "payments") return n.type === "payment" && n.direction === 'received';
@@ -126,14 +122,14 @@ export default function NotificationsPage() {
     <div className="min-h-screen bg-background-light dark:bg-background-dark font-display">
       {/* Header Section */}
       <header className="flex items-center bg-background-light/90 dark:bg-background-dark/90 backdrop-blur-md p-4 pb-2 justify-between sticky top-0 z-30 border-b border-primary/10">
-        <button 
+        <button
           onClick={() => router.back()}
           className="text-primary flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-primary/10 cursor-pointer transition-colors"
         >
           <span className="material-symbols-outlined text-2xl">arrow_back</span>
         </button>
         <h2 className="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-tight flex-1 px-4">Notifications</h2>
-        <button 
+        <button
           onClick={() => useStore.getState().markAllNotificationsAsRead()}
           className="text-primary text-sm font-bold leading-normal tracking-wide shrink-0 hover:bg-primary/5 px-3 py-1.5 rounded-lg active:scale-95 transition-all"
         >
@@ -141,7 +137,6 @@ export default function NotificationsPage() {
         </button>
       </header>
 
-      {/* Filter Tabs */}
       <nav className="bg-background-light dark:bg-background-dark sticky top-[61px] z-20 border-b border-primary/10 transition-all duration-300">
         <div className="flex px-4 gap-6 overflow-x-auto no-scrollbar">
           {["all", "proposals", "offers", "payments"].map((tab) => (
@@ -149,8 +144,8 @@ export default function NotificationsPage() {
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`flex flex-col items-center justify-center border-b-[3px] pb-[10px] pt-4 whitespace-nowrap transition-all ${activeTab === tab
-                  ? "border-primary text-slate-900 dark:text-slate-100 font-bold"
-                  : "border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300 font-bold"
+                ? "border-primary text-slate-900 dark:text-slate-100 font-bold"
+                : "border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300 font-bold"
                 }`}
             >
               <p className="text-sm capitalize">{tab}</p>
@@ -160,7 +155,6 @@ export default function NotificationsPage() {
       </nav>
 
       <main className="max-w-3xl mx-auto w-full pb-20">
-        {/* Sub-Tabs for Filtering */}
         {(activeTab === "proposals" || activeTab === "offers") && (
           <div className="bg-slate-100/50 dark:bg-slate-800/30 p-1 rounded-xl w-fit mx-auto mt-6 flex gap-1 border border-slate-200 dark:border-slate-800 shadow-sm">
             {["received", "sent"].map((sub) => {
@@ -169,11 +163,10 @@ export default function NotificationsPage() {
                 <button
                   key={sub}
                   onClick={() => activeTab === "proposals" ? setProposalTab(sub as any) : setOfferTab(sub as any)}
-                  className={`px-6 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
-                    isActive 
-                    ? "bg-white dark:bg-slate-900 text-primary shadow-sm" 
-                    : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-                  }`}
+                  className={`px-6 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${isActive
+                      ? "bg-white dark:bg-slate-900 text-primary shadow-sm"
+                      : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                    }`}
                 >
                   {sub}
                 </button>
@@ -184,8 +177,8 @@ export default function NotificationsPage() {
 
         {isLoadingNotifications ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
-             <div className="w-10 h-10 border-[3px] border-primary border-t-transparent rounded-full animate-spin"></div>
-             <p className="text-slate-400 font-bold text-xs uppercase tracking-[0.2em] animate-pulse">Syncing Feed...</p>
+            <div className="w-10 h-10 border-[3px] border-primary border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-slate-400 font-bold text-xs uppercase tracking-[0.2em] animate-pulse">Syncing Feed...</p>
           </div>
         ) : filteredNotifications.length > 0 ? (
           (() => {
@@ -199,7 +192,7 @@ export default function NotificationsPage() {
               if (d === today) groupName = "Recent";
               else if (d === yesterday) groupName = "Yesterday";
               else groupName = "Earlier";
-              
+
               if (!groups[groupName]) groups[groupName] = [];
               groups[groupName].push(n);
             });
@@ -209,7 +202,7 @@ export default function NotificationsPage() {
                 <h3 className="text-slate-900 dark:text-slate-100 text-sm font-bold uppercase tracking-widest px-4 pb-3 pt-4 opacity-60">
                   {groupName}
                 </h3>
-                
+
                 <div className="flex flex-col space-y-3 px-4">
                   {items.map((notif) => {
                     const icons: any = {
@@ -225,16 +218,15 @@ export default function NotificationsPage() {
                       <div
                         key={notif.id}
                         onClick={() => handleNotificationClick(notif)}
-                        className={`flex items-start gap-4 p-4 rounded-xl border transition-all cursor-pointer relative shadow-sm hover:shadow-md ${
-                          !notif.isRead 
-                          ? "bg-white dark:bg-white/5 border-primary/20" 
-                          : "bg-transparent border-primary/10 opacity-80"
-                        }`}
+                        className={`flex items-start gap-4 p-4 rounded-xl border transition-all cursor-pointer relative shadow-sm hover:shadow-md ${!notif.isRead
+                            ? "bg-white dark:bg-white/5 border-primary/20"
+                            : "bg-transparent border-primary/10 opacity-80"
+                          }`}
                       >
                         <div className={`${typeStyle.color} flex items-center justify-center rounded-lg ${typeStyle.bg} shrink-0 size-12 shadow-inner group-hover:scale-110 transition-transform duration-300`}>
                           <span className="material-symbols-outlined text-2xl">{typeStyle.icon}</span>
                         </div>
-                        
+
                         <div className="flex flex-col justify-center flex-1">
                           <div className="flex justify-between items-start">
                             <p className="text-slate-900 dark:text-slate-100 text-[15px] font-semibold leading-snug tracking-tight">
@@ -379,7 +371,7 @@ export default function NotificationsPage() {
               {/* Description */}
               <div className="space-y-2">
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Description</p>
-                <div 
+                <div
                   className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed font-bold border border-slate-100 dark:border-white/5 p-4 rounded-xl prose dark:prose-invert max-w-none"
                   dangerouslySetInnerHTML={{ __html: selectedOffer.description }}
                 />
@@ -392,8 +384,8 @@ export default function NotificationsPage() {
                   <p className="text-xs font-medium">Sent on {new Date(selectedOffer.createdAt).toLocaleDateString()}</p>
                 </div>
                 <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${selectedOffer.status === 'pending' ? 'bg-amber-100 text-amber-600' :
-                    selectedOffer.status === 'accepted' ? 'bg-emerald-100 text-emerald-600' :
-                      'bg-red-100 text-red-600'
+                  selectedOffer.status === 'accepted' ? 'bg-emerald-100 text-emerald-600' :
+                    'bg-red-100 text-red-600'
                   }`}>
                   {selectedOffer.status}
                 </div>
@@ -410,7 +402,7 @@ export default function NotificationsPage() {
               </button>
               {selectedOffer.status === 'pending' && user?.id === (typeof selectedOffer.freelancer === 'string' ? selectedOffer.freelancer : (selectedOffer.freelancer?._id || selectedOffer.freelancer?.id)) && (
                 <div className="flex flex-1 gap-3">
-                  <button 
+                  <button
                     onClick={() => {
                       updateOfferStatus(selectedOffer._id, 'rejected');
                       setSelectedOffer(null);
@@ -419,7 +411,7 @@ export default function NotificationsPage() {
                   >
                     Reject Offer
                   </button>
-                  <button 
+                  <button
                     onClick={() => {
                       updateOfferStatus(selectedOffer._id, 'accepted');
                       setSelectedOffer(null);
@@ -472,8 +464,8 @@ export default function NotificationsPage() {
                   </div>
                   {proposalDetail && (
                     <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${proposalDetail.status === 'pending' ? 'bg-amber-100 text-amber-600' :
-                        proposalDetail.status === 'accepted' ? 'bg-emerald-100 text-emerald-600' :
-                          'bg-red-100 text-red-600'
+                      proposalDetail.status === 'accepted' ? 'bg-emerald-100 text-emerald-600' :
+                        'bg-red-100 text-red-600'
                       }`}>
                       {proposalDetail.status}
                     </div>
@@ -502,7 +494,7 @@ export default function NotificationsPage() {
                         {proposalDetail.talent.title && (
                           <p className="text-[10px] font-bold text-primary uppercase tracking-tighter mb-2">{proposalDetail.talent.title}</p>
                         )}
-                        <button 
+                        <button
                           onClick={() => {
                             const talentId = proposalDetail.talent._id || proposalDetail.talent.id;
                             router.push(`/talent/${talentId}`);
@@ -518,7 +510,7 @@ export default function NotificationsPage() {
                   {proposalDetail && (
                     <div className="mt-4 pt-4 border-t border-slate-200 dark:border-white/10">
                       <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Cover Letter</p>
-                      <div 
+                      <div
                         className="text-sm text-slate-600 dark:text-slate-400 italic prose dark:prose-invert max-w-none"
                         dangerouslySetInnerHTML={{ __html: proposalDetail.coverLetter }}
                       />

@@ -104,10 +104,7 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
           <span className={`material-symbols-outlined ${pathname === '/security' ? "text-primary" : ""}`}>shield_person</span>
           <span className="font-medium">Security</span>
         </Link>
-        <a className="cursor-pointer flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
-          <span className="material-symbols-outlined">notifications</span>
-          <span className="font-medium">Notifications</span>
-        </a>
+
       </nav>
       <div className="p-4 border-t border-slate-200 dark:border-slate-800">
         <button onClick={onLogout} className="flex w-full items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg transition-colors">

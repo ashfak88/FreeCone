@@ -4,6 +4,9 @@ import User from "../models/User";
 import Job from "../models/Job";
 import Transaction from "../models/Transaction";
 import Complaint from "../models/Complaint";
+import Notification from "../models/Notification";
+import SystemConfig from "../models/Config";
+import { emitToUser } from "../config/socket";
 
 export const getDashboardStats = async (req: Request, res: Response): Promise<any> => {
   try {
@@ -270,7 +273,11 @@ export const getTransactions = async (req: Request, res: Response): Promise<any>
       .sort({ createdAt: -1 });
 
     const totalRevenue = transactions
-      .filter(t => t.status === "Success" && (t.type === "Deposit" || t.type === "Milestone"))
+      .filter(t => t.status === "Success" && (t.type === "Deposit" || t.type === "Milestone" || t.type === "Commission"))
+      .reduce((acc, t) => acc + t.amount, 0);
+
+    const platformCommission = transactions
+      .filter(t => t.status === "Success" && t.type === "Commission")
       .reduce((acc, t) => acc + t.amount, 0);
 
     const pendingEscrow = transactions
@@ -285,6 +292,7 @@ export const getTransactions = async (req: Request, res: Response): Promise<any>
       transactions,
       stats: {
         totalRevenue,
+        platformCommission,
         pendingEscrow,
         completedPayouts
       }
@@ -362,9 +370,92 @@ export const updateComplaintStatus = async (req: Request, res: Response): Promis
       return res.status(404).json({ message: "Complaint not found" });
     }
 
+    // Create a real-time notification for the user who filed the complaint
+    try {
+      const admin = (req as any).user;
+      const notification = new Notification({
+        recipient: complaint.user,
+        sender: admin?._id || admin?.id || complaint.user, // Fallback if admin info is missing
+        type: "other",
+        title: "Complaint Status Updated",
+        message: `Your complaint regarding "${complaint.subject}" is now ${status}.`,
+        relatedId: complaint._id
+      });
+
+      const savedNotification = await notification.save();
+
+      // Emit real-time notification via Socket.io
+      emitToUser(complaint.user.toString(), 'newNotification', savedNotification);
+    } catch (notifError: any) {
+      console.error("Error creating complaint update notification:", notifError.message);
+      // We don't fail the request if notification fails, but we log it
+    }
+
     res.json(complaint);
   } catch (error: any) {
     console.error("Error updating complaint status:", error.message);
     res.status(500).json({ message: "Server Error" });
+  }
+};
+
+// System Settings
+export const getSettings = async (req: Request, res: Response): Promise<any> => {
+  try {
+    let commission = await SystemConfig.findOne({ key: "platformCommission" });
+    if (!commission) {
+      commission = await SystemConfig.create({ key: "platformCommission", value: 5 });
+    }
+
+    let maintenance = await SystemConfig.findOne({ key: "maintenanceMode" });
+    if (!maintenance) {
+      maintenance = await SystemConfig.create({ key: "maintenanceMode", value: false });
+    }
+    
+    res.json({
+      platformCommission: commission.value,
+      maintenanceMode: maintenance.value
+    });
+  } catch (error: any) {
+    console.error("   [ERROR] GET_SETTINGS:", error.message);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+export const updateSettings = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const { platformCommission, maintenanceMode } = req.body;
+    console.log("   [ADMIN] Update Settings Request:", req.body);
+    
+    const updates = [];
+
+    if (platformCommission !== undefined) {
+      updates.push(SystemConfig.findOneAndUpdate(
+        { key: "platformCommission" },
+        { value: parseFloat(platformCommission) },
+        { new: true, upsert: true }
+      ));
+    }
+
+    if (maintenanceMode !== undefined) {
+      updates.push(SystemConfig.findOneAndUpdate(
+        { key: "maintenanceMode" },
+        { value: maintenanceMode === true || maintenanceMode === "true" },
+        { new: true, upsert: true }
+      ));
+    }
+
+    await Promise.all(updates);
+
+    const commission = await SystemConfig.findOne({ key: "platformCommission" });
+    const maintenance = await SystemConfig.findOne({ key: "maintenanceMode" });
+
+    res.json({
+      message: "Settings updated successfully",
+      platformCommission: commission?.value || 5,
+      maintenanceMode: maintenance?.value || false
+    });
+  } catch (error: any) {
+    console.error("   [ERROR] UPDATE_SETTINGS:", error);
+    res.status(500).json({ message: "Server Error", details: error.message });
   }
 };

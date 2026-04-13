@@ -22,7 +22,7 @@ export default function AdminPaymentsPage() {
   const [activeTab, setActiveTab] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [transactions, setTransactions] = useState<TransactionType[]>([]);
-  const [stats, setStats] = useState({ totalRevenue: 0, pendingEscrow: 0, completedPayouts: 0 });
+  const [stats, setStats] = useState({ totalRevenue: 0, platformCommission: 0, pendingEscrow: 0, completedPayouts: 0 });
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchTransactions = async () => {
@@ -32,7 +32,21 @@ export default function AdminPaymentsPage() {
       const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
       
       const queryParams = new URLSearchParams();
-      if (activeTab !== "All") queryParams.append("status", activeTab === "Escrow" ? "Escrow" : "Success");
+      if (activeTab === "Escrow") {
+        queryParams.append("status", "Escrow");
+      } else if (activeTab === "Deposits") {
+        queryParams.append("type", "Deposit");
+        queryParams.append("status", "Success");
+      } else if (activeTab === "Payouts") {
+        queryParams.append("type", "Payout");
+        queryParams.append("status", "Success");
+      } else if (activeTab === "Commission") {
+        queryParams.append("type", "Commission");
+        queryParams.append("status", "Success");
+      } else if (activeTab !== "All") {
+        queryParams.append("status", "Success");
+      }
+      
       if (searchQuery) queryParams.append("search", searchQuery);
 
       const res = await fetch(`${API_URL}/admin/transactions?${queryParams.toString()}`, {
@@ -81,19 +95,19 @@ export default function AdminPaymentsPage() {
 
       <main className="flex-1 max-w-5xl mx-auto w-full pb-32">
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 p-4">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="flex flex-col gap-2 rounded-xl p-6 bg-white dark:bg-slate-800 shadow-sm border border-primary/5 hover:border-primary/20 transition-all"
+            className="flex flex-col gap-2 rounded-xl p-5 bg-white dark:bg-slate-800 shadow-sm border border-primary/5 hover:border-primary/20 transition-all"
           >
             <div className="flex justify-between items-start">
-              <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Total Revenue</p>
-              <span className="text-emerald-600 dark:text-emerald-400 text-xs font-bold bg-emerald-50 dark:bg-emerald-900/30 px-2 py-1 rounded-full">+12.5%</span>
+              <p className="text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest">Total Volume</p>
+              <span className="text-emerald-600 dark:text-emerald-400 text-[9px] font-black bg-emerald-50 dark:bg-emerald-900/30 px-2 py-0.5 rounded-full">+12%</span>
             </div>
-            <p className="text-2xl font-extrabold tracking-tight">${stats.totalRevenue.toLocaleString()}</p>
-            <div className="w-full bg-slate-100 dark:bg-slate-700 h-1.5 rounded-full mt-2 overflow-hidden">
+            <p className="text-xl font-extrabold tracking-tight">${(stats.totalRevenue || 0).toLocaleString()}</p>
+            <div className="w-full bg-slate-100 dark:bg-slate-700 h-1 rounded-full mt-2 overflow-hidden">
               <motion.div 
                 initial={{ width: 0 }}
                 animate={{ width: "75%" }}
@@ -106,14 +120,35 @@ export default function AdminPaymentsPage() {
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="flex flex-col gap-2 rounded-xl p-6 bg-white dark:bg-slate-800 shadow-sm border border-primary/5 hover:border-primary/20 transition-all"
+            transition={{ delay: 0.15 }}
+            className="flex flex-col gap-2 rounded-xl p-5 bg-primary text-white shadow-xl shadow-primary/20 border border-primary/10 transition-all"
           >
             <div className="flex justify-between items-start">
-              <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Pending Escrow</p>
+              <p className="text-white/70 text-[10px] font-black uppercase tracking-widest">Platform Commission</p>
+              <span className="material-symbols-outlined text-sm">verified</span>
             </div>
-            <p className="text-2xl font-extrabold tracking-tight">${stats.pendingEscrow.toLocaleString()}</p>
-            <div className="w-full bg-slate-100 dark:bg-slate-700 h-1.5 rounded-full mt-2 overflow-hidden">
+            <p className="text-xl font-extrabold tracking-tight">${(stats.platformCommission || 0).toLocaleString()}</p>
+            <div className="w-full bg-white/20 h-1 rounded-full mt-2 overflow-hidden">
+              <motion.div 
+                initial={{ width: 0 }}
+                animate={{ width: "100%" }}
+                transition={{ duration: 1, delay: 0.5 }}
+                className="bg-white h-full rounded-full"
+              />
+            </div>
+          </motion.div>
+
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="flex flex-col gap-2 rounded-xl p-5 bg-white dark:bg-slate-800 shadow-sm border border-primary/5 hover:border-primary/20 transition-all"
+          >
+            <div className="flex justify-between items-start">
+              <p className="text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest">Pending Escrow</p>
+            </div>
+            <p className="text-xl font-extrabold tracking-tight">${(stats.pendingEscrow || 0).toLocaleString()}</p>
+            <div className="w-full bg-slate-100 dark:bg-slate-700 h-1 rounded-full mt-2 overflow-hidden">
               <motion.div 
                 initial={{ width: 0 }}
                 animate={{ width: "40%" }}
@@ -127,13 +162,13 @@ export default function AdminPaymentsPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="flex flex-col gap-2 rounded-xl p-6 bg-white dark:bg-slate-800 shadow-sm border border-primary/5 hover:border-primary/20 transition-all"
+            className="flex flex-col gap-2 rounded-xl p-5 bg-white dark:bg-slate-800 shadow-sm border border-primary/5 hover:border-primary/20 transition-all"
           >
             <div className="flex justify-between items-start">
-              <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Completed Payouts</p>
+              <p className="text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest">Completed Payouts</p>
             </div>
-            <p className="text-2xl font-extrabold tracking-tight">${stats.completedPayouts.toLocaleString()}</p>
-            <div className="w-full bg-slate-100 dark:bg-slate-700 h-1.5 rounded-full mt-2 overflow-hidden">
+            <p className="text-xl font-extrabold tracking-tight">${(stats.completedPayouts || 0).toLocaleString()}</p>
+            <div className="w-full bg-slate-100 dark:bg-slate-700 h-1 rounded-full mt-2 overflow-hidden">
               <motion.div 
                 initial={{ width: 0 }}
                 animate={{ width: "60%" }}
@@ -157,7 +192,7 @@ export default function AdminPaymentsPage() {
             />
           </div>
           <div className="flex border-b border-slate-200 dark:border-slate-700 overflow-x-auto no-scrollbar scrollbar-hide">
-            {["All", "Deposits", "Payouts", "Escrow", "Commission"].map((tab) => (
+            {["All", "Payouts", "Escrow", "Commission"].map((tab) => (
               <button 
                 key={tab}
                 onClick={() => setActiveTab(tab)}

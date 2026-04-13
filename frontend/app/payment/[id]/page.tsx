@@ -14,6 +14,9 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
+const EXCHANGE_RATE = 83.5;
+const PLATFORM_FEE_PERCENT = 0.05;
+
 export default function PaymentPage() {
   const { id } = useParams();
   const router = useRouter();
@@ -26,6 +29,7 @@ export default function PaymentPage() {
   const [payError, setPayError] = useState("");
   const [processing, setProcessing] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [commissionRate, setCommissionRate] = useState<number>(5);
 
   const [formData, setFormData] = useState({
     cardNumber: "4242 4242 4242 4242",
@@ -82,7 +86,23 @@ export default function PaymentPage() {
       }
     };
 
-    if (id) fetchPaymentData();
+    const fetchConfig = async () => {
+      try {
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
+        const res = await fetch(`${API_URL}/config/commission`);
+        if (res.ok) {
+          const data = await res.json();
+          setCommissionRate(data.platformCommission);
+        }
+      } catch (error) {
+        console.error("Failed to fetch commission config:", error);
+      }
+    };
+
+    if (id) {
+      fetchPaymentData();
+      fetchConfig();
+    }
   }, [id, searchParams]);
 
   const loadRazorpay = () => {
@@ -306,7 +326,7 @@ export default function PaymentPage() {
                           Processing...
                         </>
                       ) : (
-                        `Pay $${(offer.budget || 0).toLocaleString()} via Razorpay`
+                        `Pay $${((offer.budget || 0) * (1 + commissionRate / 100)).toLocaleString(undefined, { minimumFractionDigits: 2 })} via Razorpay`
                       )}
                     </button>
 
@@ -353,12 +373,17 @@ export default function PaymentPage() {
                           <span className="font-mono">${(offer.budget || 0).toLocaleString()}</span>
                         </div>
                         <div className="flex justify-between items-center text-sm">
-                          <span className="text-slate-400">Platform Fee</span>
-                          <span className="text-green-400 font-mono">FREE</span>
+                          <span className="text-slate-400">Platform Fee ({commissionRate}%)</span>
+                          <span className="text-primary font-mono">${((offer.budget || 0) * (commissionRate / 100)).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                         </div>
-                        <div className="pt-4 flex justify-between items-end">
-                          <span className="text-slate-200 font-bold">Total Amount</span>
-                          <span className="text-3xl font-extrabold text-white font-mono">${(offer.budget || 0).toLocaleString()}</span>
+                        <div className="pt-4 flex flex-col items-end gap-1">
+                          <div className="flex justify-between w-full items-end border-t border-white/10 pt-4">
+                            <span className="text-slate-200 font-bold">Total Amount</span>
+                            <span className="text-3xl font-extrabold text-white font-mono">${((offer.budget || 0) * (1 + commissionRate / 100)).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                          </div>
+                          <p className="text-[10px] text-slate-400 font-bold tracking-widest uppercase">
+                            Approx. ₹{Math.round((offer.budget || 0) * (1 + commissionRate / 100) * EXCHANGE_RATE).toLocaleString()} INR
+                          </p>
                         </div>
                       </div>
                     </div>

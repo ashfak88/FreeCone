@@ -455,8 +455,16 @@ export const completeOffer = async (req: Request, res: Response): Promise<any> =
           status: "Escrow" 
         }, 
         { status: "Success", type: "Payout", description: `Released funds for completed project: ${offer.jobTitle}` },
-        { sort: { createdAt: -1 } }
+        { sort: { createdAt: -1 }, new: true }
       );
+
+      // Also release the commission to "Success" if it exists
+      if (transaction) {
+        await Transaction.findOneAndUpdate(
+          { txnId: `${transaction.txnId}_fee`, type: "Commission" },
+          { status: "Success" }
+        );
+      }
 
       // Update Freelancer stats
       const User = (await import("../models/User")).default;

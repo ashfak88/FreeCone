@@ -24,7 +24,7 @@ const authRoutes = [
 export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { user } = useStore();
+  const { user, fetchProfile } = useStore();
   const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
@@ -41,26 +41,37 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
       const isAuthenticated = !!user || !!hasToken;
       const isLoggingIn = typeof window !== 'undefined' ? (window as any).isLoggingInAnimation : false;
 
+      // Sync user if token exists but user state is missing
+      if (hasToken && !user) {
+        fetchProfile();
+      }
+
       if (!isAuthenticated) {
         if (isUserProtectedRoute || isAdminRoute) {
           router.push(`/login`);
         }
-      } else if (user) {
-        const isAdmin = user.role?.toLowerCase() === "admin";
+      } else {
+        // We HAVE a session (token and/or user object)
+        const isAdmin = user?.role?.toLowerCase() === "admin";
 
-        if (isAdminRoute && !isAdmin) {
+        if (isAdminRoute && user && !isAdmin) {
           // Standard user trying to access admin panel
           router.push("/");
         } else if (!isAdminRoute && !isAuthRoute && isAdmin) {
           // Admin trying to access standard user side (isolated to Admin Panel)
           router.push("/admin/dashboard");
         } else if (isAuthRoute && !isLoggingIn) {
-          // LOGGED IN: Redirect away from login/register
-          router.push(isAdmin ? "/admin/dashboard" : "/");
+          // FORCE REDIRECT from auth pages if we have a session
+          if (user) {
+            router.push(isAdmin ? "/admin/dashboard" : "/");
+          } else if (hasToken) {
+            // Default to home if user object isn't here yet but token IS
+            router.push("/");
+          }
         }
       }
     }
-  }, [isHydrated, isAdminRoute, isAuthRoute, user, router, pathname]);
+  }, [isHydrated, isAdminRoute, isAuthRoute, user, router, pathname, fetchProfile]);
 
   // Combined protection check for rendering
   const isAdmin = user?.role?.toLowerCase() === "admin";
