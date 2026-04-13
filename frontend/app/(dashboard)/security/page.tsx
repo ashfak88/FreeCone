@@ -5,6 +5,8 @@ import DashboardHeader from "@/components/DashboardHeader";
 import { useStore } from "@/lib/store";
 import Swal from "sweetalert2";
 
+type ActionType = "success" | "info" | "warning" | "error";
+
 export default function SecurityPage() {
   const { user } = useStore();
   const [is2FAEnabled, setIs2FAEnabled] = useState(true);
@@ -14,12 +16,12 @@ export default function SecurityPage() {
   const handleAction = (
     title: string,
     message: string,
-    type: "success" | "info" | "warning" | "error" = "info"
+    type?: ActionType
   ) => {
     Swal.fire({
       title,
       text: message,
-      icon: type,
+      icon: type || "info",
       confirmButtonColor: "#6A6B4C",
     });
   };
