@@ -40,6 +40,12 @@ export interface User {
   };
   isProfileComplete: boolean;
   status: "active" | "pending" | "blocked";
+  loginHistory?: {
+    device: string;
+    location: string;
+    timestamp: string;
+    status: string;
+  }[];
   createdAt: string;
 }
 

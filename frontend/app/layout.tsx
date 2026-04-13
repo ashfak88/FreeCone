@@ -6,6 +6,8 @@ import QueryProvider from "@/components/providers/QueryProvider";
 import SocketProvider from "@/components/SocketProvider";
 import NotificationPortal from "@/components/notifications/NotificationPortal";
 
+import { DashboardProvider } from "@/context/DashboardContext";
+
 const geist = Geist({ subsets: ['latin'], variable: '--font-sans' });
 
 export const metadata = {
@@ -34,9 +36,11 @@ export default function RootLayout({
         <NotificationPortal />
         <QueryProvider>
           <SocketProvider>
-            <ProtectedRoute>
-              {children}
-            </ProtectedRoute>
+            <DashboardProvider>
+              <ProtectedRoute>
+                {children}
+              </ProtectedRoute>
+            </DashboardProvider>
           </SocketProvider>
         </QueryProvider>
       </body>

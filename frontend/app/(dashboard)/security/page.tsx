@@ -11,11 +11,15 @@ export default function SecurityPage() {
   const [isPublicProfile, setIsPublicProfile] = useState(false);
 
   // Simulated handlers for UI interaction
-  const handleAction = (title: string, text: string, icon: "success" | "warning" | "info" | "error" = "info") => {
+  const handleAction = (
+    title: string,
+    message: string,
+    type: "success" | "info" | "warning" | "error" = "info"
+  ) => {
     Swal.fire({
       title,
-      text,
-      icon,
+      text: message,
+      icon: type,
       confirmButtonColor: "#6A6B4C",
     });
   };
