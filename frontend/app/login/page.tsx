@@ -40,7 +40,7 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://13.60.254.174:5001/api";
       const res = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -80,7 +80,7 @@ export default function LoginPage() {
   };
 
   const handleGoogleLogin = () => {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://13.60.254.174:5001/api";
     window.location.href = `${API_URL}/auth/google`;
   };
 

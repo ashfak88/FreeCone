@@ -5,7 +5,7 @@ import DashboardHeader from "@/components/DashboardHeader";
 import { useStore } from "@/lib/store";
 import Swal from "sweetalert2";
 
-type ActionType = "success" | "info" | "warning" | "error" | "question";
+type SecurityActionType = "success" | "info" | "warning" | "error" | "question";
 
 export default function SecurityPage() {
   const { user } = useStore();
@@ -16,12 +16,12 @@ export default function SecurityPage() {
   const handleAction = (
     title: string,
     message: string,
-    type?: ActionType
+    type: SecurityActionType = "info"
   ) => {
     Swal.fire({
       title,
       text: message,
-      icon: type || "info",
+      icon: type,
       confirmButtonColor: "#6A6B4C",
     });
   };
@@ -110,7 +110,7 @@ export default function SecurityPage() {
                 if (!formValues.subject || !formValues.message) {
                   return handleAction("Error", "All fields are required.", "error");
                 }
-                const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
+                const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://13.60.254.174:5001/api";
                 const token = localStorage.getItem("accessToken");
                 try {
                   const res = await fetch(`${API_URL}/report`, {

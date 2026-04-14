@@ -22,7 +22,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         const token = localStorage.getItem("accessToken");
         if (!token) return;
 
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://13.60.254.174:5001/api";
         const res = await fetch(`${API_URL}/users/profile`, {
           headers: {
             "Authorization": `Bearer ${token}`

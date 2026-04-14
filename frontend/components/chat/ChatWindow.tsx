@@ -6,7 +6,7 @@ import MessageInput from "./MessageInput";
 import { format, isToday, isYesterday } from "date-fns";
 import Swal from "sweetalert2";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://13.60.254.174:5001/api";
 
 function ConfirmationMessageBubble({ msg }: { msg: any }) {
   const status = msg.metadata?.status || null;
