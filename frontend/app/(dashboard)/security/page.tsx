@@ -5,7 +5,7 @@ import DashboardHeader from "@/components/DashboardHeader";
 import { useStore } from "@/lib/store";
 import Swal from "sweetalert2";
 
-type ActionType = "success" | "info" | "warning" | "error";
+type ActionType = "success" | "info" | "warning" | "error" | "question";
 
 export default function SecurityPage() {
   const { user } = useStore();
