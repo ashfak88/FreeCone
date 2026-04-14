@@ -35,7 +35,7 @@ initSocket(server);
 connectDB();
 
 app.use(cors({
-  origin: ["https://free-cone-dv81.vercel.app"],
+  origin: ["https://free-cone-dv81.vercel.app", "https://freecone.duckdns.org"],
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true
 }));
@@ -74,7 +74,6 @@ app.use("/api/transactions", transactionRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/config", configRoutes);
 
-// Test route to debug 404
 app.get("/api/test-admin", (req, res) => res.json({ message: "Admin space is reachable" }));
 
 

@@ -161,7 +161,8 @@ export const googleCallback = (req: Request, res: Response) => {
   const user = req.user as any;
 
   if (user && user.status === "blocked") {
-    const errorUrl = new URL("http://localhost:3000/auth/error");
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+    const errorUrl = new URL(`${frontendUrl}/auth/error`);
     errorUrl.searchParams.append("message", "Your account is suspended. Please contact support.");
     return res.redirect(errorUrl.toString());
   }
@@ -190,7 +191,8 @@ export const googleCallback = (req: Request, res: Response) => {
     isProfileComplete: user.isProfileComplete
   };
 
-  const successUrl = new URL("http://localhost:3000/auth/success");
+  const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+  const successUrl = new URL(`${frontendUrl}/auth/success`);
   successUrl.searchParams.append("token", accessToken);
   successUrl.searchParams.append("user", encodeURIComponent(JSON.stringify(userInfo)));
 

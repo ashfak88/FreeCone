@@ -4,12 +4,26 @@ import { Server as HttpServer } from "http";
 let io: Server;
 
 export const initSocket = (server: HttpServer) => {
+  const allowedOrigins = [
+    "https://freecone.duckdns.org",
+    "https://free-cone-dv81.vercel.app",
+    "http://localhost:3000",
+    "http://localhost:3001"
+  ];
+
+  if (process.env.FRONTEND_URL) {
+    allowedOrigins.push(process.env.FRONTEND_URL);
+  }
+
   io = new Server(server, {
     cors: {
-      origin: process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : ["http://localhost:3000", "http://localhost:3001"],
+      origin: allowedOrigins,
       methods: ["GET", "POST"],
       credentials: true,
     },
+    pingTimeout: 60000,
+    pingInterval: 25000,
+    transports: ["polling", "websocket"],
   });
 
   io.on("connection", (socket: Socket) => {

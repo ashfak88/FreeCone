@@ -11,10 +11,13 @@ class SocketService {
       console.log("   [SOCKET] Initializing socket connection to:", SOCKET_URL);
       this.socket = io(SOCKET_URL, {
         withCredentials: true,
-        transports: ["websocket", "polling"],
+        transports: ["polling", "websocket"],
+        autoConnect: true,
         reconnection: true,
         reconnectionAttempts: Infinity,
         reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+        timeout: 20000,
       });
 
       this.socket.on("connect", () => {
@@ -23,7 +26,7 @@ class SocketService {
           console.log("   [SOCKET] Re-joining room:", this.userId);
           this.socket?.emit("join", this.userId);
         }
-      });
+      })
 
       this.socket.on("disconnect", (reason) => {
         console.log("   [SOCKET] Disconnected:", reason);
@@ -57,4 +60,4 @@ class SocketService {
   }
 }
 
-export const socketService = new SocketService();
+export const socketService = new SocketService()
