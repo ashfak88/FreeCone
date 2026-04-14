@@ -1,4 +1,4 @@
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://freecone.duckdns.org/api";
+export const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
 /**
  * Robust response handler to avoid "Unexpected token '<'..." errors.
