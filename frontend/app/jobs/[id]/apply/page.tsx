@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Job, useStore } from "@/lib/store";
 import RichTextEditor from "@/components/RichTextEditor";
 import Swal from "sweetalert2";
+import { API_URL, handleResponse } from "@/lib/api";
 
 export default function ApplyForProjectPage() {
   const params = useParams();
@@ -24,11 +25,11 @@ export default function ApplyForProjectPage() {
   useEffect(() => {
     const fetchJob = async () => {
       try {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
         const response = await fetch(`${API_URL}/jobs/${params.id}`);
-        if (!response.ok) throw new Error("Job not found");
-        const data = await response.json();
-        setJob(data);
+        const data = await handleResponse(response);
+        if (data) {
+          setJob(data);
+        }
         // Pre-fill budget min/max if needed, but the HTML just shows the range
       } catch (error) {
         console.error("Error fetching job:", error);
@@ -45,8 +46,6 @@ export default function ApplyForProjectPage() {
     
     try {
       const token = localStorage.getItem("accessToken");
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
-      
       const submitData = new FormData();
       submitData.append("coverLetter", formData.coverLetter);
       submitData.append("proposedRate", formData.proposedRate);
@@ -62,10 +61,8 @@ export default function ApplyForProjectPage() {
         body: submitData,
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to submit proposal");
-      }
+      const data = await handleResponse(response);
+      if (!data) return;
 
       await Swal.fire({
         title: 'Success!',

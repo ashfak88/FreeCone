@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Mail, Lock, Eye, EyeOff, User } from "lucide-react";
+import { API_URL, handleResponse } from "@/lib/api";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -22,7 +23,6 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://13.60.254.174:5001/api";
       const res = await fetch(`${API_URL}/auth/register`, {
         method: "POST",
         headers: {
@@ -31,11 +31,8 @@ export default function RegisterPage() {
         body: JSON.stringify(formData),
       });
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.message || "Registration failed");
-      }
+      const data = await handleResponse(res);
+      if (!data) return;
 
       // Successful registration, redirect to login
       router.push("/login?registered=true");
@@ -51,7 +48,6 @@ export default function RegisterPage() {
   };
 
   const handleGoogleLogin = () => {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
     window.location.href = `${API_URL}/auth/google`;
   };
 

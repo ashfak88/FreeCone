@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useStore, User } from "@/lib/store";
 import Link from "next/link";
 import RichTextEditor from "@/components/RichTextEditor";
+import { API_URL, handleResponse } from "@/lib/api";
 
 function SendOfferContent() {
   const router = useRouter();
@@ -45,7 +46,6 @@ function SendOfferContent() {
       const token = localStorage.getItem("accessToken");
       if (!token) throw new Error("Please log in to send an offer");
 
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
       const response = await fetch(`${API_URL}/offers`, {
         method: "POST",
         headers: {
@@ -60,10 +60,7 @@ function SendOfferContent() {
         })
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to send offer");
-      }
+      await handleResponse(response);
 
       setStatus({ type: "success", message: "Offer sent successfully!" });
       setTimeout(() => router.push("/dashboard"), 2000);

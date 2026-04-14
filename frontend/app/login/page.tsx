@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { useStore } from "@/lib/store";
 import LoadingScreen from "@/components/LoadingScreen";
+import { API_URL, handleResponse } from "@/lib/api";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -40,7 +41,6 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://13.60.254.174:5001/api";
       const res = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -48,11 +48,8 @@ export default function LoginPage() {
         body: JSON.stringify(formData),
       });
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.message || "Login failed");
-      }
+      const data = await handleResponse(res);
+      if (!data) return;
 
       localStorage.setItem("accessToken", data.accessToken);
       
@@ -80,7 +77,6 @@ export default function LoginPage() {
   };
 
   const handleGoogleLogin = () => {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://13.60.254.174:5001/api";
     window.location.href = `${API_URL}/auth/google`;
   };
 

@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Job } from "@/lib/store";
 import Link from "next/link";
+import { API_URL, handleResponse } from "@/lib/api";
 
 export default function ProjectDetailsPage() {
   const params = useParams();
@@ -14,11 +15,11 @@ export default function ProjectDetailsPage() {
   useEffect(() => {
     const fetchJob = async () => {
       try {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
         const response = await fetch(`${API_URL}/jobs/${params.id}`);
-        if (!response.ok) throw new Error("Job not found");
-        const data = await response.json();
-        setJob(data);
+        const data = await handleResponse(response);
+        if (data) {
+          setJob(data);
+        }
       } catch (error) {
         console.error("Error fetching job:", error);
       } finally {

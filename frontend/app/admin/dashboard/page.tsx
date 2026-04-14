@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useStore } from "@/lib/store";
 import BottomNavbar from "@/components/BottomNavbar";
 import AdminHeader from "@/components/AdminHeader";
+import { API_URL, handleResponse } from "@/lib/api";
 
 interface AdminStats {
   todayRevenue: number;
@@ -43,14 +44,13 @@ export default function AdminDashboard() {
     const fetchStats = async () => {
       try {
         const token = localStorage.getItem("accessToken");
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://13.60.254.174:5001/api";
         const res = await fetch(`${API_URL}/admin/stats`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
-        if (res.ok) {
-          const data = await res.json();
+        const data = await handleResponse(res);
+        if (data) {
           setStats(data);
         }
       } catch (error) {

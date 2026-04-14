@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import DashboardHeader from "@/components/DashboardHeader";
 import { useStore } from "@/lib/store";
 import Swal from "sweetalert2";
+import { API_URL, handleResponse } from "@/lib/api";
 
 type SecurityActionType = "success" | "info" | "warning" | "error" | "question";
 
@@ -110,7 +111,6 @@ export default function SecurityPage() {
                 if (!formValues.subject || !formValues.message) {
                   return handleAction("Error", "All fields are required.", "error");
                 }
-                const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://13.60.254.174:5001/api";
                 const token = localStorage.getItem("accessToken");
                 try {
                   const res = await fetch(`${API_URL}/report`, {
@@ -121,7 +121,8 @@ export default function SecurityPage() {
                     },
                     body: JSON.stringify(formValues)
                   });
-                  if (res.ok) {
+                  const data = await handleResponse(res);
+                  if (data) {
                     handleAction("Report Submitted", "Admin has been notified. We will review your case shortly.", "success");
                   }
                 } catch (err) {

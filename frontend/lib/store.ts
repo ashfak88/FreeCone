@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { API_URL, handleResponse } from './api';
 
 export interface PortfolioItem {
   title: string;
@@ -253,7 +254,6 @@ interface AppState {
   updateMessageLocally: (message: Message) => void;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://13.60.254.174:5001/api";
 
 export const useStore = create<AppState>((set, get) => {
   let initialUser = null;
@@ -301,9 +301,8 @@ export const useStore = create<AppState>((set, get) => {
         const res = await fetch(`${API_URL}/users/profile`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (res.ok) {
-          const data = await res.json();
-          // Update local state and localStorage
+        const data = await handleResponse(res);
+        if (data) {
           if (typeof window !== 'undefined') {
             localStorage.setItem('user', JSON.stringify(data));
           }
@@ -321,7 +320,7 @@ export const useStore = create<AppState>((set, get) => {
       set({ isLoadingJobs: true });
       try {
         const res = await fetch(`${API_URL}/jobs`, { cache: "no-store" });
-        const data = await res.json();
+        const data = await handleResponse(res);
         set({ jobs: data });
       } catch (err) {
         console.error("Failed to fetch jobs:", err);
@@ -345,7 +344,7 @@ export const useStore = create<AppState>((set, get) => {
 
         const url = `${API_URL}/users/freelancers?${queryParams.toString()}`;
         const res = await fetch(url, { cache: "no-store" });
-        const data = await res.json();
+        const data = await handleResponse(res);
         set({ talent: data });
       } catch (err) {
         console.error("Error fetching talent:", err);
@@ -356,7 +355,7 @@ export const useStore = create<AppState>((set, get) => {
     fetchUserById: async (id: string) => {
       try {
         const res = await fetch(`${API_URL}/users/${id}`, { cache: "no-store" });
-        if (res.ok) return await res.json();
+        return await handleResponse(res);
       } catch (err) {
         console.error("Error fetching user by ID:", err);
       }
@@ -376,7 +375,7 @@ export const useStore = create<AppState>((set, get) => {
             Authorization: `Bearer ${token}`,
           },
         });
-        const data = await res.json();
+        const data = await handleResponse(res);
         set({ offers: data });
       } catch (err) {
         console.error("Failed to fetch offers:", err);
@@ -396,14 +395,12 @@ export const useStore = create<AppState>((set, get) => {
           body: JSON.stringify({ status }),
         });
 
-        if (res.ok) {
+        const data = await handleResponse(res);
+        if (data) {
           const updatedOffers = get().offers.map((o) =>
             o._id === id ? { ...o, status } : o
           );
           set({ offers: updatedOffers });
-        } else {
-          const errorData = await res.json();
-          console.error("Failed to update offer status:", errorData.message);
         }
       } catch (err) {
         console.error("Error updating offer status:", err);
@@ -415,7 +412,7 @@ export const useStore = create<AppState>((set, get) => {
         const res = await fetch(`${API_URL}/offers/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (res.ok) return await res.json();
+        return await handleResponse(res);
       } catch (err) {
         console.error("Failed to fetch offer:", err);
       }
@@ -432,8 +429,8 @@ export const useStore = create<AppState>((set, get) => {
           },
           body: JSON.stringify({ text, type }),
         });
-        if (res.ok) {
-          const updatedOffer = await res.json();
+        const updatedOffer = await handleResponse(res);
+        if (updatedOffer) {
           const updatedOffers = get().offers.map((o) =>
             o._id === id ? updatedOffer : o
           );
@@ -450,8 +447,8 @@ export const useStore = create<AppState>((set, get) => {
           method: "PUT",
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (res.ok) {
-          const updatedOffer = await res.json();
+        const updatedOffer = await handleResponse(res);
+        if (updatedOffer) {
           const updatedOffers = get().offers.map((o) =>
             o._id === id ? updatedOffer : o
           );
@@ -472,8 +469,8 @@ export const useStore = create<AppState>((set, get) => {
           },
           body: JSON.stringify({ reason })
         });
-        if (res.ok) {
-          const updatedOffer = await res.json();
+        const updatedOffer = await handleResponse(res);
+        if (updatedOffer) {
           set((state) => ({
             offers: state.offers.map((o) => (o._id === id ? updatedOffer : o)),
           }));
@@ -493,8 +490,8 @@ export const useStore = create<AppState>((set, get) => {
           },
           body: JSON.stringify({ githubRepo }),
         });
-        if (res.ok) {
-          const updatedOffer = await res.json();
+        const updatedOffer = await handleResponse(res);
+        if (updatedOffer) {
           const updatedOffers = get().offers.map((o) =>
             o._id === id ? updatedOffer : o
           );
@@ -516,7 +513,8 @@ export const useStore = create<AppState>((set, get) => {
           body: JSON.stringify(reviewData),
         });
 
-        if (res.ok) {
+        const data = await handleResponse(res);
+        if (data) {
           // Update the localized offer state
           const updatedOffers = get().offers.map((o) =>
             o._id === reviewData.offerId ? { ...o, isReviewed: true } : o
@@ -533,7 +531,7 @@ export const useStore = create<AppState>((set, get) => {
     fetchUserReviews: async (id: string) => {
       try {
         const res = await fetch(`${API_URL}/users/${id}/reviews`, { cache: "no-store" });
-        if (res.ok) return await res.json();
+        return await handleResponse(res) || [];
       } catch (err) {
         console.error("Failed to fetch user reviews:", err);
       }
@@ -548,8 +546,8 @@ export const useStore = create<AppState>((set, get) => {
         const res = await fetch(`${API_URL}/transactions`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (res.ok) {
-          const data = await res.json();
+        const data = await handleResponse(res);
+        if (data) {
           set({ transactions: data });
         }
       } catch (err) {
@@ -570,7 +568,7 @@ export const useStore = create<AppState>((set, get) => {
             Authorization: `Bearer ${token}`,
           },
         });
-        const data = await res.json();
+        const data = await handleResponse(res);
         const notificationData = Array.isArray(data) ? data : [];
         if (dir === 'sent') {
           set({ sentNotifications: notificationData });
@@ -593,7 +591,8 @@ export const useStore = create<AppState>((set, get) => {
             Authorization: `Bearer ${token}`,
           },
         });
-        if (res.ok) {
+        const data = await handleResponse(res);
+        if (data) {
           const updatedNotifications = get().notifications.map((n) =>
             n._id === id ? { ...n, isRead: true } : n
           );
@@ -616,7 +615,8 @@ export const useStore = create<AppState>((set, get) => {
             Authorization: `Bearer ${token}`,
           },
         });
-        if (res.ok) {
+        const data = await handleResponse(res);
+        if (data) {
           const updatedNotifications = get().notifications.map((n) => ({
             ...n,
             isRead: true,
@@ -641,7 +641,8 @@ export const useStore = create<AppState>((set, get) => {
             Authorization: `Bearer ${token}`,
           },
         });
-        if (res.ok) {
+        const data = await handleResponse(res);
+        if (data) {
           const updatedNotifications = get().notifications.map((n) => ({
             ...n,
             isRead: false,
@@ -669,8 +670,8 @@ export const useStore = create<AppState>((set, get) => {
           cache: "no-store",
           headers: { Authorization: `Bearer ${token}` },
         });
-        const data = await res.json();
-        set({ myJobs: data });
+        const data = await handleResponse(res);
+        set({ myJobs: data || [] });
       } catch (err) {
         console.error("Failed to fetch my jobs:", err);
       } finally {
@@ -685,8 +686,8 @@ export const useStore = create<AppState>((set, get) => {
           cache: "no-store",
           headers: { Authorization: `Bearer ${token}` },
         });
-        const data = await res.json();
-        set({ myProposals: data });
+        const data = await handleResponse(res);
+        set({ myProposals: data || [] });
       } catch (err) {
         console.error("Failed to fetch my proposals:", err);
       } finally {
@@ -701,8 +702,8 @@ export const useStore = create<AppState>((set, get) => {
           cache: "no-store",
           headers: { Authorization: `Bearer ${token}` },
         });
-        const data = await res.json();
-        set({ receivedProposals: data });
+        const data = await handleResponse(res);
+        set({ receivedProposals: data || [] });
       } catch (err) {
         console.error("Failed to fetch received proposals:", err);
       } finally {
@@ -721,15 +722,13 @@ export const useStore = create<AppState>((set, get) => {
           body: JSON.stringify({ status }),
         });
 
-        if (res.ok) {
+        const data = await handleResponse(res);
+        if (data) {
           // Update local state
           const updatedReceived = get().receivedProposals.map((p) =>
             p._id === id ? { ...p, status } : p
           );
           set({ receivedProposals: updatedReceived });
-        } else {
-          const errorData = await res.json();
-          console.error("Failed to update proposal status:", errorData.message);
         }
       } catch (err) {
         console.error("Error updating proposal status:", err);
@@ -745,7 +744,8 @@ export const useStore = create<AppState>((set, get) => {
           },
         });
 
-        if (res.ok) {
+        const data = await handleResponse(res);
+        if (data) {
           // Update local state for received proposals
           const updatedReceived = get().receivedProposals.map((p) =>
             p._id === id ? { ...p, status: 'viewed' as any } : p
@@ -768,7 +768,7 @@ export const useStore = create<AppState>((set, get) => {
         const res = await fetch(`${API_URL}/messages/conversations`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        const data = await res.json();
+        const data = await handleResponse(res);
         set({ conversations: Array.isArray(data) ? data : [] });
       } catch (err) {
         console.error("Error fetching conversations:", err);
@@ -781,7 +781,7 @@ export const useStore = create<AppState>((set, get) => {
         const res = await fetch(`${API_URL}/messages/${conversationId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        const data = await res.json();
+        const data = await handleResponse(res);
         set({ messages: Array.isArray(data) ? data : [] });
 
         // Mark as read in backend
@@ -850,7 +850,8 @@ export const useStore = create<AppState>((set, get) => {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        if (!res.ok) {
+        const data = await handleResponse(res);
+        if (!data) {
           set({ conversations }); // Revert
           console.warn("Failed to delete all conversations API response");
         }
@@ -887,14 +888,13 @@ export const useStore = create<AppState>((set, get) => {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        if (!res.ok) {
+        const updatedConversation = await handleResponse(res);
+        if (!updatedConversation) {
           // Revert if failed
           set({ conversations });
           console.warn("Failed to toggle favorite API response");
           return;
         }
-
-        const updatedConversation = await res.json();
 
         // Final sync
         set({

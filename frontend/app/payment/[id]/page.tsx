@@ -13,6 +13,7 @@ import {
   Briefcase
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { API_URL, handleResponse } from "@/lib/api";
 
 const EXCHANGE_RATE = 83.5;
 const PLATFORM_FEE_PERCENT = 0.05;
@@ -48,7 +49,6 @@ export default function PaymentPage() {
           return;
         }
 
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
         const type = searchParams.get("type");
 
         let endpoint = `${API_URL}/offers/${id}`;
@@ -60,9 +60,9 @@ export default function PaymentPage() {
           headers: { Authorization: `Bearer ${token}` }
         });
 
-        const data = await res.json();
+        const data = await handleResponse(res);
 
-        if (res.ok) {
+        if (data) {
           if (type === "proposal") {
             setOffer({
               _id: data._id,
@@ -76,8 +76,6 @@ export default function PaymentPage() {
           } else {
             setOffer(data);
           }
-        } else {
-          setLoadError(data.message || "Failed to load payment details.");
         }
       } catch (err: any) {
         setLoadError("Connection error. Please check that the server is running.");
@@ -88,10 +86,9 @@ export default function PaymentPage() {
 
     const fetchConfig = async () => {
       try {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
         const res = await fetch(`${API_URL}/config/commission`);
-        if (res.ok) {
-          const data = await res.json();
+        const data = await handleResponse(res);
+        if (data) {
           setCommissionRate(data.platformCommission);
         }
       } catch (error) {
@@ -129,7 +126,6 @@ export default function PaymentPage() {
       }
 
       const token = localStorage.getItem("accessToken");
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
       // 1. Create Order
       const orderRes = await fetch(`${API_URL}/payments/order`, {
@@ -145,10 +141,8 @@ export default function PaymentPage() {
         }),
       });
 
-      const orderData = await orderRes.json();
-      if (!orderRes.ok) {
-        throw new Error(orderData.message || "Failed to create order");
-      }
+      const orderData = await handleResponse(orderRes);
+      if (!orderData) return;
 
       // 2. Open Razorpay
       const options = {
@@ -174,12 +168,10 @@ export default function PaymentPage() {
               }),
             });
 
-            const verifyData = await verifyRes.json();
-            if (verifyRes.ok) {
+            const verifyData = await handleResponse(verifyRes);
+            if (verifyData) {
               setSuccess(true);
               setOffer((prev: any) => ({ ...prev, isPaid: true }));
-            } else {
-              setPayError(verifyData.message || "Payment verification failed.");
             }
           } catch (err: any) {
             setPayError("Verification connection error. Please contact support.");

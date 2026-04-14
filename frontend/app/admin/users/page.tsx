@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useStore } from "@/lib/store";
 import { motion, AnimatePresence } from "framer-motion";
+import { API_URL, handleResponse } from "@/lib/api";
 
 import BottomNavbar from "@/components/BottomNavbar";
 import AdminHeader from "@/components/AdminHeader";
@@ -31,20 +32,14 @@ export default function UserManagementPage() {
     setIsLoading(true);
     try {
       const token = localStorage.getItem("accessToken");
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
-      
-      const queryParams = new URLSearchParams();
-      if (activeStatusFilter !== "all") queryParams.append("status", activeStatusFilter);
-      if (search) queryParams.append("search", search);
-
       const res = await fetch(`${API_URL}/admin/users?${queryParams.toString()}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
       
-      if (res.ok) {
-        const data = await res.json();
+      const data = await handleResponse(res);
+      if (data) {
         setUsers(data);
       }
     } catch (error) {
@@ -64,8 +59,6 @@ export default function UserManagementPage() {
   const handleUpdateStatus = async (userId: string, newStatus: string) => {
     try {
       const token = localStorage.getItem("accessToken");
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
-
       const res = await fetch(`${API_URL}/admin/users/${userId}/status`, {
         method: "PUT",
         headers: {
@@ -75,7 +68,8 @@ export default function UserManagementPage() {
         body: JSON.stringify({ status: newStatus }),
       });
 
-      if (res.ok) {
+      const data = await handleResponse(res);
+      if (data) {
         setUsers(users.map(u => u._id === userId ? { ...u, status: newStatus as any } : u));
       }
     } catch (error) {

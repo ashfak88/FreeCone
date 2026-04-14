@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import AdminHeader from "@/components/AdminHeader";
 import BottomNavbar from "@/components/BottomNavbar";
 import { useStore } from "@/lib/store";
+import { API_URL, handleResponse } from "@/lib/api";
 import { format } from "date-fns";
 import Swal from "sweetalert2";
 
@@ -39,12 +40,12 @@ export default function AdminAuditPage() {
     setIsLoading(true);
     try {
       const token = localStorage.getItem("accessToken");
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
       const res = await fetch(`${API_URL}/admin/complaints?status=${filterStatus}&category=${filterCategory}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      if (res.ok) {
-        setComplaints(await res.json());
+      const data = await handleResponse(res);
+      if (data) {
+        setComplaints(data);
       }
     } catch (error) {
       console.error("Failed to fetch complaints:", error);
@@ -62,7 +63,6 @@ export default function AdminAuditPage() {
   const updateStatus = async (id: string, newStatus: string) => {
     try {
       const token = localStorage.getItem("accessToken");
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
       const res = await fetch(`${API_URL}/admin/complaints/${id}/status`, {
         method: "PATCH",
         headers: {
@@ -72,7 +72,8 @@ export default function AdminAuditPage() {
         body: JSON.stringify({ status: newStatus })
       });
 
-      if (res.ok) {
+      const data = await handleResponse(res);
+      if (data) {
         Swal.fire({
           title: "Status Updated",
           icon: "success",

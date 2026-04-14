@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import AdminHeader from "@/components/AdminHeader";
 import BottomNavbar from "@/components/BottomNavbar";
+import { API_URL, handleResponse } from "@/lib/api";
 
 export default function AdminConfigPage() {
   const [commission, setCommission] = useState<number>(0);
@@ -16,12 +17,11 @@ export default function AdminConfigPage() {
     const fetchSettings = async () => {
       try {
         const token = localStorage.getItem("accessToken");
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
         const res = await fetch(`${API_URL}/admin/system-settings`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        if (res.ok) {
-          const data = await res.json();
+        const data = await handleResponse(res);
+        if (data) {
           setCommission(data.platformCommission);
           setMaintenanceMode(data.maintenanceMode);
         }
@@ -38,7 +38,6 @@ export default function AdminConfigPage() {
     setIsSaving(true);
     try {
       const token = localStorage.getItem("accessToken");
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
       const res = await fetch(`${API_URL}/admin/system-settings`, {
         method: "PUT",
         headers: {
@@ -50,11 +49,9 @@ export default function AdminConfigPage() {
           maintenanceMode: maintenanceMode
         })
       });
-      if (res.ok) {
+      const data = await handleResponse(res);
+      if (data) {
         alert("Settings updated successfully!");
-      } else {
-        const data = await res.json();
-        alert(`Failed to update settings: ${data.message || res.statusText}`);
       }
     } catch (error) {
       console.error("Failed to save settings:", error);
@@ -158,8 +155,7 @@ export default function AdminConfigPage() {
                   // Immediate save for maintenance mode
                   try {
                     const token = localStorage.getItem("accessToken");
-                    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
-                    await fetch(`${API_URL}/admin/system-settings`, {
+                    const res = await fetch(`${API_URL}/admin/system-settings`, {
                       method: "PUT",
                       headers: {
                         "Content-Type": "application/json",
@@ -167,6 +163,7 @@ export default function AdminConfigPage() {
                       },
                       body: JSON.stringify({ maintenanceMode: newState })
                     });
+                    await handleResponse(res);
                   } catch (err) {
                     console.error("Failed to toggle maintenance mode:", err);
                     setMaintenanceMode(!newState); // revert

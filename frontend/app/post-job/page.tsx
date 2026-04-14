@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useStore } from "@/lib/store";
+import { API_URL, handleResponse } from "@/lib/api";
 
 export default function PostJobPage() {
   const router = useRouter();
@@ -27,7 +28,6 @@ export default function PostJobPage() {
     setError("");
 
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
       const token = localStorage.getItem("accessToken");
       const res = await fetch(`${API_URL}/jobs`, {
         method: "POST",
@@ -41,10 +41,7 @@ export default function PostJobPage() {
         }),
       });
 
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.message || "Failed to post job");
-      }
+      await handleResponse(res);
 
       // Successfully posted job
       router.push("/dashboard");

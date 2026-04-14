@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useStore } from "@/lib/store";
+import { API_URL, handleResponse } from "@/lib/api";
 
 interface UserDetail {
   user: {
@@ -54,15 +55,12 @@ export default function AdminUserDetailPage() {
     setIsLoading(true);
     try {
       const token = localStorage.getItem("accessToken");
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
       const res = await fetch(`${API_URL}/admin/users/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      if (res.ok) {
-        const result = await res.json();
+      const result = await handleResponse(res);
+      if (result) {
         setData(result);
-      } else {
-        console.error("Fetch failed with status:", res.status);
       }
     } catch (error) {
       console.error("Failed to fetch user details:", error);
@@ -81,7 +79,6 @@ export default function AdminUserDetailPage() {
     setIsUpdating(true);
     try {
       const token = localStorage.getItem("accessToken");
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
       const res = await fetch(`${API_URL}/admin/users/${id}/status`, {
         method: "PUT",
         headers: {
@@ -90,7 +87,8 @@ export default function AdminUserDetailPage() {
         },
         body: JSON.stringify({ status: newStatus })
       });
-      if (res.ok) {
+      const data = await handleResponse(res);
+      if (data) {
         await fetchDetail();
       }
     } catch (error) {
@@ -104,7 +102,6 @@ export default function AdminUserDetailPage() {
     setIsUpdating(true);
     try {
       const token = localStorage.getItem("accessToken");
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
       const res = await fetch(`${API_URL}/admin/users/${id}/role`, {
         method: "PUT",
         headers: {
@@ -113,7 +110,8 @@ export default function AdminUserDetailPage() {
         },
         body: JSON.stringify({ role: newRole })
       });
-      if (res.ok) {
+      const data = await handleResponse(res);
+      if (data) {
         await fetchDetail();
       }
     } catch (error) {
