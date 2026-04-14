@@ -10,8 +10,7 @@ type SecurityActionType = "success" | "info" | "warning" | "error" | "question";
 
 export default function SecurityPage() {
   const { user } = useStore();
-  const [is2FAEnabled, setIs2FAEnabled] = useState(true);
-  const [isPublicProfile, setIsPublicProfile] = useState(false);
+
 
   // Simulated handlers for UI interaction
   const handleAction = (
@@ -27,40 +26,6 @@ export default function SecurityPage() {
     });
   };
 
-  const confirmDestructiveAction = async (title: string, text: string, confirmText: string) => {
-    const result = await Swal.fire({
-      title,
-      text,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#b91c1c",
-      cancelButtonColor: "#64748b",
-      confirmButtonText: confirmText
-    });
-    return result.isConfirmed;
-  };
-
-  const handleLogoutAll = async () => {
-    const confirmed = await confirmDestructiveAction(
-      "Log out all devices?",
-      "You will be logged out of every session except this one.",
-      "Yes, log out all"
-    );
-    if (confirmed) {
-      handleAction("Sessions Terminated", "You have been logged out of all other devices.", "success");
-    }
-  };
-
-  const handleDeleteAccount = async () => {
-    const confirmed = await confirmDestructiveAction(
-      "Delete Account Permanently?",
-      "This action is irreversible. All your data, projects, and history will be cleared.",
-      "Yes, delete everything"
-    );
-    if (confirmed) {
-      handleAction("Account Deleted", "Your account has been scheduled for deletion.", "success");
-    }
-  };
 
   return (
     <div className="min-h-full bg-slate-50 dark:bg-slate-950">
@@ -139,46 +104,25 @@ export default function SecurityPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
-            {/* Password & Authentication */}
+            {/* Password Management */}
             <section className="space-y-4">
               <h3 className="text-xs font-black text-primary uppercase tracking-[0.2em] px-1">Authentication</h3>
-              <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden divide-y divide-slate-100 dark:divide-slate-800">
-                <button 
-                  onClick={() => handleAction("Reset Sequence", "We've sent a password reset link to your email.", "success")}
-                  className="w-full flex items-center justify-between p-5 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group text-left"
-                >
-                  <div className="flex items-center gap-5">
-                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-111 transition-transform">
-                      <span className="material-symbols-outlined">lock_reset</span>
-                    </div>
-                    <div>
-                      <p className="font-bold text-slate-900 dark:text-white">Change Password</p>
-                      <p className="text-xs text-slate-500 font-medium">Update regularly for better security</p>
-                    </div>
+              <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-5 flex items-center justify-between group transition-all hover:shadow-md">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                    <span className="material-symbols-outlined">lock_reset</span>
                   </div>
-                  <span className="material-symbols-outlined text-slate-300 group-hover:translate-x-1 transition-transform">chevron_right</span>
-                </button>
-
-                <div className="flex items-center justify-between p-5">
-                  <div className="flex items-center gap-5">
-                    <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500">
-                      <span className="material-symbols-outlined">phonelink_lock</span>
-                    </div>
-                    <div>
-                      <p className="font-bold text-slate-900 dark:text-white">Two-Factor Authentication</p>
-                      <p className="text-xs text-slate-500 font-medium">Extra layer of protection</p>
-                    </div>
+                  <div>
+                    <p className="font-bold text-slate-900 dark:text-white">Account Password</p>
+                    <p className="text-xs text-slate-500 font-medium">Reset or change your current password</p>
                   </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input 
-                      type="checkbox" 
-                      checked={is2FAEnabled} 
-                      onChange={(e) => setIs2FAEnabled(e.target.checked)}
-                      className="sr-only peer" 
-                    />
-                    <div className="w-12 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-800 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
-                  </label>
                 </div>
+                <button 
+                  onClick={handleChangePassword}
+                  className="text-[11px] font-black text-primary uppercase tracking-widest hover:underline bg-slate-50 dark:bg-slate-800 px-4 py-2 rounded-lg transition-colors hover:bg-primary hover:text-white"
+                >
+                  Forgot Password?
+                </button>
               </div>
             </section>
 
@@ -186,12 +130,6 @@ export default function SecurityPage() {
             <section className="space-y-4">
               <div className="flex justify-between items-end px-1">
                 <h3 className="text-xs font-black text-primary uppercase tracking-[0.2em]">Active Sessions</h3>
-                <button 
-                  onClick={handleLogoutAll}
-                  className="text-[10px] text-red-500 font-black uppercase tracking-widest hover:underline"
-                >
-                  Log out all other devices
-                </button>
               </div>
               <div className="space-y-3">
                 {user?.loginHistory?.slice(0, 3).map((device: any, i: number) => (
@@ -258,47 +196,6 @@ export default function SecurityPage() {
               </div>
             </section>
 
-            {/* Privacy & Danger Zone */}
-            <section className="space-y-4">
-              <h3 className="text-xs font-black text-primary uppercase tracking-[0.2em] px-1">Privacy</h3>
-              <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                    <span className="material-symbols-outlined">visibility</span>
-                  </div>
-                  <div>
-                    <p className="font-bold text-slate-900 dark:text-white">Public Profile</p>
-                    <p className="text-xs text-slate-500 font-medium">Visible to search results</p>
-                  </div>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input 
-                    type="checkbox" 
-                    checked={isPublicProfile} 
-                    onChange={(e) => setIsPublicProfile(e.target.checked)}
-                    className="sr-only peer" 
-                  />
-                  <div className="w-12 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-800 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
-                </label>
-              </div>
-
-              <div className="pt-6 space-y-4">
-                <button 
-                  onClick={() => handleAction("Report Generating", "Your security report is being generated and will download shortly.", "info")}
-                  className="w-full bg-primary text-white font-black py-4 rounded-2xl shadow-lg shadow-primary/20 active:scale-[0.98] transition-all text-sm uppercase tracking-widest"
-                >
-                  Download Security Report
-                </button>
-                <div className="pt-4 border-t border-slate-200 dark:border-slate-800 text-center">
-                  <button 
-                    onClick={handleDeleteAccount}
-                    className="text-red-500 text-xs font-black uppercase tracking-widest hover:bg-red-50 dark:hover:bg-red-500/10 px-6 py-2 rounded-full transition-colors"
-                  >
-                    Delete Account Permanently
-                  </button>
-                </div>
-              </div>
-            </section>
           </div>
         </div>
       </main>

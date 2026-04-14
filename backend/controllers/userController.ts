@@ -1,5 +1,5 @@
-import { Request, Response } from "express";
 import mongoose from "mongoose";
+import bcrypt from "bcryptjs";
 import User from "../models/User";
 import Offer from "../models/Offer";
 import Review from "../models/Review";
@@ -242,6 +242,43 @@ export const getUserReviews = async (req: Request, res: Response): Promise<any> 
     res.status(200).json(reviews);
   } catch (error: any) {
     console.error("   [ERROR] GET USER REVIEWS:", error.message);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+// @desc    Change user password
+// @route   PUT /api/users/change-password
+// @access  Private
+export const changePassword = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const { oldPassword, newPassword } = req.body;
+    const userId = (req as any).user?.id || (req as any).user?._id;
+
+    if (!oldPassword || !newPassword) {
+      return res.status(400).json({ message: "Both old and new passwords are required" });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Verify old password
+    if (user.password) {
+      const isMatch = await bcrypt.compare(oldPassword, user.password);
+      if (!isMatch) {
+        return res.status(400).json({ message: "Incorrect current password" });
+      }
+    }
+
+    // Hash new password
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+    await user.save();
+
+    res.status(200).json({ message: "Password updated successfully" });
+  } catch (error: any) {
+    console.error("   [ERROR] CHANGE PASSWORD:", error.message);
     res.status(500).json({ message: "Server Error" });
   }
 };

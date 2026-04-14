@@ -7,6 +7,7 @@ import { useStore } from "@/lib/store";
 import DashboardHeader from "@/components/DashboardHeader";
 import { socketService } from "@/lib/socket";
 import HistoryModal from "@/components/HistoryModal";
+import ActivityItem from "@/components/ActivityItem";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
@@ -33,7 +34,9 @@ export default function DashboardPage() {
     myJobs,
     transactions,
     fetchTransactions,
-    fetchProfile
+    fetchProfile,
+    notifications,
+    fetchNotifications
   } = useStore();
 
   const [escrow, setEscrow] = useState<EscrowSummary | null>(null);
@@ -68,6 +71,7 @@ export default function DashboardPage() {
     fetchReceivedProposals();
     fetchEscrow();
     fetchTransactions();
+    fetchNotifications();
 
     // Socket.io Real-time Listeners
     const socket = socketService.getSocket();
@@ -78,6 +82,7 @@ export default function DashboardPage() {
         fetchMyProposals();
         fetchReceivedProposals();
         fetchProfile();
+        fetchNotifications();
       };
       const handleEscrowUpdate = () => {
         fetchEscrow();
@@ -408,6 +413,37 @@ export default function DashboardPage() {
           {/* Right Column */}
           <div className="lg:col-span-1 space-y-8">
 
+            {/* Recent Activity */}
+            <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm overflow-hidden">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-bold text-slate-900">Recent Activity</h3>
+                <Link href="/notifications" className="text-xs font-bold text-slate-400 hover:text-primary transition-colors">
+                  View all
+                </Link>
+              </div>
+
+              {notifications.length > 0 ? (
+                <div className="divide-y divide-slate-50 -mx-6">
+                  {notifications.slice(0, 5).map((activity) => (
+                    <ActivityItem
+                      key={activity._id}
+                      type={activity.type}
+                      title={activity.title}
+                      message={activity.message}
+                      createdAt={activity.createdAt}
+                      isRead={activity.isRead}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="py-10 text-center">
+                  <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <span className="material-symbols-outlined text-slate-300">notifications_off</span>
+                  </div>
+                  <p className="text-sm text-slate-500">No recent activity</p>
+                </div>
+              )}
+            </div>
 
 
             {/* Dashboard Tip */}

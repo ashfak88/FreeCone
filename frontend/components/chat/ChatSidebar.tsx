@@ -4,6 +4,8 @@ import React, { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useStore, Conversation, User } from "@/lib/store";
 import { format, isToday, isYesterday } from "date-fns";
+import Swal from "sweetalert2";
+import { API_URL, handleResponse } from "@/lib/api";
 
 export default function ChatSidebar() {
   const router = useRouter();
@@ -19,12 +21,43 @@ export default function ChatSidebar() {
     return participants?.find((p: any) => p._id !== user?.id && p._id !== user?._id);
   };
   
-  const handleReport = () => {
+  const handleReport = async () => {
     if (!reportReason.trim()) return;
-    // Mock report submission
-    alert("Thank you for your report. Our team will review it shortly.");
-    setIsReporting(false);
-    setReportReason("");
+    
+    try {
+      const token = localStorage.getItem("accessToken");
+      const res = await fetch(`${API_URL}/report`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          subject: "Chat Sidebar Report",
+          message: reportReason,
+          category: "message"
+        })
+      });
+
+      const data = await handleResponse(res);
+      if (data) {
+        Swal.fire({
+          title: "Report Submitted",
+          text: "Thank you for your report. Our team will review it shortly.",
+          icon: "success",
+          confirmButtonColor: "#6A6B4C"
+        });
+        setIsReporting(false);
+        setReportReason("");
+      }
+    } catch (err: any) {
+      Swal.fire({
+        title: "Error",
+        text: err.message || "Failed to submit report. Please try again later.",
+        icon: "error",
+        confirmButtonColor: "#6A6B4C"
+      });
+    }
   };
 
   // Build the unified list of chats including temp participants

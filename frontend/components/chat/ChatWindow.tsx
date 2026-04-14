@@ -5,8 +5,9 @@ import { useStore, Conversation, User, Message } from "@/lib/store";
 import MessageInput from "./MessageInput";
 import { format, isToday, isYesterday } from "date-fns";
 import Swal from "sweetalert2";
+import { API_URL, handleResponse } from "@/lib/api";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://13.60.254.174:5001/api";
+
 
 function ConfirmationMessageBubble({ msg }: { msg: any }) {
   const status = msg.metadata?.status || null;
@@ -245,7 +246,7 @@ export default function ChatWindow() {
 
       try {
         const token = localStorage.getItem("accessToken");
-        const res = await fetch(`${API_URL}/misc/report`, {
+        const res = await fetch(`${API_URL}/report`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -254,7 +255,8 @@ export default function ChatWindow() {
           body: JSON.stringify(formValues)
         });
 
-        if (res.ok) {
+        const data = await handleResponse(res);
+        if (data) {
           Swal.fire({
             title: "Report Submitted",
             text: "Administrators have been notified and will review the case shortly.",
@@ -262,8 +264,8 @@ export default function ChatWindow() {
             confirmButtonColor: "#6A6B4C"
           });
         }
-      } catch (err) {
-        Swal.fire("Error", "Failed to send report. Try again later.", "error");
+      } catch (err: any) {
+        Swal.fire("Error", err.message || "Failed to send report. Try again later.", "error");
       }
     }
   };

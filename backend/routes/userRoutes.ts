@@ -1,5 +1,5 @@
 import express from "express";
-import { getFreelancers, updateProfile, getProfile, getTestUsers, getUserById, submitReview, getUserReviews } from "../controllers/userController";
+import { getFreelancers, updateProfile, getProfile, getTestUsers, getUserById, submitReview, getUserReviews, changePassword } from "../controllers/userController";
 import { protect } from "../middleware/auth";
 
 const router = express.Router();
@@ -12,6 +12,9 @@ router.get("/profile", protect, getProfile);
 
 // @route   PUT /api/users/profile
 router.put("/profile", protect, updateProfile);
+
+// @route   PUT /api/users/change-password
+router.put("/change-password", protect, changePassword);
 
 // @route   GET /api/users/test-users
 router.get("/test-users", getTestUsers);
