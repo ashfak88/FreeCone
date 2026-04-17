@@ -19,48 +19,45 @@ passport.use(
 
         if (user) {
           if (user.status === "blocked") {
-            return done(null, false, { message: "Account suspended" });
+            return done(null, false, { message: "Account suspended" })
           }
           return done(null, user);
         }
 
-        // If not, check if user exists with the same email
-        user = await User.findOne({ email: profile.emails?.[0].value });
+        user = await User.findOne({ email: profile.emails?.[0].value })
 
         if (user) {
           if (user.status === "blocked") {
             return done(null, false, { message: "Account suspended" });
           }
-          // Update user with googleId
-          user.googleId = profile.id;
+          user.googleId = profile.id
           await user.save();
           return done(null, user);
         }
 
-        // Create new user if neither exists
         user = new User({
           name: profile.displayName,
           email: profile.emails?.[0].value,
           googleId: profile.id,
-          role: "user", // default role
+          role: "user",
         });
 
-        await user.save();
-        done(null, user);
+        await user.save()
+        done(null, user)
       } catch (err: any) {
-        done(err, undefined);
+        done(err, undefined)
       }
     }
   )
 );
 
 passport.serializeUser((user: any, done) => {
-  done(null, user.id);
+  done(null, user.id)
 });
 
 passport.deserializeUser(async (id: any, done) => {
   try {
-    const user = await User.findById(id);
+    const user = await User.findById(id)
     if (user && user.status === "blocked") {
       return done(null, false);
     }

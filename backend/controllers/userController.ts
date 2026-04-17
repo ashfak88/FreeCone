@@ -1,3 +1,4 @@
+import { Request, Response } from "express";
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import User from "../models/User";
@@ -35,7 +36,6 @@ export const getFreelancers = async (req: Request, res: Response): Promise<any> 
       ];
     }
 
-    // Rate filter
     if (rateRange !== "") {
       if (rateRange === "0-50") {
         query.rate = { $gt: 0, $lte: 50 };
@@ -46,7 +46,6 @@ export const getFreelancers = async (req: Request, res: Response): Promise<any> 
       }
     }
 
-    // Rating filter
     if (rating !== "" && !isNaN(Number(rating))) {
       query.rating = { $gte: Number(rating) };
     }

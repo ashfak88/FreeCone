@@ -1,4 +1,4 @@
-import { Response } from "express";
+import { Request, Response } from "express";
 import Message from "../models/Message";
 import Conversation from "../models/Conversation";
 import { getIO } from "../config/socket";

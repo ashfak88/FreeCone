@@ -1,4 +1,4 @@
-import { Response } from "express";
+import { Request, Response } from "express";
 import Notification from "../models/Notification";
 import Proposal from "../models/Proposal";
 import Offer from "../models/Offer";
