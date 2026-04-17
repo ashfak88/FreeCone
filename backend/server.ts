@@ -47,13 +47,23 @@ const allowedOrigins = [
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin) || origin.endsWith(".vercel.app")) {
+    
+    // Normalize origin: remove trailing slash and trim
+    const normalizedOrigin = origin.replace(/\/$/, "").trim();
+    
+    const isAllowed = allowedOrigins.some(allowed => 
+      allowed.replace(/\/$/, "").trim() === normalizedOrigin
+    ) || normalizedOrigin.endsWith(".vercel.app");
+
+    if (isAllowed) {
       callback(null, true);
     } else {
+      console.log(`CORS blocked for origin: ${origin}`);
       callback(null, false);
     }
   },
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
   credentials: true,
   optionsSuccessStatus: 200
 }));

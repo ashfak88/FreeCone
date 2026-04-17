@@ -5,8 +5,9 @@ let io: Server;
 
 export const initSocket = (server: HttpServer) => {
   const allowedOrigins = [
-    "https://freecone.duckdns.org",
+    "https://free-cone.vercel.app",
     "https://free-cone-dv81.vercel.app",
+    "https://freecone.duckdns.org",
     "http://localhost:3000",
     "http://localhost:3001"
   ];
@@ -17,7 +18,13 @@ export const initSocket = (server: HttpServer) => {
 
   io = new Server(server, {
     cors: {
-      origin: allowedOrigins,
+      origin: (origin, callback) => {
+        if (!origin) return callback(null, true);
+        const normalizedOrigin = origin.replace(/\/$/, "").trim();
+        const isAllowed = allowedOrigins.some(a => a.replace(/\/$/, "").trim() === normalizedOrigin) || 
+                         normalizedOrigin.endsWith(".vercel.app");
+        callback(null, isAllowed);
+      },
       methods: ["GET", "POST"],
       credentials: true,
     },
