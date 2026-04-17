@@ -1,4 +1,7 @@
 import dotenv from "dotenv";
+
+dotenv.config();
+
 import express from "express";
 import http from "http";
 import cors from "cors";
@@ -25,7 +28,6 @@ import paymentRoutes from "./routes/paymentRoutes";
 import configRoutes from "./routes/configRoutes";
 
 
-dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
@@ -34,10 +36,26 @@ initSocket(server);
 
 connectDB();
 
+const allowedOrigins = [
+  "https://free-cone.vercel.app",
+  "https://free-cone-dv81.vercel.app",
+  "https://freecone.duckdns.org",
+  "http://localhost:3000",
+  "http://localhost:3001"
+];
+
 app.use(cors({
-  origin: ["https://free-cone-dv81.vercel.app", "https://freecone.duckdns.org", "http://localhost:3000", "http://localhost:3001"],
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  credentials: true
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin) || origin.endsWith(".vercel.app")) {
+      callback(null, true);
+    } else {
+      callback(null, false);
+    }
+  },
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  credentials: true,
+  optionsSuccessStatus: 200
 }));
 
 app.use(express.json());
