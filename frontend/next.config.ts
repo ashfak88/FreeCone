@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: `${process.env.BACKEND_URL || 'https://freecone.duckdns.org'}/api/:path*`,
+        destination: `${process.env.BASE_URL || 'http://localhost:5001'}/api/:path*`,
       },
     ];
   },

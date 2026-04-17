@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/User";
+import SystemConfig from "../models/Config";
 
 const generateAccessToken = (userId: string, role: string) => {
   const secret = process.env.JWT_ACCESS_SECRET as string;
@@ -20,6 +21,18 @@ export const registerUser = async (req: Request, res: Response): Promise<any> =>
 
     if (!name || !email || !password) {
       return res.status(400).json({ message: "Please enter all required fields" });
+    }
+
+    // CHECK MAINTENANCE MODE: Only admins can register (though usually admins are created differently, 
+    // but this prevents regular users from registering during maintenance)
+    const maintenance = await SystemConfig.findOne({ key: "maintenanceMode" });
+    const isMaintenance = maintenance ? (maintenance.value === true || String(maintenance.value).toLowerCase() === "true") : false;
+
+    if (isMaintenance) {
+      return res.status(503).json({ 
+        message: "System is under maintenance. Registration is temporarily disabled.",
+        maintenance: true 
+      });
     }
 
     let user = await User.findOne({ email });
@@ -78,6 +91,24 @@ export const loginUser = async (req: Request, res: Response): Promise<any> => {
     const isMatch = await bcrypt.compare(password, user.password || "");
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid credentials" });
+    }
+
+    // CHECK MAINTENANCE MODE: Only admins can login
+    const maintenance = await SystemConfig.findOne({ key: "maintenanceMode" });
+    const isMaintenance = maintenance ? (maintenance.value === true || String(maintenance.value).toLowerCase() === "true") : false;
+
+    if (isMaintenance) {
+      const role = (user.role || "").toLowerCase();
+      console.log(`   [MAINTENANCE] Login attempt by role: ${role}`);
+      
+      if (role !== "admin") {
+        console.log(`   [MAINTENANCE] BLOCKING non-admin login: ${user.email}`);
+        return res.status(503).json({ 
+          message: "System is under maintenance. Only administrators can login at this time.",
+          maintenance: true 
+        });
+      }
+      console.log(`   [MAINTENANCE] ALLOWING admin login: ${user.email}`);
     }
 
     // Log the login attempt
@@ -143,6 +174,21 @@ export const refreshToken = async (req: Request, res: Response): Promise<any> =>
       return res.status(403).json({ message: "Your account is suspended. Please contact support." });
     }
 
+    // CHECK MAINTENANCE MODE: Only admins can refresh tokens during maintenance
+    const maintenance = await SystemConfig.findOne({ key: "maintenanceMode" });
+    const isMaintenance = maintenance ? (maintenance.value === true || String(maintenance.value).toLowerCase() === "true") : false;
+
+    if (isMaintenance) {
+       const role = (user.role || "").toLowerCase();
+       if (role !== "admin") {
+         console.log(`   [MAINTENANCE] BLOCKING non-admin refresh: ${user.email}`);
+         return res.status(503).json({ 
+           message: "System is under maintenance. Access restricted to administrators.",
+           maintenance: true 
+         });
+       }
+    }
+
     const newAccessToken = jwt.sign({ id: user._id, role: user.role }, accessSecret, { expiresIn: "24h" });
     res.json({ accessToken: newAccessToken });
   } catch {
@@ -157,14 +203,40 @@ export const logoutUser = (_req: Request, res: Response) => {
 };
 
 // Google Callback
-export const googleCallback = (req: Request, res: Response) => {
+export const googleCallback = async (req: Request, res: Response) => {
   const user = req.user as any;
 
   if (user && user.status === "blocked") {
-    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
-    const errorUrl = new URL(`${frontendUrl}/auth/error`);
+    const targetFrontend = process.env.FRONTEND_URL;
+    if (!targetFrontend) {
+      console.error("FRONTEND_URL is not defined in environment variables");
+      return res.status(500).send("Configuration Error: FRONTEND_URL missing");
+    }
+    const errorUrl = new URL(`${targetFrontend}/auth/error`);
     errorUrl.searchParams.append("message", "Your account is suspended. Please contact support.");
     return res.redirect(errorUrl.toString());
+  }
+
+  // CHECK MAINTENANCE MODE: Only admins can login via Google
+  const isMaintenanceActive = await (async () => {
+    const maintenance = await SystemConfig.findOne({ key: "maintenanceMode" });
+    return maintenance ? (maintenance.value === true || String(maintenance.value).toLowerCase() === "true") : false;
+  })();
+
+  if (isMaintenanceActive) {
+    const role = (user.role || "").toLowerCase();
+    console.log(`   [MAINTENANCE] Google login attempt by role: ${role}`);
+    
+    if (role !== "admin") {
+      console.log(`   [MAINTENANCE] BLOCKING non-admin Google login: ${user.email}`);
+      const targetFrontend = process.env.FRONTEND_URL;
+      if (!targetFrontend) {
+        return res.status(503).json({ message: "Maintenance mode active, and FRONTEND_URL is missing." });
+      }
+      const errorUrl = new URL(`${targetFrontend}/auth/error`);
+      errorUrl.searchParams.append("message", "System is under maintenance. Only administrators can login at this time.");
+      return res.redirect(errorUrl.toString());
+    }
   }
 
   const accessToken = generateAccessToken(String(user._id), user.role);
@@ -191,8 +263,12 @@ export const googleCallback = (req: Request, res: Response) => {
     isProfileComplete: user.isProfileComplete
   };
 
-  const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
-  const successUrl = new URL(`${frontendUrl}/auth/success`);
+  const targetFrontend = process.env.FRONTEND_URL;
+  if (!targetFrontend) {
+    console.error("FRONTEND_URL is not defined in environment variables");
+    return res.status(500).send("Configuration Error: FRONTEND_URL missing");
+  }
+  const successUrl = new URL(`${targetFrontend}/auth/success`);
   successUrl.searchParams.append("token", accessToken);
   successUrl.searchParams.append("user", encodeURIComponent(JSON.stringify(userInfo)));
 

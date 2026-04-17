@@ -13,7 +13,7 @@ passport.use(
     {
       clientID: process.env.GOOGLE_CLIENT_ID as string,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
-      callbackURL: "https://freecone.duckdns.org/api/auth/google/callback",
+      callbackURL: `${process.env.BASE_URL}/api/auth/google/callback`,
       proxy: true,
     },
     async (accessToken, refreshToken, profile, done) => {

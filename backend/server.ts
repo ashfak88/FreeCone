@@ -37,36 +37,39 @@ initSocket(server);
 connectDB();
 
 const allowedOrigins = [
+  process.env.FRONTEND_URL,
   "https://free-cone.vercel.app",
   "https://free-cone-dv81.vercel.app",
   "https://freecone.duckdns.org",
   "http://localhost:3000",
   "http://localhost:3001"
-];
+].filter(Boolean) as string[];
 
-app.use(cors({
-  origin: (origin, callback) => {
+const corsOptions = {
+  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
     if (!origin) return callback(null, true);
     
-    // Normalize origin: remove trailing slash and trim
-    const normalizedOrigin = origin.replace(/\/$/, "").trim();
+    // Normalize: lowercase, remove trailing slash, and trim
+    const normalizedOrigin = origin.toLowerCase().replace(/\/$/, "").trim();
     
     const isAllowed = allowedOrigins.some(allowed => 
-      allowed.replace(/\/$/, "").trim() === normalizedOrigin
+      allowed.toLowerCase().replace(/\/$/, "").trim() === normalizedOrigin
     ) || normalizedOrigin.endsWith(".vercel.app");
 
     if (isAllowed) {
       callback(null, true);
     } else {
-      console.log(`CORS blocked for origin: ${origin}`);
+      console.warn(`   [CORS] Blocked origin: ${origin}`);
       callback(null, false);
     }
   },
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"],
   credentials: true,
   optionsSuccessStatus: 200
-}));
+};
+
+app.use(cors(corsOptions));
 
 app.use(express.json());
 app.use(cookieParser());
