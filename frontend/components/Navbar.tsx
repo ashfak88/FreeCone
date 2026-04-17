@@ -77,7 +77,7 @@ export default function Navbar() {
   }, []);
 
   const handleLogout = async () => {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://13.60.254.174:5001/api";
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
     try {
       await fetch(`${API_URL}/auth/logout`, {
         method: "POST",

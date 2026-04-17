@@ -4,13 +4,16 @@ import User from "../models/User";
 import dotenv from "dotenv";
 
 dotenv.config();
-
+console.log(
+  "Callback URL:",
+  `${process.env.BASE_URL}/api/auth/google/callback`
+);
 passport.use(
   new GoogleStrategy(
     {
       clientID: process.env.GOOGLE_CLIENT_ID as string,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
-      callbackURL: `${process.env.BASE_URL}/api/auth/google/callback`,
+      callbackURL: "https://freecone.duckdns.org/api/auth/google/callback",
       proxy: true,
     },
     async (accessToken, refreshToken, profile, done) => {
