@@ -14,26 +14,32 @@ class SocketService {
         transports: ["polling", "websocket"],
         autoConnect: true,
         reconnection: true,
-        reconnectionAttempts: Infinity,
-        reconnectionDelay: 1000,
-        reconnectionDelayMax: 5000,
+        reconnectionAttempts: 10,
+        reconnectionDelay: 2000,
+        reconnectionDelayMax: 10000,
         timeout: 20000,
+        forceNew: true,
       });
 
       this.socket.on("connect", () => {
-        console.log("   [SOCKET] Connected to server. ID:", this.socket?.id);
+        console.log("   [SOCKET] ✅ Connected to server. ID:", this.socket?.id);
         if (this.userId) {
           console.log("   [SOCKET] Re-joining room:", this.userId);
           this.socket?.emit("join", this.userId);
         }
-      })
-
-      this.socket.on("disconnect", (reason) => {
-        console.log("   [SOCKET] Disconnected:", reason);
       });
 
       this.socket.on("connect_error", (error) => {
-        console.error("   [SOCKET] Connection Error:", error.message);
+        console.error("   [SOCKET] ❌ Connection Error:", error.message);
+        console.log("   [SOCKET] Attempting transport fallback...");
+      });
+
+      this.socket.on("reconnect_attempt", (attempt) => {
+        console.log("   [SOCKET] Reconnection attempt:", attempt);
+      });
+
+      this.socket.on("disconnect", (reason) => {
+        console.log("   [SOCKET] ⚠️ Disconnected:", reason);
       });
     }
     return this.socket;

@@ -30,6 +30,8 @@ import configRoutes from "./routes/configRoutes";
 
 
 const app = express();
+app.set("trust proxy", 1);
+
 const server = http.createServer(app);
 
 initSocket(server);

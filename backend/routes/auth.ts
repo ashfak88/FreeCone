@@ -23,7 +23,9 @@ router.post("/logout", logoutUser);
 router.get("/google", passport.authenticate("google", { scope: ["profile", "email"] }))
 router.get(
   "/google/callback",
-  passport.authenticate("google", { failureRedirect: "/login" }),
+  passport.authenticate("google", { 
+    failureRedirect: `${process.env.FRONTEND_URL || "http://localhost:3000"}/login?error=OAuthFailed` 
+  }),
   googleCallback
 );
 

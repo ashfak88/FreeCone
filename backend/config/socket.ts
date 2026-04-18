@@ -5,31 +5,34 @@ let io: Server;
 
 export const initSocket = (server: HttpServer) => {
   const allowedOrigins = [
+    process.env.FRONTEND_URL,
     "https://free-cone.vercel.app",
     "https://free-cone-dv81.vercel.app",
     "https://freecone.duckdns.org",
     "http://localhost:3000",
     "http://localhost:3001"
-  ];
-
-  if (process.env.FRONTEND_URL) {
-    allowedOrigins.push(process.env.FRONTEND_URL);
-  }
+  ].filter(Boolean) as string[];
 
   io = new Server(server, {
     cors: {
       origin: (origin, callback) => {
         if (!origin) return callback(null, true);
-        const normalizedOrigin = origin.replace(/\/$/, "").trim();
-        const isAllowed = allowedOrigins.some(a => a.replace(/\/$/, "").trim() === normalizedOrigin) || 
-                         normalizedOrigin.endsWith(".vercel.app");
+        
+        const normalizedOrigin = origin.toLowerCase().replace(/\/$/, "").trim();
+        const isAllowed = allowedOrigins.some(a => 
+          a.toLowerCase().replace(/\/$/, "").trim() === normalizedOrigin
+        ) || normalizedOrigin.endsWith(".vercel.app");
+        
         callback(null, isAllowed);
       },
-      methods: ["GET", "POST"],
+      methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
       credentials: true,
+      allowedHeaders: ["Content-Type", "Authorization"]
     },
+    allowEIO3: true, // Compatibility for some clients
     pingTimeout: 60000,
     pingInterval: 25000,
+    connectTimeout: 45000,
     transports: ["polling", "websocket"],
   });
 
