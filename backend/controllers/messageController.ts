@@ -104,11 +104,11 @@ export const getMessages = async (req: any, res: Response): Promise<void> => {
 
 export const sendMessage = async (req: any, res: Response): Promise<void> => {
   try {
-    const { recipientId, content, conversationId } = req.body;
+    const { recipientId, content, conversationId, type, metadata } = req.body;
     const senderId = req.user._id;
 
     console.log("   [SERVER] Full Request Body:", JSON.stringify(req.body, null, 2));
-    console.log(`   [SERVER] sendMessage from ${senderId}: contentLen=${content?.length}, recipient=${recipientId}, convId=${conversationId}`);
+    console.log(`   [SERVER] sendMessage from ${senderId}: type=${type || 'text'}, recipient=${recipientId}, convId=${conversationId}`);
 
     if (!content || (!recipientId && !conversationId)) {
       res.status(400).json({ 
@@ -153,6 +153,8 @@ export const sendMessage = async (req: any, res: Response): Promise<void> => {
       conversationId: conversation._id,
       sender: senderId,
       content,
+      type: type || "text",
+      metadata: metadata || {},
       readBy: [senderId],
     });
 

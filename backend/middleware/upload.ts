@@ -37,6 +37,20 @@ const resumeStorage = new CloudinaryStorage({
   },
 });
 
+// ---------------- VOICE MESSAGE STORAGE ----------------
+const voiceStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: async (req: any, file: any) => {
+    return {
+      folder: "voice_messages",
+      resource_type: "video", // Required for audio files in Cloudinary
+      public_id: `voice_${req.user?.id || req.user?._id || Date.now()}_${Date.now()}`,
+      access_mode: "public",
+      type: "upload",
+    };
+  },
+});
+
 // ---------------- MULTER EXPORTS ----------------
 export const uploadProfile = multer({
   storage: profileStorage,
@@ -44,4 +58,8 @@ export const uploadProfile = multer({
 
 export const uploadResume = multer({
   storage: resumeStorage,
+});
+
+export const uploadVoice = multer({
+  storage: voiceStorage,
 });

@@ -153,7 +153,7 @@ export default function AdminAuditPage() {
                   
                   {/* Reporters Info */}
                   <div className="md:w-64 border-r border-slate-100 dark:border-slate-800 pr-8">
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-4">Reporter</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-4">Victim (Reporter)</p>
                     <div className="flex items-center gap-3">
                       <img 
                         src={item.user?.imageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(item.user?.name || 'U')}&background=random`} 
@@ -163,12 +163,18 @@ export default function AdminAuditPage() {
                       <div className="min-w-0">
                         <p className="text-sm font-bold truncate text-slate-900 dark:text-white">{item.user?.name}</p>
                         <p className="text-[10px] text-slate-500 truncate">{item.user?.email}</p>
+                        <button 
+                          onClick={() => window.open(`/admin/users/${item.user?._id}`, '_blank')}
+                          className="text-[9px] font-black uppercase tracking-widest text-primary hover:underline mt-1 block"
+                        >
+                          View Profile
+                        </button>
                       </div>
                     </div>
 
                     {item.reportedUser && (
                       <div className="mt-8">
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-red-400 mb-4">Accused User</p>
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-red-500 mb-4">Reported User</p>
                         <div className="flex items-center gap-3">
                           <img 
                             src={item.reportedUser?.imageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(item.reportedUser?.name || 'U')}&background=fecaca&color=991b1b`} 
@@ -178,6 +184,12 @@ export default function AdminAuditPage() {
                           <div className="min-w-0">
                             <p className="text-sm font-bold truncate text-red-600">{item.reportedUser?.name}</p>
                             <p className="text-[10px] text-slate-500 truncate">{item.reportedUser?.email}</p>
+                            <button 
+                              onClick={() => window.open(`/admin/users/${item.reportedUser?._id}`, '_blank')}
+                              className="text-[9px] font-black uppercase tracking-widest text-red-500 hover:underline mt-1 block"
+                            >
+                              View Profile
+                            </button>
                           </div>
                         </div>
                       </div>

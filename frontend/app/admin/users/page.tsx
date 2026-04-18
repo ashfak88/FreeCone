@@ -30,6 +30,10 @@ export default function UserManagementPage() {
 
   const fetchUsers = async () => {
     setIsLoading(true);
+    const queryParams = new URLSearchParams();
+    if (activeStatusFilter !== "all") queryParams.append("status", activeStatusFilter);
+    if (search) queryParams.append("search", search);
+
     try {
       const token = localStorage.getItem("accessToken");
       const res = await fetch(`${API_URL}/admin/users?${queryParams.toString()}`, {
@@ -55,6 +59,7 @@ export default function UserManagementPage() {
       return () => clearTimeout(timeoutId);
     }
   }, [currentUser, activeStatusFilter, search]);
+
 
   const handleUpdateStatus = async (userId: string, newStatus: string) => {
     try {

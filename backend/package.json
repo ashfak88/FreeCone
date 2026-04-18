@@ -1,7 +1,7 @@
 {
   "name": "freecone-backend",
   "scripts": {
-    "dev": "ts-node server.ts",
+    "dev": "nodemon server.ts",
     "start": "node dist/server.js",
     "build": "tsc"
   },

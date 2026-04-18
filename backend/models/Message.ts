@@ -14,7 +14,7 @@ const MessageSchema: Schema = new Schema({
   conversationId: { type: Schema.Types.ObjectId, ref: "Conversation", required: true },
   sender: { type: Schema.Types.ObjectId, ref: "User", required: true },
   content: { type: String, required: true },
-  type: { type: String, enum: ["text", "payment", "confirmation"], default: "text" },
+  type: { type: String, enum: ["text", "payment", "confirmation", "voice"], default: "text" },
   metadata: { type: Schema.Types.Mixed },
   readBy: [{ type: Schema.Types.ObjectId, ref: "User" }],
   createdAt: { type: Date, default: Date.now },

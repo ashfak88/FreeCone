@@ -36,22 +36,38 @@ export const getJobById = async (req: Request, res: Response): Promise<void> => 
 
 export const createJob = async (req: any, res: Response): Promise<void> => {
   try {
-    const { title, description, budget, category, timeline, skills, client, user } = req.body;
+    const { title, description, budget, category, timeline, skills, user: providedUser } = req.body;
+    const userId = req.user?._id || providedUser;
 
     if (!title || !description || !budget) {
       res.status(400).json({ message: "Please provide all required fields." });
       return;
     }
 
+    // Fetch real user data to populate client info
+    const postingUser = await User.findById(userId);
+    if (!postingUser) {
+      res.status(404).json({ message: "User not found." });
+      return;
+    }
+
     const newJob = new Job({
-      user: req.user?._id || user,
+      user: userId,
       title,
       description,
       budget,
       category,
       timeline,
-      skills,
-      client,
+      skills: Array.isArray(skills) ? skills : [],
+      client: {
+        name: postingUser.name,
+        role: postingUser.title,
+        avatar: postingUser.imageUrl,
+        location: postingUser.location,
+        rating: postingUser.rating || 5.0,
+        reviewsCount: postingUser.totalReviews || 0,
+        verified: !!postingUser.isProfileComplete,
+      },
     });
 
     const savedJob = await newJob.save();

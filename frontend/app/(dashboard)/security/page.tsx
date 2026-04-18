@@ -26,6 +26,62 @@ export default function SecurityPage() {
     });
   };
 
+  const handleChangePassword = async () => {
+    const { value: formValues } = await Swal.fire({
+      title: 'Update Password',
+      html:
+        '<div class="space-y-4">' +
+        '<input id="old-pass" type="password" class="swal2-input !mx-0 !w-full" placeholder="Current Password">' +
+        '<input id="new-pass" type="password" class="swal2-input !mx-0 !w-full" placeholder="New Password">' +
+        '<input id="confirm-pass" type="password" class="swal2-input !mx-0 !w-full" placeholder="Confirm New Password">' +
+        '</div>',
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: 'Update Now',
+      confirmButtonColor: '#6A6B4C',
+      preConfirm: () => {
+        const oldPass = (document.getElementById('old-pass') as HTMLInputElement).value;
+        const newPass = (document.getElementById('new-pass') as HTMLInputElement).value;
+        const confirmPass = (document.getElementById('confirm-pass') as HTMLInputElement).value;
+
+        if (!oldPass || !newPass || !confirmPass) {
+          Swal.showValidationMessage('Please fill in all fields');
+          return false;
+        }
+        if (newPass !== confirmPass) {
+          Swal.showValidationMessage('New passwords do not match');
+          return false;
+        }
+        if (newPass.length < 6) {
+          Swal.showValidationMessage('Password must be at least 6 characters');
+          return false;
+        }
+        return { oldPassword: oldPass, newPassword: newPass };
+      }
+    });
+
+    if (formValues) {
+      try {
+        const token = localStorage.getItem("accessToken");
+        const res = await fetch(`${API_URL}/users/change-password`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify(formValues)
+        });
+
+        const data = await handleResponse(res);
+        if (data) {
+          handleAction("Success", "Your password has been updated successfully.", "success");
+        }
+      } catch (err: any) {
+        handleAction("Error", err.message || "Failed to update password.", "error");
+      }
+    }
+  };
+
 
   return (
     <div className="min-h-full bg-slate-50 dark:bg-slate-950">
@@ -121,7 +177,7 @@ export default function SecurityPage() {
                   onClick={handleChangePassword}
                   className="text-[11px] font-black text-primary uppercase tracking-widest hover:underline bg-slate-50 dark:bg-slate-800 px-4 py-2 rounded-lg transition-colors hover:bg-primary hover:text-white"
                 >
-                  Forgot Password?
+                  Change Password
                 </button>
               </div>
             </section>

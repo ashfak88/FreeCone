@@ -6,6 +6,7 @@ import MessageInput from "./MessageInput";
 import { format, isToday, isYesterday } from "date-fns";
 import Swal from "sweetalert2";
 import { API_URL, handleResponse } from "@/lib/api";
+import { Play, Pause, Mic as MicIcon } from "lucide-react";
 
 
 
@@ -157,6 +158,125 @@ function PaymentMessageBubble({ msg }: { msg: any }) {
           Pay Now
         </button>
       )}
+    </div>
+  );
+}
+
+function VoiceMessageBubble({ msg, isMe }: { msg: any; isMe: boolean }) {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [playbackRate, setPlaybackRate] = useState(1);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  const togglePlay = () => {
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause();
+      } else {
+        audioRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  const onTimeUpdate = () => {
+    if (audioRef.current) {
+      setProgress((audioRef.current.currentTime / audioRef.current.duration) * 100);
+    }
+  };
+
+  const onLoadedMetadata = () => {
+    if (audioRef.current) {
+      setDuration(audioRef.current.duration);
+    }
+  };
+
+  const onEnded = () => {
+    setIsPlaying(false);
+    setProgress(0);
+  };
+
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = parseFloat(e.target.value);
+    if (audioRef.current) {
+      audioRef.current.currentTime = (val / 100) * audioRef.current.duration;
+      setProgress(val);
+    }
+  };
+
+  const toggleSpeed = () => {
+    const rates = [1, 1.5, 2];
+    const currentIndex = rates.indexOf(playbackRate);
+    const nextIndex = (currentIndex + 1) % rates.length;
+    const nextRate = rates[nextIndex];
+    setPlaybackRate(nextRate);
+    if (audioRef.current) {
+      audioRef.current.playbackRate = nextRate;
+    }
+  };
+
+  const formatTime = (time: number) => {
+    if (isNaN(time)) return "0:00";
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${String(seconds).padStart(2, '0')}`;
+  };
+
+  return (
+    <div className="flex items-center gap-3 py-1.5 min-w-[240px]">
+      <div className="relative shrink-0">
+        <img 
+          src={msg.sender?.imageUrl || msg.sender?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(msg.sender?.name || 'U')}&background=0b141a&color=fff`}
+          alt="Avatar"
+          className="size-10 rounded-full object-cover border border-wa-bg-search"
+        />
+        <div className="absolute -bottom-1 -right-1 bg-wa-bg-sidebar rounded-full p-1 border border-wa-bg-search">
+           <MicIcon className="size-3 text-wa-check-blue fill-current" />
+        </div>
+      </div>
+
+      <button 
+        onClick={togglePlay}
+        className="size-11 flex items-center justify-center text-wa-text-secondary hover:text-wa-text-primary transition-colors bg-wa-bg-search/20 rounded-full"
+      >
+        {isPlaying ? (
+          <Pause className="size-6 fill-current" />
+        ) : (
+          <Play className="size-6 fill-current ml-0.5" />
+        )}
+      </button>
+
+      <div className="flex-1 flex flex-col gap-1">
+        <input 
+          type="range" 
+          value={progress || 0}
+          onChange={handleSeek}
+          className="w-full h-1 bg-wa-bg-search rounded-lg appearance-none cursor-pointer accent-wa-check-blue"
+          style={{
+            background: `linear-gradient(to right, #53bdeb ${progress}%, #d1d7db ${progress}%)`
+          }}
+        />
+        <div className="flex justify-between items-center px-0.5">
+           <span className="text-[11px] font-medium text-wa-text-secondary">
+             {isPlaying ? formatTime(audioRef.current?.currentTime || 0) : formatTime(duration)}
+           </span>
+           <button 
+             onClick={toggleSpeed}
+             className="bg-wa-bg-search rounded-full px-1.5 py-0.5 text-[10px] font-black text-wa-text-primary hover:bg-wa-text-secondary/10 transition-colors"
+           >
+             {playbackRate}x
+           </button>
+        </div>
+      </div>
+
+      <audio 
+        ref={audioRef}
+        src={msg.content}
+        onTimeUpdate={onTimeUpdate}
+        onLoadedMetadata={onLoadedMetadata}
+        onEnded={onEnded}
+      />
     </div>
   );
 }
@@ -375,6 +495,8 @@ export default function ChatWindow() {
                           <PaymentMessageBubble msg={msg} />
                         ) : msg.type === 'confirmation' ? (
                           <ConfirmationMessageBubble msg={msg} />
+                        ) : (msg.type === 'voice' || (typeof msg.content === 'string' && msg.content.includes('voice_messages') && msg.content.endsWith('.webm'))) ? (
+                          <VoiceMessageBubble msg={msg} isMe={isMe} />
                         ) : (
                           <span className="text-[14.2px] leading-snug break-words whitespace-pre-wrap inline-block">
                             {msg.content}

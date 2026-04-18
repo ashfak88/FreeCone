@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useStore } from "@/lib/store";
 import { API_URL, handleResponse } from "@/lib/api";
+import Swal from "sweetalert2";
 
 interface UserDetail {
   user: {
@@ -118,6 +119,70 @@ export default function AdminUserDetailPage() {
       console.error("Failed to update role:", error);
     } finally {
       setIsUpdating(false);
+    }
+  };
+
+  const handleNotifyUser = async () => {
+    if (!data?.user) return;
+    const { user } = data;
+    
+    const { value: formValues } = await Swal.fire({
+      title: `<div class="flex items-center gap-3 text-slate-900 dark:text-white"><span class="material-symbols-outlined text-primary">campaign</span> Notify ${user.name}</span></div>`,
+      html:
+        '<div class="space-y-4 pt-4">' +
+        '<input id="swal-title" class="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl px-4 py-3 text-sm font-bold uppercase tracking-wider text-slate-900 dark:text-white" placeholder="Message Title (e.g. Account Update)">' +
+        '<textarea id="swal-message" class="w-full h-32 bg-slate-50 dark:bg-slate-800 border-none rounded-xl px-4 py-3 text-sm font-medium resize-none shadow-inner text-slate-900 dark:text-white" placeholder="Detailed message for the user..."></textarea>' +
+        '</div>',
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: 'Send Notification',
+      confirmButtonColor: '#6A6B4C',
+      cancelButtonColor: '#94a3b8',
+      customClass: {
+        popup: 'rounded-3xl p-8 bg-white dark:bg-slate-900',
+        confirmButton: 'rounded-xl px-8 py-3 text-[10px] font-black uppercase tracking-widest',
+        cancelButton: 'rounded-xl px-8 py-3 text-[10px] font-black uppercase tracking-widest'
+      },
+      preConfirm: () => {
+        const title = (document.getElementById('swal-title') as HTMLInputElement).value;
+        const message = (document.getElementById('swal-message') as HTMLTextAreaElement).value;
+        if (!title.trim() || !message.trim()) {
+           Swal.showValidationMessage('Both title and message are required');
+           return false;
+        }
+        return [title, message];
+      }
+    });
+
+    if (formValues && formValues[0] && formValues[1]) {
+      try {
+        const token = localStorage.getItem("accessToken");
+        const res = await fetch(`${API_URL}/admin/send-notification`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+          body: JSON.stringify({ 
+            userId: user._id,
+            title: formValues[0], 
+            message: formValues[1] 
+          }),
+        });
+
+        const resData = await handleResponse(res);
+        if (resData) {
+          Swal.fire({
+            title: "Success",
+            text: "Notification sent successfully",
+            icon: "success",
+            confirmButtonColor: "#6A6B4C",
+            customClass: { popup: 'rounded-3xl' }
+          });
+        }
+      } catch (error: any) {
+        Swal.fire("Error", error.message || "Failed to send notification", "error");
+      }
     }
   };
 
@@ -275,6 +340,13 @@ export default function AdminUserDetailPage() {
                       Promote to Admin
                     </button>
                   )}
+                  <button 
+                    onClick={handleNotifyUser}
+                    className="w-full bg-white/10 dark:bg-slate-900/10 border border-white/20 dark:border-slate-900/20 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all mb-4 hover:bg-primary/10 hover:border-primary flex items-center justify-center gap-2"
+                  >
+                    <span className="material-symbols-outlined text-sm">campaign</span>
+                    Send Direct Notification
+                  </button>
                   <button className="w-full bg-white/10 dark:bg-slate-900/10 border border-white/20 dark:border-slate-900/20 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all">
                     Reset Security Keys
                   </button>

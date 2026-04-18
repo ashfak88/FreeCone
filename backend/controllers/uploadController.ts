@@ -108,3 +108,27 @@ export const resumeDelete = async (req: Request, res: Response): Promise<any> =>
     res.status(500).json({ message: "Server Error", error: error.message });
   }
 };
+
+export const voiceMessageUpload = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const userId = (req as any).user?.id || (req as any).user?._id;
+    if (!userId) {
+      return res.status(401).json({ message: "Not authorized" });
+    }
+
+    const reqAny = req as any;
+    if (!reqAny.file) {
+      return res.status(400).json({ message: "No audio file uploaded" });
+    }
+
+    const audioUrl = reqAny.file.path; 
+
+    res.status(200).json({
+      message: "Voice message uploaded successfully",
+      audioUrl: audioUrl
+    });
+  } catch (error: any) {
+    console.error("Voice Upload Error:", error);
+    res.status(500).json({ message: "Server Error", error: error.message });
+  }
+};

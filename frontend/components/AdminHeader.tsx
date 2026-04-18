@@ -80,11 +80,28 @@ export default function AdminHeader() {
                 <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">{user.name}</p>
                 <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{user.email}</p>
               </div>
+              <div className="py-1">
+                <button
+                  onClick={() => { router.push("/admin/broadcast"); setDropdownOpen(false); }}
+                  className="w-full text-left px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors flex items-center gap-2"
+                >
+                  <span className="material-symbols-outlined text-[18px]">campaign</span>
+                  Broadcast Center
+                </button>
+                <button
+                  onClick={() => { router.push("/admin/dashboard"); setDropdownOpen(false); }}
+                  className="w-full text-left px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors flex items-center gap-2"
+                >
+                  <span className="material-symbols-outlined text-[18px]">dashboard</span>
+                  Dashboard
+                </button>
+              </div>
               <div className="border-t border-slate-100 dark:border-slate-700">
                 <button
                   onClick={handleLogout}
-                  className="w-full text-left px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                  className="w-full text-left px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-2"
                 >
+                  <span className="material-symbols-outlined text-[18px]">logout</span>
                   Log Out
                 </button>
               </div>

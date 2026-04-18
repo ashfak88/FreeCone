@@ -11,14 +11,16 @@ import {
   getAdminComplaints,
   updateComplaintStatus,
   getSettings,
-  updateSettings
+  updateSettings,
+  broadcastMessage,
+  notifyUser
 } from "../controllers/adminController";
 
 const router = express.Router();
 console.log("   [ROUTER] Admin Routes Loaded");
 
-
 router.get("/stats", protect, isAdmin, getDashboardStats);
+router.post("/send-notification", protect, isAdmin, notifyUser);
 router.get("/users", protect, isAdmin, getUsers);
 router.get("/users/:id", protect, isAdmin, getUserDetail);
 router.put("/users/:id/status", protect, isAdmin, updateUserStatus);
@@ -29,5 +31,6 @@ router.get("/complaints", protect, isAdmin, getAdminComplaints);
 router.patch("/complaints/:id/status", protect, isAdmin, updateComplaintStatus);
 router.get("/system-settings", protect, isAdmin, getSettings);
 router.put("/system-settings", protect, isAdmin, updateSettings);
+router.post("/broadcast", protect, isAdmin, broadcastMessage);
 
 export default router;

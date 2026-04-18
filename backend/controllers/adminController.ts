@@ -459,3 +459,80 @@ export const updateSettings = async (req: Request, res: Response): Promise<any> 
     res.status(500).json({ message: "Server Error", details: error.message });
   }
 };
+
+export const broadcastMessage = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const { title, message } = req.body;
+    const adminId = (req as any).user.id;
+
+    if (!title || !message) {
+      return res.status(400).json({ message: "Title and message are required" });
+    }
+
+    const users = await User.find({ status: { $ne: "blocked" }, role: { $ne: "admin" } }).select("_id");
+    
+    const notifications = users.map(u => ({
+      recipient: u._id,
+      sender: adminId,
+      type: "other",
+      title,
+      message,
+    }));
+
+    if (notifications.length > 0) {
+      await Notification.insertMany(notifications);
+
+      // Emit socket events to each user
+      users.forEach(u => {
+        emitToUser(u._id.toString(), "newNotification", {
+          title,
+          message,
+          type: "other",
+          createdAt: new Date()
+        });
+      });
+    }
+
+    res.status(200).json({ 
+      message: `Broadcast successfully sent to ${users.length} users.`,
+      count: users.length
+    });
+  } catch (error: any) {
+    console.error("   [ERROR] BROADCAST_MESSAGE:", error.message);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+export const notifyUser = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const { userId, title, message } = req.body;
+    const adminId = (req as any).user.id;
+
+    if (!userId || !title || !message) {
+      return res.status(400).json({ message: "UserId, title and message are required" });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const notification = new Notification({
+      recipient: user._id,
+      sender: adminId,
+      type: "other",
+      title,
+      message,
+    });
+
+    const savedNotification = await notification.save();
+
+    // Emit real-time notification via Socket.io
+    emitToUser(user._id.toString(), 'newNotification', savedNotification);
+
+    res.status(200).json({ message: "Notification sent successfully" });
+  } catch (error: any) {
+    console.error("   [ERROR] NOTIFY_USER:", error.message);
+    res.status(500).json({ message: "Server Error" });
+  }
+};

@@ -23,7 +23,11 @@ export default function ChatSidebar() {
   
   const handleReport = async () => {
     if (!reportReason.trim()) return;
-    
+
+    const otherUser = activeConversation
+      ? activeConversation.participants.find((p: any) => p._id !== user?.id && p._id !== user?._id)
+      : tempParticipant;
+
     try {
       const token = localStorage.getItem("accessToken");
       const res = await fetch(`${API_URL}/report`, {
@@ -35,7 +39,8 @@ export default function ChatSidebar() {
         body: JSON.stringify({
           subject: "Chat Sidebar Report",
           message: reportReason,
-          category: "message"
+          category: "message",
+          reportedUser: otherUser ? (otherUser._id || otherUser.id) : undefined
         })
       });
 
@@ -165,7 +170,14 @@ export default function ChatSidebar() {
           <div className="flex justify-between items-center">
             <p className={`text-[13.5px] truncate flex items-center gap-1 leading-tight ${isUnread ? 'text-wa-text-primary font-medium' : 'text-wa-text-secondary'}`}>
                {lastMsg && isMe && <span className="material-symbols-outlined text-[17px] text-wa-check-blue">done_all</span>}
-               {lastMsg?.content || (chat.isTemp ? "New message..." : "Start a chat")}
+               {lastMsg?.type === 'voice' || (typeof lastMsg?.content === 'string' && lastMsg.content.includes('voice_messages') && lastMsg.content.endsWith('.webm')) ? (
+                 <span className="flex items-center gap-1">
+                   <span className="material-symbols-outlined text-[17px] mt-0.5">mic</span>
+                   Voice message
+                 </span>
+               ) : (
+                 lastMsg?.content || (chat.isTemp ? "New message..." : "Start a chat")
+               )}
             </p>
             <div className="flex items-center gap-2 shrink-0 ml-2">
               {isUnread && (

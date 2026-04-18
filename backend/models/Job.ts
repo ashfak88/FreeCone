@@ -58,20 +58,20 @@ const JobSchema: Schema<IJob> = new mongoose.Schema(
     },
     timeline: {
       type: String,
-      default: '3-4 Weeks',
+      required: false,
     },
     skills: {
       type: [String],
       default: [],
     },
     client: {
-      name: { type: String, default: 'Elite Client' },
-      role: { type: String, default: 'Founder' },
+      name: { type: String },
+      role: { type: String },
       avatar: { type: String },
-      location: { type: String, default: 'Global Remote' },
-      rating: { type: Number, default: 4.9 },
-      reviewsCount: { type: Number, default: 0 },
-      verified: { type: Boolean, default: true },
+      location: { type: String },
+      rating: { type: Number },
+      reviewsCount: { type: Number },
+      verified: { type: Boolean },
     },
   },
   { timestamps: true }

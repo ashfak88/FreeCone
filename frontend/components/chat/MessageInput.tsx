@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useStore } from "@/lib/store";
 import toast from "react-hot-toast";
+import { Mic, Send, Square, Trash2, Smile } from "lucide-react";
 
 interface MessageInputProps {
   conversationId?: string;
@@ -14,6 +15,13 @@ export default function MessageInput({ conversationId, recipientId }: MessageInp
   const [isSending, setIsSending] = useState(false);
   const { user, addMessage, updateConversationLocally, fetchConversations, setActiveConversation, conversations } = useStore();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Recording states
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const audioChunks = useRef<Blob[]>([]);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Auto-resize textarea
   useEffect(() => {
@@ -39,9 +47,9 @@ export default function MessageInput({ conversationId, recipientId }: MessageInp
     const end = textarea.selectionEnd;
     const text = content;
     const newText = text.substring(0, start) + emoji + text.substring(end);
-    
+
     setContent(newText);
-    
+
     // Set cursor position after the emoji
     setTimeout(() => {
       textarea.selectionStart = textarea.selectionEnd = start + emoji.length;
@@ -74,12 +82,12 @@ export default function MessageInput({ conversationId, recipientId }: MessageInp
 
     setIsSending(true);
     const loadingToast = toast.loading("Sending message...");
-    const api_url = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api").replace(/\/$/, ""); 
+    const api_url = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api").replace(/\/$/, "");
     const token = typeof window !== 'undefined' ? localStorage.getItem("accessToken") : null;
 
     try {
       console.log("   [SEND] Attempting send:", { conversationId, recipientId, contentSize: content.length });
-      
+
       if (!token) {
         toast.error("Your session has expired. Please log in again.", { id: loadingToast });
         return;
@@ -109,7 +117,7 @@ export default function MessageInput({ conversationId, recipientId }: MessageInp
       if (res.ok) {
         console.log("   [SEND] Success:", responseData);
         toast.success("Message sent", { id: loadingToast });
-        
+
         addMessage(responseData);
 
         updateConversationLocally({
@@ -141,7 +149,7 @@ export default function MessageInput({ conversationId, recipientId }: MessageInp
         console.error("   [SEND] API Error Status:", res.status);
         console.error("   [SEND] API Error Body:", responseData);
         console.error("   [SEND] API Error Raw:", responseText);
-        
+
         const errorMsg = responseData.message || responseData.error || responseText.substring(0, 100) || "Failed to send";
         toast.error(`Error: ${errorMsg}`, { id: loadingToast });
       }
@@ -150,6 +158,117 @@ export default function MessageInput({ conversationId, recipientId }: MessageInp
       toast.error("Connection error. Check your internet.", { id: loadingToast });
     } finally {
       setIsSending(false);
+    }
+  };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      audioChunks.current = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          audioChunks.current.push(e.data);
+        }
+      };
+
+      recorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunks.current, { type: 'audio/webm' });
+        if (audioChunks.current.length > 0) {
+          await sendVoiceMessage(audioBlob);
+        }
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      recorder.start();
+      setMediaRecorder(recorder);
+      setIsRecording(true);
+      setRecordingDuration(0);
+
+      timerRef.current = setInterval(() => {
+        setRecordingDuration(prev => prev + 1);
+      }, 1000);
+    } catch (err) {
+      console.error("   [RECORD] Failed to start:", err);
+      toast.error("Format error or microphone permission denied.");
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      mediaRecorder.stop();
+      setIsRecording(false);
+      if (timerRef.current) clearInterval(timerRef.current);
+    }
+  };
+
+  const cancelRecording = () => {
+    if (mediaRecorder) {
+      audioChunks.current = [];
+      mediaRecorder.stop();
+      setIsRecording(false);
+      if (timerRef.current) clearInterval(timerRef.current);
+    }
+  };
+
+  const sendVoiceMessage = async (audioBlob: Blob) => {
+    if (audioChunks.current.length === 0) return;
+
+    setIsSending(true);
+    const loadingToast = toast.loading("Sending voice message...");
+    const api_url = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api").replace(/\/$/, "");
+    const token = localStorage.getItem("accessToken");
+
+    try {
+      // 1. Upload the audio file
+      const formData = new FormData();
+      formData.append("voice", audioBlob, "voice_message.webm");
+
+      const uploadRes = await fetch(`${api_url}/upload/voice-message`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (!uploadRes.ok) throw new Error("Upload failed");
+      const { audioUrl } = await uploadRes.json();
+
+      // 2. Send the message
+      const res = await fetch(`${api_url}/messages`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          recipientId: recipientId || undefined,
+          content: audioUrl,
+          type: "voice",
+          conversationId: conversationId || undefined,
+        }),
+      });
+
+      const responseData = await res.json();
+      if (res.ok) {
+        toast.success("Voice message sent", { id: loadingToast });
+        addMessage(responseData);
+        updateConversationLocally({
+          _id: responseData.conversationId,
+          lastMessage: responseData,
+          updatedAt: new Date().toISOString(),
+        } as any);
+      } else {
+        throw new Error(responseData.message || "Failed to send");
+      }
+    } catch (err: any) {
+      console.error("   [VOICE SEND] Error:", err);
+      toast.error(err.message || "Failed to send voice message", { id: loadingToast });
+    } finally {
+      setIsSending(false);
+      setMediaRecorder(null);
     }
   };
 
@@ -164,7 +283,7 @@ export default function MessageInput({ conversationId, recipientId }: MessageInp
     <div className="px-4 py-2 bg-wa-bg-sidebar border-t border-wa-bg-search/5 select-none z-20 relative">
       {/* Emoji Picker Overlay */}
       {showEmojiPicker && (
-        <div 
+        <div
           ref={emojiPickerRef}
           className="absolute bottom-full left-4 mb-2 w-72 h-80 bg-white dark:bg-[#233138] rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200 z-[100]"
         >
@@ -187,58 +306,89 @@ export default function MessageInput({ conversationId, recipientId }: MessageInp
         </div>
       )}
 
-      <div className="max-w-screen-2xl mx-auto flex items-center gap-4">
-        {/* Attachment & Emoji Icons */}
-        <div className="flex items-center gap-1 text-wa-text-secondary">
-          <button 
-             type="button" 
-             onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-             className={`p-1.5 hover:bg-wa-bg-search/40 rounded-full transition-colors active:scale-95 ${showEmojiPicker ? 'text-primary bg-wa-bg-search/40' : ''}`}
-             title="Emoji"
+      <div className="max-w-screen-2xl mx-auto flex items-center gap-3">
+        {/* Emoji Icon */}
+        <div className="flex items-center text-wa-text-secondary shrink-0">
+          <button
+            type="button"
+            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+            className={`p-2 hover:bg-wa-bg-search/40 rounded-full transition-colors active:scale-95 ${showEmojiPicker ? 'text-wa-check-blue bg-wa-bg-search/40' : ''}`}
+            title="Emoji"
           >
-             <span className="material-symbols-outlined text-2xl">sentiment_satisfied</span>
-          </button>
-          <button 
-             type="button" 
-             className="p-1.5 hover:bg-wa-bg-search/40 rounded-full transition-colors active:scale-95"
-             title="Add"
-          >
-             <span className="material-symbols-outlined text-2xl">add</span>
+            <Smile className="size-6" />
           </button>
         </div>
 
-        {/* Input Bar */}
-        <div className="flex-1 relative bg-wa-bg-search flex items-center rounded-lg px-3 py-1.5 focus-within:ring-0 transition-all">
-          <textarea
-            ref={textareaRef}
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Type a message"
-            className="w-full bg-transparent border-none focus:ring-0 text-[15px] text-wa-text-primary placeholder:text-wa-text-secondary min-h-[42px] max-h-32 py-2 px-1 resize-none font-normal leading-normal custom-scrollbar"
-          />
+        {/* Input Bar & Recording UI */}
+        <div className="flex-1 relative bg-wa-bg-search flex items-center rounded-xl px-4 py-2 focus-within:ring-1 focus-within:ring-wa-check-blue/20 transition-all min-h-[48px]">
+          {isRecording ? (
+            <div className="flex-1 flex items-center gap-4 px-1 animate-in fade-in slide-in-from-left-2 duration-300">
+              <div className="flex items-center gap-2">
+                <span className="flex h-2.5 w-2.5 rounded-full bg-red-500 animate-pulse"></span>
+                <span className="text-[15px] font-bold text-wa-text-primary tabular-nums">
+                  {Math.floor(recordingDuration / 60)}:{String(recordingDuration % 60).padStart(2, '0')}
+                </span>
+              </div>
+              <div className="flex-1 text-wa-text-secondary text-[14px]">Recording...</div>
+              <button
+                onClick={cancelRecording}
+                className="p-2 hover:bg-red-500/10 rounded-full text-wa-text-secondary hover:text-red-500 transition-all active:scale-90"
+                title="Cancel"
+              >
+                <Trash2 className="size-5" />
+              </button>
+            </div>
+          ) : (
+            <textarea
+              ref={textareaRef}
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Type a message"
+              className="w-full bg-transparent border-none focus:ring-0 text-[15px] text-wa-text-primary placeholder:text-wa-text-secondary py-1 px-0 resize-none font-normal leading-normal custom-scrollbar"
+            />
+          )}
         </div>
 
-        {/* Send Button */}
+        {/* Action Button: Send or Microphone */}
         <div className="flex items-center justify-center shrink-0">
-           <button
-              onClick={() => handleSend()}
-              disabled={!content.trim() || isSending}
-              className={`flex items-center justify-center w-10 h-10 rounded-full transition-all active:scale-90 ${
-                content.trim() && !isSending 
-                  ? "bg-wa-check-blue text-white shadow-lg shadow-wa-check-blue/20 hover:scale-105" 
-                  : "bg-wa-bg-search text-wa-text-secondary opacity-50 cursor-not-allowed shadow-none"
+          {(content.trim() || isRecording) ? (
+            <button
+              onClick={() => {
+                console.log("   [UI] Action button clicked: isRecording=", isRecording);
+                isRecording ? stopRecording() : handleSend();
+              }}
+              disabled={isSending}
+              style={{ backgroundColor: (content.trim() || isRecording) && !isSending ? '#53bdeb' : '#202c33' }}
+              className={`flex items-center justify-center size-12 rounded-full transition-all active:scale-90 shadow-lg text-white ${
+                (content.trim() || isRecording) && !isSending ? "hover:scale-105" : "opacity-50 cursor-not-allowed"
               }`}
-              title="Send message"
-           >
+              title={isRecording ? "Stop recording" : "Send message"}
+            >
               {isSending ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                <div className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              ) : isRecording ? (
+                <Square className="size-5 fill-current" />
               ) : (
-                <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>send</span>
+                <Send className="size-5 fill-current ml-0.5" />
               )}
-           </button>
+            </button>
+          ) : (
+            <button
+              onClick={() => {
+                console.log("   [UI] Microphone button clicked");
+                startRecording();
+              }}
+              style={{ backgroundColor: '#53bdeb' }}
+              className="flex items-center justify-center size-12 text-white rounded-full shadow-lg hover:scale-105 transition-all active:scale-95 cursor-pointer"
+              title="Record voice message"
+            >
+              <Mic size={24} color="white" />
+            </button>
+          )}
         </div>
       </div>
     </div>
   );
 }
+

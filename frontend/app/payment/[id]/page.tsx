@@ -9,8 +9,11 @@ import {
   Lock,
   CheckCircle2,
   AlertCircle,
-  ArrowLeft,
-  Briefcase
+  Briefcase,
+  Home,
+  LayoutDashboard,
+  MessageSquare,
+  Hand
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { API_URL, handleResponse } from "@/lib/api";
@@ -101,6 +104,7 @@ export default function PaymentPage() {
       fetchConfig();
     }
   }, [id, searchParams]);
+
 
   const loadRazorpay = () => {
     return new Promise((resolve) => {
@@ -235,16 +239,9 @@ export default function PaymentPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-slate-900">
+    <div className={`min-h-screen bg-[#f8fafc] text-slate-900 ${success ? "overflow-hidden" : ""}`}>
 
-      <main className="max-w-6xl mx-auto px-4 py-8 md:py-16">
-        <button
-          onClick={() => router.back()}
-          className="flex items-center gap-2 text-slate-500 hover:text-primary transition-colors mb-8 group"
-        >
-          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-          <span className="text-sm font-semibold">Back to Messages</span>
-        </button>
+      <main className={`max-w-6xl mx-auto px-4 ${success ? "h-screen flex flex-col justify-center" : "py-8 md:py-16"}`}>
 
         <AnimatePresence mode="wait">
           {!success ? (
@@ -308,8 +305,8 @@ export default function PaymentPage() {
                       onClick={handlePayment}
                       disabled={processing}
                       className={`w-full h-16 rounded-2xl font-bold text-lg transition-all flex items-center justify-center gap-3 ${processing
-                          ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-                          : "bg-primary text-white hover:bg-primary/90 shadow-xl shadow-primary/20 active:scale-[0.98]"
+                        ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                        : "bg-primary text-white hover:bg-primary/90 shadow-xl shadow-primary/20 active:scale-[0.98]"
                         }`}
                     >
                       {processing ? (
@@ -400,31 +397,134 @@ export default function PaymentPage() {
           ) : (
             // ─── Success Screen ───
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="max-w-2xl mx-auto text-center py-20 px-8 bg-white rounded-[48px] shadow-2xl border border-slate-100 flex flex-col items-center"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="max-w-3xl mx-auto w-full"
             >
-              <div className="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center mb-8 shadow-xl shadow-green-200">
-                <CheckCircle2 className="text-white w-12 h-12" />
-              </div>
-              <h2 className="text-4xl font-extrabold text-slate-900 mb-4">Payment Successful!</h2>
-              <p className="text-slate-600 text-lg mb-10 max-w-md mx-auto">
-                The advance payment for <span className="font-bold text-slate-900">"{offer.jobTitle}"</span> has been securely processed. The freelancer has been notified.
-              </p>
+              <div className="bg-white rounded-[40px] shadow-2xl shadow-slate-200/50 border border-slate-100 overflow-hidden relative">
+                {/* Background Decorative Elements */}
+                <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 bg-green-50 rounded-full blur-3xl opacity-60" />
+                <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-64 h-64 bg-primary/5 rounded-full blur-3xl opacity-60" />
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-sm">
-                <button
-                  onClick={() => router.push("/messages")}
-                  className="h-14 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition-all shadow-lg"
-                >
-                  Back to Chat
-                </button>
-                <button
-                  onClick={() => router.push("/dashboard")}
-                  className="h-14 bg-white text-slate-900 border border-slate-200 rounded-2xl font-bold hover:bg-slate-50 transition-all"
-                >
-                  Go to Dashboard
-                </button>
+                <div className="relative z-10 p-10 md:p-14 flex flex-col items-center text-center">
+                  {/* Animated Handshake */}
+                  <div className="mb-12 relative">
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: "spring", damping: 15, stiffness: 100 }}
+                      className="w-32 h-32 bg-primary/10 rounded-full flex items-center justify-center relative overflow-hidden border border-primary/20"
+                    >
+                      {/* Left Hand */}
+                      <motion.div
+                        initial={{ x: -100, opacity: 0, rotate: 20 }}
+                        animate={{ x: -8, opacity: 1, rotate: 45 }}
+                        transition={{ delay: 0.4, duration: 0.6, ease: "easeOut" }}
+                        className="absolute"
+                      >
+                        <Hand className="w-16 h-16 text-primary" />
+                      </motion.div>
+
+                      {/* Right Hand */}
+                      <motion.div
+                        initial={{ x: 100, opacity: 0, rotate: -20 }}
+                        animate={{ x: 8, opacity: 1, rotate: -45 }}
+                        transition={{ delay: 0.4, duration: 0.6, ease: "easeOut" }}
+                        className="absolute"
+                      >
+                        <Hand className="w-16 h-16 text-primary scale-x-[-1]" />
+                      </motion.div>
+
+                    </motion.div>
+
+                    {/* Shaking Motion */}
+                    <motion.div
+                      animate={{
+                        y: [0, -8, 8, -8, 8, 0],
+                      }}
+                      transition={{
+                        delay: 1,
+                        duration: 0.6,
+                        repeat: 1,
+                        repeatType: "reverse",
+                      }}
+                      className="absolute inset-0 pointer-events-none"
+                    />
+
+                    {/* Decorative Rings */}
+                    <motion.div
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1.5, opacity: 0 }}
+                      transition={{ repeat: Infinity, duration: 2, ease: "easeOut", delay: 1.5 }}
+                      className="absolute inset-0 rounded-full border-2 border-primary/20 pointer-events-none"
+                    />
+                  </div>
+
+                  {/* Text Content */}
+                  <div className="space-y-4 mb-12">
+                    <motion.h2
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.7 }}
+                      className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight"
+                    >
+                      Payment Successful!
+                    </motion.h2>
+                    <motion.p
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.8 }}
+                      className="text-slate-500 text-lg max-w-lg mx-auto leading-relaxed"
+                    >
+                      The advance payment for <span className="text-slate-900 font-bold">"{offer.jobTitle}"</span> has been processed. The project is now active and the freelancer has been notified.
+                    </motion.p>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 1 }}
+                    className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full"
+                  >
+                    <button
+                      onClick={() => router.push("/")}
+                      className="flex flex-col items-center justify-center gap-3 p-6 bg-slate-50 hover:bg-slate-100 rounded-3xl transition-all group border border-slate-100"
+                    >
+                      <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+                        <Home className="w-6 h-6 text-slate-600" />
+                      </div>
+                      <span className="font-bold text-slate-900">Go to Home</span>
+                    </button>
+
+                    <button
+                      onClick={() => router.push("/dashboard")}
+                      className="flex flex-col items-center justify-center gap-3 p-6 bg-primary/5 hover:bg-primary/10 rounded-3xl transition-all group border border-primary/10"
+                    >
+                      <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+                        <LayoutDashboard className="w-6 h-6 text-primary" />
+                      </div>
+                      <span className="font-bold text-slate-900">Dashboard</span>
+                    </button>
+
+                    <button
+                      onClick={() => router.push("/messages")}
+                      className="flex flex-col items-center justify-center gap-3 p-6 bg-slate-900 hover:bg-slate-800 rounded-3xl transition-all group shadow-xl shadow-slate-200"
+                    >
+                      <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <MessageSquare className="w-6 h-6 text-white" />
+                      </div>
+                      <span className="font-bold text-white">Back to Chat</span>
+                    </button>
+                  </motion.div>
+                </div>
+
+                {/* Footer info */}
+                <div className="bg-slate-50 p-6 text-center border-t border-slate-100">
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">
+                    FreeCone Escrow Protection Active
+                  </p>
+                </div>
               </div>
             </motion.div>
           )}

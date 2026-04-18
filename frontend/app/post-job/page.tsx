@@ -12,10 +12,12 @@ export default function PostJobPage() {
   const [error, setError] = useState("");
 
   const [formData, setFormData] = useState({
+    name: "",
     title: "",
     description: "",
     budget: "",
-    timeline: "1-2 Weeks",
+    timeline: "2-4 Weeks",
+    skills: "",
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -38,6 +40,7 @@ export default function PostJobPage() {
         body: JSON.stringify({
           ...formData,
           budget: Number(formData.budget),
+          skills: formData.skills.split(",").map(s => s.trim()).filter(s => s !== ""),
         }),
       });
 
@@ -152,6 +155,22 @@ export default function PostJobPage() {
               <option value="3-6 Months">3-6 Months</option>
               <option value="More than 6 Months">More than 6 Months</option>
             </select>
+          </div>
+
+          <div>
+            <label htmlFor="skills" className="block text-sm font-bold text-slate-700 mb-2">
+              Required Skills (Separated by commas)
+            </label>
+            <input
+              type="text"
+              id="skills"
+              name="skills"
+              value={formData.skills}
+              onChange={handleChange}
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+              placeholder="e.g. React, Node.js, Design"
+            />
+            <p className="text-[10px] text-slate-400 mt-2 ml-1 italic font-medium">// Add key expertise needed for this project</p>
           </div>
 
           <div className="flex gap-4 pt-4">

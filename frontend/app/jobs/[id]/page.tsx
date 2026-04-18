@@ -82,13 +82,15 @@ export default function ProjectDetailsPage() {
       <div className="flex p-4 bg-white dark:bg-slate-900/50 border-b border-primary/5">
         <div className="max-w-5xl mx-auto w-full flex flex-col gap-4 md:flex-row md:justify-between md:items-center">
           <div className="flex gap-4">
-            <div 
-              className="bg-center bg-no-repeat aspect-square bg-cover rounded-xl min-h-24 w-24 border border-primary/20 shadow-sm transition-transform hover:scale-105" 
-              style={{ backgroundImage: `url("https://images.unsplash.com/photo-1626785774573-4b799315345d?w=200&h=200&fit=crop")` }}
-            ></div>
+            {job.imageUrl && (
+              <div 
+                className="bg-center bg-no-repeat aspect-square bg-cover rounded-xl min-h-24 w-24 border border-primary/20 shadow-sm transition-transform hover:scale-105" 
+                style={{ backgroundImage: `url("${job.imageUrl}")` }}
+              ></div>
+            )}
             <div className="flex flex-col justify-center">
               <p className="text-slate-900 dark:text-slate-100 text-xl font-bold leading-tight tracking-tight">{job.title}</p>
-              <p className="text-primary text-sm font-medium leading-normal">by {job.client?.name || 'Artisan Collective'}</p>
+              <p className="text-primary text-sm font-medium leading-normal">by {job.client?.name}</p>
               <div className="flex items-center gap-1 mt-1">
                 <span className="material-symbols-outlined text-[16px] text-primary/60">schedule</span>
                 <p className="text-slate-500 dark:text-slate-400 text-xs font-normal">Posted {timeAgo(job.createdAt)}</p>
@@ -107,10 +109,9 @@ export default function ProjectDetailsPage() {
       {/* Tabbed Navigation */}
       <div className="pb-3 bg-white dark:bg-slate-900/50">
         <div className="max-w-5xl mx-auto flex border-b border-primary/10 px-4 gap-8 overflow-x-auto no-scrollbar">
-          <a className="flex flex-col items-center justify-center border-b-[3px] border-primary text-primary pb-3 pt-4 shrink-0 transition-all hover:opacity-80" href="#">
+          <div className="flex flex-col items-center justify-center border-b-[3px] border-primary text-primary pb-3 pt-4 shrink-0 transition-all hover:opacity-80">
             <p className="text-sm font-bold leading-normal tracking-wide">Overview</p>
-          </a>
-
+          </div>
         </div>
       </div>
 
@@ -135,15 +136,17 @@ export default function ProjectDetailsPage() {
               <p className="text-slate-900 dark:text-slate-100 font-black text-xl">${job.budget.toLocaleString()}</p>
             </div>
           </div>
-          <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-primary/10 flex items-start gap-4 shadow-sm">
-            <div className="bg-primary/10 p-3 rounded-lg text-primary">
-              <span className="material-symbols-outlined text-xl">timer</span>
+          {job.timeline && (
+            <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-primary/10 flex items-start gap-4 shadow-sm">
+              <div className="bg-primary/10 p-3 rounded-lg text-primary">
+                <span className="material-symbols-outlined text-xl">timer</span>
+              </div>
+              <div>
+                <p className="text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-wider mb-1">Timeline</p>
+                <p className="text-slate-900 dark:text-slate-100 font-black text-xl">{job.timeline}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-wider mb-1">Timeline</p>
-              <p className="text-slate-900 dark:text-slate-100 font-black text-xl">{job.timeline || '3-4 Weeks'}</p>
-            </div>
-          </div>
+          )}
         </section>
 
 
@@ -153,43 +156,47 @@ export default function ProjectDetailsPage() {
           <div className="flex items-center gap-5 mb-8">
             <div 
               className="size-16 rounded-full bg-cover bg-center border-2 border-primary/20 shadow-md" 
-              style={{ backgroundImage: `url("${job.client?.avatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(job.client?.name || 'Client') + '&background=6a6b4c&color=fff'}")` }}
+              style={{ backgroundImage: `url("${job.client?.avatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(job.client?.name || 'U') + '&background=6a6b4c&color=fff'}")` }}
             ></div>
             <div>
-              <p className="text-slate-900 dark:text-slate-100 text-lg font-black tracking-tight">{job.client?.name || 'Sarah Jenkins'}</p>
-              <p className="text-slate-500 dark:text-slate-400 text-xs font-bold">{job.client?.role || 'Founder @ Artisan Collective'}</p>
+              <p className="text-slate-900 dark:text-slate-100 text-lg font-black tracking-tight">{job.client?.name}</p>
+              <p className="text-slate-500 dark:text-slate-400 text-xs font-bold">{job.client?.role}</p>
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="flex items-center gap-3 bg-white/40 dark:bg-white/5 p-3 rounded-xl border border-white/40 transition-all hover:bg-white dark:hover:bg-white/10">
               <span className="material-symbols-outlined text-primary text-xl">verified_user</span>
-              <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{job.client?.verified ? 'Verified Client' : 'New Client'}</span>
+              <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{job.client?.verified ? 'Verified Client' : 'Standard Member'}</span>
             </div>
-            <div className="flex items-center gap-3 bg-white/40 dark:bg-white/5 p-3 rounded-xl border border-white/40 transition-all hover:bg-white dark:hover:bg-white/10">
-              <span className="material-symbols-outlined text-primary text-xl">location_on</span>
-              <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{job.client?.location || 'Global Remote'}</span>
-            </div>
+            {job.client?.location && (
+              <div className="flex items-center gap-3 bg-white/40 dark:bg-white/5 p-3 rounded-xl border border-white/40 transition-all hover:bg-white dark:hover:bg-white/10">
+                <span className="material-symbols-outlined text-primary text-xl">location_on</span>
+                <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{job.client?.location}</span>
+              </div>
+            )}
             <div className="flex items-center gap-3 bg-white/40 dark:bg-white/5 p-3 rounded-xl border border-white/40 transition-all hover:bg-white dark:hover:bg-white/10">
               <span className="material-symbols-outlined text-primary text-xl">star</span>
-              <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{job.client?.rating || '4.9'} ({job.client?.reviewsCount || '12'} reviews)</span>
+              <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{job.client?.rating || '5.0'} ({job.client?.reviewsCount || '0'} reviews)</span>
             </div>
           </div>
         </section>
 
         {/* Tags/Skills */}
-        <section className="flex flex-col gap-4">
-          <h3 className="text-slate-900 dark:text-slate-100 text-lg font-bold">Skills Required</h3>
-          <div className="flex flex-wrap gap-2">
-            {(job.skills && job.skills.length > 0 ? job.skills : ['Brand Identity', 'Graphic Design', 'Typography', 'Illustration']).map((skill) => (
-              <span 
-                key={skill} 
-                className="px-4 py-2 bg-white dark:bg-slate-800 border border-primary/10 hover:border-primary/30 rounded-full text-[11px] font-black uppercase tracking-wider text-primary shadow-sm transition-all hover:shadow-md cursor-default"
-              >
-                {skill}
-              </span>
-            ))}
-          </div>
-        </section>
+        {job.skills && job.skills.length > 0 && (
+          <section className="flex flex-col gap-4">
+            <h3 className="text-slate-900 dark:text-slate-100 text-lg font-bold">Skills Required</h3>
+            <div className="flex flex-wrap gap-2">
+              {job.skills.map((skill) => (
+                <span 
+                  key={skill} 
+                  className="px-4 py-2 bg-white dark:bg-slate-800 border border-primary/10 hover:border-primary/30 rounded-full text-[11px] font-black uppercase tracking-wider text-primary shadow-sm transition-all hover:shadow-md cursor-default"
+                >
+                  {skill}
+                </span>
+              ))}
+            </div>
+          </section>
+        )}
       </div>
 
       {/* Footer Bottom Spacing */}

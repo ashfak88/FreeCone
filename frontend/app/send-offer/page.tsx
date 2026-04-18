@@ -2,8 +2,20 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useStore, User } from "@/lib/store";
+import { useStore } from "@/lib/store";
 import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
+import { 
+  ArrowLeft, 
+  Send, 
+  ShieldCheck, 
+  DollarSign, 
+  FileText, 
+  User as UserIcon,
+  CheckCircle2,
+  AlertCircle,
+  Briefcase
+} from "lucide-react";
 import RichTextEditor from "@/components/RichTextEditor";
 import { API_URL, handleResponse } from "@/lib/api";
 
@@ -62,8 +74,8 @@ function SendOfferContent() {
 
       await handleResponse(response);
 
-      setStatus({ type: "success", message: "Offer sent successfully!" });
-      setTimeout(() => router.push("/dashboard"), 2000);
+      setStatus({ type: "success", message: "Your offer has been sent securely!" });
+      setTimeout(() => router.push("/dashboard"), 2500);
     } catch (err: any) {
       setStatus({ type: "error", message: err.message });
     } finally {
@@ -71,145 +83,273 @@ function SendOfferContent() {
     }
   };
 
-  if (loading) return <div className="p-8 text-center">Loading talent details...</div>;
-  if (!talentId || !profile) return <div className="p-8 text-center text-red-500">Talent not found.</div>;
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#f6f7f8]">
+        <motion.div 
+          animate={{ scale: [1, 1.1, 1], opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 2, repeat: Infinity }}
+          className="size-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6"
+        >
+          <Briefcase className="text-primary size-8" />
+        </motion.div>
+        <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Preparing Workspace...</p>
+      </div>
+    );
+  }
+
+  if (!talentId || !profile) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#f6f7f8] p-4 text-center">
+        <div className="size-20 rounded-full bg-rose-50 flex items-center justify-center mb-6">
+          <AlertCircle className="text-rose-500 size-10" />
+        </div>
+        <h2 className="text-2xl font-black text-slate-900 mb-2">Talent Not Found</h2>
+        <p className="text-slate-500 max-w-xs mb-8 font-medium">We couldn't locate the profile you were looking for. It might have been removed or deactivated.</p>
+        <Link href="/find-talent" className="px-8 py-3 bg-slate-900 text-white rounded-xl font-bold transition-all hover:scale-105 active:scale-95">
+          Browse Talent
+        </Link>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-slate-50 font-display transition-colors duration-500">
-      <header className="sticky top-0 z-50 bg-white border-b border-primary/10 px-4 md:px-8 h-16 flex items-center">
-        <div className="max-w-7xl mx-auto w-full flex items-center justify-between">
-          <button
+    <div className="min-h-screen bg-[#f6f7f8] font-display text-slate-900 selection:bg-primary/20">
+      {/* Decorative Elements */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none opacity-40">
+        <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-primary/5 blur-[120px]" />
+        <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary/10 blur-[120px]" />
+      </div>
+
+      <header className="sticky top-0 z-50 backdrop-blur-md bg-white/70 border-b border-slate-200/50 h-16 md:h-20 flex items-center px-4 md:px-8">
+        <div className="max-w-5xl mx-auto w-full flex items-center justify-between">
+          <motion.button
+            whileHover={{ x: -4 }}
+            whileTap={{ scale: 0.95 }}
             onClick={() => router.back()}
-            className="flex items-center justify-center rounded-full w-10 h-10 -ml-2 text-slate-500 hover:text-primary hover:bg-primary/10 transition-all duration-300"
-            title="Go Back"
+            className="group flex items-center gap-3 text-slate-500 hover:text-slate-900 transition-colors"
           >
-            <span className="material-symbols-outlined text-[24px]">arrow_back</span>
-          </button>
+            <div className="size-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center shadow-sm group-hover:border-primary/30 group-hover:bg-primary/5 transition-all">
+              <ArrowLeft size={18} />
+            </div>
+            <span className="hidden md:block text-sm font-bold tracking-tight">Back to Profile</span>
+          </motion.button>
 
           <div className="flex items-center gap-3">
-            <span className="material-symbols-outlined text-primary text-xl">verified_user</span>
-            <h1 className="text-sm font-black uppercase tracking-widest text-slate-800">Direct Offer</h1>
+            <div className="size-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+              <ShieldCheck className="text-emerald-500 size-5" />
+            </div>
+            <h1 className="text-sm font-black uppercase tracking-[0.2em] text-slate-900">Secure Offer</h1>
           </div>
+          
+          <div className="w-10 md:w-32" /> {/* Spacer */}
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto px-4 py-8 md:py-12">
-        <div className="bg-white rounded-3xl border border-primary/10 shadow-sm overflow-hidden">
-
-          {/* Compact Talent Card */}
-          <div className="px-6 py-5 bg-primary/5 flex items-center justify-between border-b border-primary/5">
-            <div className="flex items-center gap-4">
-              <div className="size-12 rounded-xl border-2 border-white bg-white overflow-hidden shadow-sm">
-                <img
-                  src={profile.imageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name)}&background=6a6b4c&color=fff`}
-                  alt={profile.name}
-                  className="w-full h-full object-cover"
-                />
+      <main className="max-w-4xl mx-auto px-4 py-8 md:py-16">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          
+          {/* Form Side */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="lg:col-span-7 space-y-6"
+          >
+            <div className="bg-white rounded-[2.5rem] border border-slate-200/60 shadow-xl shadow-slate-200/40 p-6 md:p-10 relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-8 opacity-[0.03] pointer-events-none">
+                <Send size={120} />
               </div>
-              <div className="leading-tight">
-                <h2 className="text-base font-black text-slate-900">{profile.name}</h2>
-                <p className="text-[10px] font-bold text-primary uppercase tracking-wider">{profile.title || 'Elite Talent'}</p>
+
+              <div className="mb-10">
+                <h3 className="text-3xl font-black tracking-tight text-slate-900 mb-2">Create Proposal</h3>
+                <p className="text-slate-400 font-semibold text-sm">Define your project requirements and budget.</p>
               </div>
-            </div>
-            <div className="text-right">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Rate</p>
-              <p className="text-sm font-black text-slate-900">${profile.rate || '0'}/hr</p>
-            </div>
-          </div>
 
-          <div className="p-6 md:p-8 space-y-6">
-            <div className="space-y-1">
-              <h3 className="text-xl font-black text-slate-900 tracking-tight">Project Proposal</h3>
-              <p className="text-xs font-semibold text-slate-400">Review your requirement details before sending</p>
-            </div>
+              <form onSubmit={handleSubmit} className="space-y-8">
+                <AnimatePresence mode="wait">
+                  {status && (
+                    <motion.div 
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className={`p-5 rounded-2xl flex items-start gap-4 ${
+                        status.type === "success"
+                          ? "bg-emerald-50 text-emerald-800 border border-emerald-100"
+                          : "bg-rose-50 text-rose-800 border border-rose-100"
+                      }`}
+                    >
+                      {status.type === "success" ? <CheckCircle2 className="size-6 shrink-0 mt-0.5" /> : <AlertCircle className="size-6 shrink-0 mt-0.5" />}
+                      <div className="space-y-1">
+                        <p className="font-black text-sm uppercase tracking-wider">{status.type === "success" ? "Success" : "Error"}</p>
+                        <p className="text-sm font-semibold opacity-90">{status.message}</p>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {status && (
-                <div className={`p-4 rounded-xl text-xs font-bold flex items-center gap-3 ${status.type === "success"
-                    ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
-                    : "bg-rose-50 text-rose-700 border border-rose-100"
-                  }`}>
-                  <span className="material-symbols-outlined text-lg">{status.type === "success" ? "check_circle" : "error"}</span>
-                  {status.message}
-                </div>
-              )}
-
-              <div className="space-y-5">
-                <div className="space-y-2">
-                  <label htmlFor="jobTitle" className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-0.5">
-                    Job Title
-                  </label>
-                  <input
-                    id="jobTitle"
-                    required
-                    placeholder="Enter project name"
-                    className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/5 outline-none transition-all font-bold text-sm text-slate-900"
-                    type="text"
-                    value={formData.jobTitle}
-                    onChange={handleInputChange}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-0.5">
-                    Description
-                  </label>
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 focus-within:bg-white focus-within:border-primary transition-all overflow-hidden">
-                    <RichTextEditor
-                      value={formData.description}
-                      onChange={(content) => setFormData({ ...formData, description: content })}
-                      placeholder="Share your goals and deliverables..."
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label htmlFor="budget" className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-0.5">
-                    Budget ($)
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
+                <div className="space-y-6">
+                  {/* Job Title */}
+                  <div className="group space-y-3">
+                    <label htmlFor="jobTitle" className="flex items-center gap-2 text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1 transition-colors group-focus-within:text-primary">
+                      <FileText size={14} />
+                      Project Title
+                    </label>
                     <input
-                      id="budget"
+                      id="jobTitle"
                       required
-                      placeholder="0.00"
-                      className="w-full h-12 pl-10 pr-4 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/5 outline-none transition-all font-bold text-sm text-slate-900"
-                      type="number"
-                      value={formData.budget}
+                      placeholder="e.g. Modern Web Dashboard UI Design"
+                      className="w-full h-14 px-6 rounded-2xl border-2 border-slate-100 bg-slate-50 focus:bg-white focus:border-primary/30 focus:ring-4 focus:ring-primary/5 outline-none transition-all font-bold text-slate-900 placeholder:text-slate-300"
+                      type="text"
+                      value={formData.jobTitle}
                       onChange={handleInputChange}
                     />
                   </div>
+
+                  {/* Description */}
+                  <div className="group space-y-3">
+                    <label className="flex items-center gap-2 text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1 transition-colors group-focus-within:text-primary">
+                      <Briefcase size={14} />
+                      Scope of Work
+                    </label>
+                    <div className="rounded-2xl border-2 border-slate-100 bg-slate-50 focus-within:bg-white focus-within:border-primary/30 transition-all overflow-hidden focus-within:ring-4 focus-within:ring-primary/5">
+                      <RichTextEditor
+                        value={formData.description}
+                        onChange={(content) => setFormData({ ...formData, description: content })}
+                        placeholder="Detailed project requirements, goals, and key deliverables..."
+                      />
+                    </div>
+                  </div>
+
+                  {/* Budget */}
+                  <div className="group space-y-3">
+                    <label htmlFor="budget" className="flex items-center gap-2 text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1 transition-colors group-focus-within:text-primary">
+                      <DollarSign size={14} />
+                      Fixed Budget
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 font-black text-lg">$</span>
+                      <input
+                        id="budget"
+                        required
+                        placeholder="0.00"
+                        className="w-full h-14 pl-12 pr-6 rounded-2xl border-2 border-slate-100 bg-slate-50 focus:bg-white focus:border-primary/30 focus:ring-4 focus:ring-primary/5 outline-none transition-all font-black text-lg text-slate-900 placeholder:text-slate-300"
+                        type="number"
+                        value={formData.budget}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-4">
+                  <motion.button
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.98 }}
+                    type="submit"
+                    disabled={isSubmitting}
+                    className={`group w-full h-16 rounded-2xl font-black text-lg tracking-tight transition-all flex items-center justify-center gap-3 ${
+                      isSubmitting
+                        ? "bg-slate-100 text-slate-300 cursor-not-allowed"
+                        : "bg-primary text-white shadow-xl shadow-primary/20 hover:shadow-primary/30"
+                    }`}
+                  >
+                    {isSubmitting ? (
+                      <div className="size-6 border-3 border-slate-300 border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <span>Submit Project Offer</span>
+                        <Send className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" size={20} />
+                      </>
+                    )}
+                  </motion.button>
+                </div>
+              </form>
+            </div>
+
+            <div className="px-8 flex items-center justify-between opacity-40">
+              <div className="flex items-center gap-2">
+                <ShieldCheck size={14} className="text-slate-400" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Escrow Protected</span>
+              </div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Secure 256-bit Encryption</p>
+            </div>
+          </motion.div>
+
+          {/* Talent Side Card */}
+          <motion.aside 
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 }}
+            className="lg:col-span-5 space-y-6 lg:sticky lg:top-36"
+          >
+            <div className="bg-white rounded-[2rem] border border-slate-200/60 shadow-lg p-8 relative overflow-hidden group">
+              <div className="absolute top-0 right-0 p-4">
+                <div className="size-16 bg-primary/5 rounded-full flex items-center justify-center -mr-8 -mt-8 group-hover:bg-primary/10 transition-colors">
+                  <UserIcon size={32} className="text-primary/20" />
                 </div>
               </div>
 
-              <div className="pt-4">
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className={`w-full h-14 rounded-2xl font-black text-base tracking-tight transition-all active:scale-[0.98] flex items-center justify-center gap-2 ${isSubmitting
-                      ? "bg-slate-100 text-slate-300 cursor-not-allowed"
-                      : "bg-primary text-white shadow-lg hover:shadow-primary/20 hover:-translate-y-0.5"
-                    }`}
-                >
-                  {isSubmitting ? (
-                    <div className="size-5 border-2 border-slate-300 border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <>
-                      <span>Send Job Offer</span>
-                      <span className="material-symbols-outlined text-lg">send</span>
-                    </>
-                  )}
-                </button>
-              </div>
+              <div className="flex flex-col items-center text-center space-y-6">
+                <div className="relative group/avatar">
+                  <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full scale-110 group-hover/avatar:scale-125 transition-transform duration-500 opacity-0 group-hover/avatar:opacity-100" />
+                  <div className="size-28 rounded-[2rem] border-4 border-white overflow-hidden shadow-2xl relative bg-slate-50 shrink-0">
+                    <img
+                      src={profile.imageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name)}&background=6a6b4c&color=fff&size=200`}
+                      alt={profile.name}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover/avatar:scale-110"
+                    />
+                  </div>
+                  <div className="absolute -bottom-2 -right-2 size-10 bg-emerald-500 text-white rounded-2xl flex items-center justify-center border-4 border-white shadow-lg">
+                    <CheckCircle2 size={20} />
+                  </div>
+                </div>
 
-              <div className="flex items-center justify-center gap-2 pt-2">
-                <span className="material-symbols-outlined text-slate-300 text-xs">verified</span>
-                <p className="text-[9px] font-bold text-slate-300 uppercase tracking-[0.2em]">
-                  Protected by FreeCone Escrow
-                </p>
+                <div className="space-y-1">
+                  <h2 className="text-2xl font-black text-slate-900 tracking-tight">{profile.name}</h2>
+                  <p className="text-primary font-black uppercase tracking-[0.15em] text-[10px]">{profile.title || 'Expert Freelancer'}</p>
+                </div>
+
+                <div className="flex flex-wrap justify-center gap-2">
+                  {profile.skills?.slice(0, 3).map((skill: string, idx: number) => (
+                    <span key={idx} className="px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-100 text-[10px] font-black uppercase text-slate-500 tracking-wider">
+                      {skill}
+                    </span>
+                  ))}
+                  {(profile.skills?.length || 0) > 3 && (
+                    <span className="px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-100 text-[10px] font-black uppercase text-slate-400">
+                      +{(profile.skills?.length || 0) - 3}
+                    </span>
+                  )}
+                </div>
+
+                <div className="w-full pt-6 border-t border-slate-100">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pricing</p>
+                      <p className="text-xl font-black text-slate-900 tracking-tight">${profile.rate || '0'}<span className="text-slate-400 text-sm font-bold">/hr</span></p>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-indigo-50/30 border border-indigo-100/50 space-y-1">
+                      <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Experience</p>
+                      <p className="text-xl font-black text-indigo-900 tracking-tight">Level 3</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="w-full p-6 rounded-2xl bg-primary/5 border border-primary/10 text-left">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="size-6 rounded-md bg-primary/10 flex items-center justify-center">
+                      <ShieldCheck className="text-primary size-4" />
+                    </div>
+                    <p className="text-[11px] font-black text-primary uppercase tracking-widest">Talent Guarantee</p>
+                  </div>
+                  <p className="text-xs font-semibold text-slate-500 leading-relaxed">
+                    This freelancer is verified through our rigorous identity check process and has a proven track record.
+                  </p>
+                </div>
               </div>
-            </form>
-          </div>
+            </div>
+          </motion.aside>
+
         </div>
       </main>
     </div>
@@ -218,7 +358,14 @@ function SendOfferContent() {
 
 export default function SendOfferPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-center">Loading...</div>}>
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-[#f6f7f8]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="size-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+          <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Syncing Data...</p>
+        </div>
+      </div>
+    }>
       <SendOfferContent />
     </Suspense>
   );
