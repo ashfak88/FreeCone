@@ -169,7 +169,15 @@ export default function ChatSidebar() {
           </div>
           <div className="flex justify-between items-center">
             <p className={`text-[13.5px] truncate flex items-center gap-1 leading-tight ${isUnread ? 'text-wa-text-primary font-medium' : 'text-wa-text-secondary'}`}>
-               {lastMsg && isMe && <span className="material-symbols-outlined text-[17px] text-wa-check-blue">done_all</span>}
+               {lastMsg && isMe && (
+                 <span className={`material-symbols-outlined text-[17px] ${
+                   lastMsg.readBy && lastMsg.readBy.length > 1 
+                     ? "text-wa-check-blue" 
+                     : "text-wa-text-secondary"
+                 }`}>
+                   done_all
+                 </span>
+               )}
                {lastMsg?.type === 'voice' || (typeof lastMsg?.content === 'string' && lastMsg.content.includes('voice_messages') && lastMsg.content.endsWith('.webm')) ? (
                  <span className="flex items-center gap-1">
                    <span className="material-symbols-outlined text-[17px] mt-0.5">mic</span>

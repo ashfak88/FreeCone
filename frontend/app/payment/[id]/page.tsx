@@ -278,7 +278,50 @@ export default function PaymentPage() {
                       </div>
 
                       <div className="pt-4 border-t border-slate-200">
-                        <div className="grid grid-cols-1 gap-4">
+                        <div className="grid grid-cols-1 gap-6">
+                          {/* Recipient Payout Destination - Moved to Main Card for Transparency */}
+                          {(offer.freelancer?.paymentAccount?.upiId || offer.freelancer?.paymentAccount?.cardDetails?.last4) && (
+                            <div className="p-4 bg-slate-100 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-3">
+                              <div className="flex items-center gap-2">
+                                <span className="material-symbols-outlined text-primary text-sm font-bold">payments</span>
+                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none">Recipient Payout Destination</p>
+                              </div>
+                              <div className="flex flex-col gap-2 pl-6">
+                                {offer.freelancer.paymentAccount.upiId && (
+                                  <div className="flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-primary text-[10px] font-bold">account_balance_wallet</span>
+                                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300">UPI: {offer.freelancer.paymentAccount.upiId}</span>
+                                  </div>
+                                )}
+                                {offer.freelancer.paymentAccount.cardDetails?.last4 && (
+                                  <div className="flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-slate-400 text-[10px] font-bold">credit_card</span>
+                                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300">CARD: **** {offer.freelancer.paymentAccount.cardDetails.last4}</span>
+                                  </div>
+                                )}
+                              </div>
+                              <p className="text-[9px] text-slate-400 font-medium italic pl-6">Funds will be held in Escrow and released to this account once milestones are approved.</p>
+                            </div>
+                          )}
+
+                          {/* Payer's Saved Method Confirmation */}
+                          {(user?.paymentAccount?.upiId || user?.paymentAccount?.cardDetails?.last4) && (
+                            <div className="p-4 bg-primary/5 rounded-2xl border border-primary/20 space-y-2">
+                              <div className="flex items-center gap-2">
+                                <span className="material-symbols-outlined text-primary text-sm font-bold">person</span>
+                                <p className="text-[10px] font-black text-primary uppercase tracking-widest leading-none">Your Saved Payment Info</p>
+                              </div>
+                              <div className="pl-6">
+                                {user.paymentAccount.upiId && (
+                                  <p className="text-xs font-bold text-slate-700">UPI: {user.paymentAccount.upiId}</p>
+                                )}
+                                {user.paymentAccount.cardDetails?.last4 && (
+                                  <p className="text-xs font-bold text-slate-700">CARD: **** {user.paymentAccount.cardDetails.last4}</p>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
                           <div className="space-y-1.5">
                             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Confirm Your Name</label>
                             <input
@@ -355,6 +398,7 @@ export default function PaymentPage() {
                           <p className="font-semibold text-primary">{offer.freelancer?.name || "—"}</p>
                         </div>
                       </div>
+
 
                       <div className="space-y-3 pt-2">
                         <div className="flex justify-between items-center text-sm">

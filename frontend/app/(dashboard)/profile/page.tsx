@@ -7,6 +7,7 @@ import DashboardHeader from "@/components/DashboardHeader";
 import ImageCropperModal from "@/components/ImageCropperModal";
 import Swal from "sweetalert2";
 import { API_URL, handleResponse } from "@/lib/api";
+import PaymentHistory from "@/components/PaymentHistory";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -17,7 +18,11 @@ export default function ProfilePage() {
     title: "",
     bio: "",
     location: "",
-    rate: 0
+    rate: 0,
+    upiId: "",
+    cardHolderName: "",
+    cardLast4: "",
+    cardExpiry: ""
   });
   const [skills, setSkills] = useState<string[]>([]);
   const [skillInput, setSkillInput] = useState("");
@@ -40,6 +45,13 @@ export default function ProfilePage() {
         rate: user.rate || 0
       });
       setSkills(user.skills || []);
+      setFormData((prev) => ({
+        ...prev,
+        upiId: user.paymentAccount?.upiId || "",
+        cardHolderName: user.paymentAccount?.cardDetails?.holderName || "",
+        cardLast4: user.paymentAccount?.cardDetails?.last4 || "",
+        cardExpiry: user.paymentAccount?.cardDetails?.expiry || ""
+      }));
     }
   }, [user]);
 
@@ -89,7 +101,18 @@ export default function ProfilePage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ ...formData, skills })
+        body: JSON.stringify({ 
+          ...formData, 
+          skills,
+          paymentAccount: {
+            upiId: formData.upiId,
+            cardDetails: {
+              holderName: formData.cardHolderName,
+              last4: formData.cardLast4,
+              expiry: formData.cardExpiry
+            }
+          }
+        })
       });
       const data = await handleResponse(response);
       if (!data) return;
@@ -175,6 +198,13 @@ export default function ProfilePage() {
       setSkills(user.skills || []);
       setSkillInput("");
       setSaveStatus(null);
+      setFormData((prev) => ({
+        ...prev,
+        upiId: user.paymentAccount?.upiId || "",
+        cardHolderName: user.paymentAccount?.cardDetails?.holderName || "",
+        cardLast4: user.paymentAccount?.cardDetails?.last4 || "",
+        cardExpiry: user.paymentAccount?.cardDetails?.expiry || ""
+      }));
     }
   };
 
@@ -274,7 +304,7 @@ export default function ProfilePage() {
       >
         <div className="flex items-center gap-3">
 
-          
+
           <button
             type="button"
             onClick={handleSave}
@@ -435,6 +465,64 @@ export default function ProfilePage() {
                 ></textarea>
               </div>
             </div>
+
+            {/* Payment Account Details */}
+            <div className="pt-6 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2 mb-6">
+                <span className="material-symbols-outlined text-primary font-bold">payments</span>
+                <h4 className="font-black text-slate-900 dark:text-slate-100 uppercase tracking-widest text-[10px]">Payment & Payout Methods</h4>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">UPI ID (e.g. user@okaxis)</label>
+                  <input
+                    id="upiId"
+                    placeholder="Enter your UPI ID for quick payouts"
+                    className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                    type="text"
+                    value={formData.upiId}
+                    onChange={handleInputChange}
+                  />
+                </div>
+                <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+                  <div className="md:col-span-1 space-y-2">
+                    <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Card Holder Name</label>
+                    <input
+                      id="cardHolderName"
+                      placeholder="Name on card"
+                      className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                      type="text"
+                      value={formData.cardHolderName}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Card Number (Last 4)</label>
+                    <input
+                      id="cardLast4"
+                      placeholder="e.g. 4242"
+                      maxLength={4}
+                      className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                      type="text"
+                      value={formData.cardLast4}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Expiry Date</label>
+                    <input
+                      id="cardExpiry"
+                      placeholder="MM/YY"
+                      className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                      type="text"
+                      value={formData.cardExpiry}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -518,22 +606,22 @@ export default function ProfilePage() {
                   {user.resume ? "article" : "upload_file"}
                 </span>
               </div>
-              
+
               <div className="flex-1 text-center md:text-left space-y-2">
                 <h4 className="font-black text-slate-900 dark:text-slate-100">
                   {user.resume ? "Professional Resume Uploaded" : "No Resume Uploaded"}
                 </h4>
                 <p className="text-sm text-slate-500 max-w-md italic">
-                  {user.resume 
-                    ? "Your professional resume is currently saved and visible to clients when you apply for projects." 
+                  {user.resume
+                    ? "Your professional resume is currently saved and visible to clients when you apply for projects."
                     : "Upload your professional resume or CV to stand out from other freelancers. We support PDF, DOC, and DOCX."}
                 </p>
                 {user.resume && (
                   <div className="pt-2">
-                    <a 
-                      href={user.resume} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
+                    <a
+                      href={user.resume}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="text-primary text-xs font-black uppercase tracking-widest hover:underline flex items-center justify-center md:justify-start gap-1"
                     >
                       <span className="material-symbols-outlined text-sm">open_in_new</span>
@@ -595,7 +683,7 @@ export default function ProfilePage() {
           onCropComplete={async (croppedBlob) => {
             setShowCropper(false);
             setSelectedImage(null);
-            
+
             setIsSaving(true);
             setSaveStatus(null);
             try {

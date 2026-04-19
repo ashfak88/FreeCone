@@ -41,6 +41,14 @@ export interface IUser extends Document {
     timestamp: Date;
     status: "Successful" | "Blocked";
   }>;
+  paymentAccount?: {
+    upiId?: string;
+    cardDetails?: {
+      holderName?: string;
+      last4?: string;
+      expiry?: string;
+    };
+  };
   createdAt: Date;
 }
 
@@ -150,6 +158,14 @@ const UserSchema: Schema = new mongoose.Schema(
         status: { type: String, enum: ["Successful", "Blocked"] }
       }
     ],
+    paymentAccount: {
+      upiId: { type: String, default: "" },
+      cardDetails: {
+        holderName: { type: String, default: "" },
+        last4: { type: String, default: "" },
+        expiry: { type: String, default: "" },
+      },
+    },
     createdAt: {
       type: Date,
       default: Date.now,

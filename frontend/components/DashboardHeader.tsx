@@ -19,7 +19,7 @@ export default function DashboardHeader({ user, title, subtitle, showSearch = fa
   const { toggleMobileSidebar } = useDashboard();
 
   return (
-    <header className={`bg-white/80 dark:bg-slate-900/80 backdrop-blur-md fixed top-0 right-0 left-0 ${!isStandalone ? 'lg:left-72' : ''} z-30 border-b border-slate-200 dark:border-slate-800 px-4 md:px-8 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all duration-300`}>
+    <header className={`bg-white/80 dark:bg-slate-900/80 backdrop-blur-md fixed top-0 right-0 left-0 ${!isStandalone ? 'lg:left-72' : ''} z-30 border-b border-slate-200 dark:border-slate-800 px-4 md:px-8 py-3 md:py-4 flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4 transition-all duration-300`}>
       <div className="flex items-center gap-4">
         {showBack ? (
           <button 
@@ -34,8 +34,8 @@ export default function DashboardHeader({ user, title, subtitle, showSearch = fa
             <span className="material-symbols-outlined text-[28px]">menu</span>
           </button>
         )}
-        <div className="flex flex-col">
-          <h2 className="text-xl md:text-2xl font-black text-slate-900 dark:text-slate-100 flex items-center gap-1">
+        <div className="flex flex-col min-w-0">
+          <h2 className="text-lg md:text-2xl font-black text-slate-900 dark:text-slate-100 flex items-center gap-1 truncate">
             {title ? (
               title
             ) : (
@@ -57,7 +57,7 @@ export default function DashboardHeader({ user, title, subtitle, showSearch = fa
         </div>
       </div>
 
-      <div className="flex items-center gap-4 self-end md:self-auto">
+      <div className="flex items-center gap-3 sm:gap-4 ml-auto md:ml-0 overflow-x-auto no-scrollbar pb-1 md:pb-0">
         {showSearch && (
           <div className="relative group hidden md:block">
             <input
@@ -76,7 +76,7 @@ export default function DashboardHeader({ user, title, subtitle, showSearch = fa
             <p className="text-sm font-bold leading-none">{user?.name}</p>
             <p className="text-[11px] text-slate-500 font-medium tracking-wide mt-1">{user?.role}</p>
           </div>
-          <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-primary/20 bg-slate-200 shrink-0">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden border-2 border-primary/20 bg-slate-200 shrink-0">
             <img
               src={user?.avatar || user?.imageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || "U")}&background=0ea5e9&color=fff`}
               alt="User profile avatar"

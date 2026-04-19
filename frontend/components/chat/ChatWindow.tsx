@@ -224,7 +224,7 @@ function VoiceMessageBubble({ msg, isMe }: { msg: any; isMe: boolean }) {
   };
 
   return (
-    <div className="flex items-center gap-3 py-1.5 min-w-[240px]">
+    <div className="flex items-center gap-4 py-1.5 min-w-[260px] pr-2">
       <div className="relative shrink-0">
         <img 
           src={msg.sender?.imageUrl || msg.sender?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(msg.sender?.name || 'U')}&background=0b141a&color=fff`}
@@ -232,7 +232,7 @@ function VoiceMessageBubble({ msg, isMe }: { msg: any; isMe: boolean }) {
           className="size-10 rounded-full object-cover border border-wa-bg-search"
         />
         <div className="absolute -bottom-1 -right-1 bg-wa-bg-sidebar rounded-full p-1 border border-wa-bg-search">
-           <MicIcon className="size-3 text-wa-check-blue fill-current" />
+           <MicIcon className="size-3 text-primary fill-current" />
         </div>
       </div>
 
@@ -252,9 +252,9 @@ function VoiceMessageBubble({ msg, isMe }: { msg: any; isMe: boolean }) {
           type="range" 
           value={progress || 0}
           onChange={handleSeek}
-          className="w-full h-1 bg-wa-bg-search rounded-lg appearance-none cursor-pointer accent-wa-check-blue"
+          className="w-full h-1 bg-wa-bg-search rounded-lg appearance-none cursor-pointer accent-primary"
           style={{
-            background: `linear-gradient(to right, #53bdeb ${progress}%, #d1d7db ${progress}%)`
+            background: `linear-gradient(to right, #6A6B4C ${progress}%, #d1d7db ${progress}%)`
           }}
         />
         <div className="flex justify-between items-center px-0.5">
@@ -392,7 +392,7 @@ export default function ChatWindow() {
 
   if (!activeConversation && !tempParticipant) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center bg-wa-bg-main p-12 text-center select-none border-b-[6px] border-wa-check-blue">
+      <div className="flex-1 flex flex-col items-center justify-center bg-wa-bg-main p-12 text-center select-none border-b-[6px] border-primary">
         <div className="size-64 mb-8 opacity-20 filter grayscale drop-shadow-2xl">
           <span className="material-symbols-outlined text-[180px] text-wa-text-secondary leading-none">settings_ethernet</span>
         </div>
@@ -405,14 +405,14 @@ export default function ChatWindow() {
   }
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-wa-bg-main relative">
-      <div className="px-4 py-2 bg-wa-bg-sidebar border-b border-wa-bg-search/20 flex justify-between items-center z-20">
+    <div className="flex-1 flex flex-col h-full bg-wa-bg-main relative overflow-hidden">
+      <div className="px-3 md:px-4 py-1.5 md:py-2 bg-wa-bg-sidebar border-b border-wa-bg-search/20 flex justify-between items-center z-20 shrink-0">
         <div className="flex items-center gap-3 cursor-pointer p-1 hover:bg-wa-bg-search/30 rounded-lg transition-colors">
           <button
             onClick={() => setActiveConversation(null)}
-            className="md:hidden text-wa-text-secondary hover:text-wa-text-primary transition-colors"
+            className="md:hidden text-wa-text-secondary hover:text-wa-text-primary transition-colors flex items-center justify-center -ml-1 pr-1"
           >
-            <span className="material-symbols-outlined">arrow_back</span>
+            <span className="material-symbols-outlined text-2xl">arrow_back</span>
           </button>
 
           <img
@@ -445,7 +445,7 @@ export default function ChatWindow() {
 
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto px-10 py-6 flex flex-col gap-1 relative scroll-smooth custom-scrollbar"
+        className="flex-1 overflow-y-auto px-4 sm:px-10 py-4 md:py-6 flex flex-col gap-1 relative scroll-smooth custom-scrollbar"
         style={{
           backgroundImage: `url("https://w0.peakpx.com/wallpaper/580/630/wallpaper-dark-background-whatsapp-doodle-patterns-thumbnail.jpg")`,
           backgroundSize: '400px',
@@ -457,7 +457,7 @@ export default function ChatWindow() {
         <div className="relative z-10 flex flex-col gap-1">
           {isLoadingMessages ? (
             <div className="flex flex-col items-center justify-center py-10 gap-3">
-              <div className="w-8 h-8 border-3 border-wa-check-blue/20 border-t-wa-check-blue rounded-full animate-spin"></div>
+              <div className="w-8 h-8 border-3 border-primary/20 border-t-primary rounded-full animate-spin"></div>
             </div>
           ) : messages.length > 0 ? (
             messages.map((msg, index) => {
@@ -496,7 +496,9 @@ export default function ChatWindow() {
                         ) : msg.type === 'confirmation' ? (
                           <ConfirmationMessageBubble msg={msg} />
                         ) : (msg.type === 'voice' || (typeof msg.content === 'string' && msg.content.includes('voice_messages') && msg.content.endsWith('.webm'))) ? (
-                          <VoiceMessageBubble msg={msg} isMe={isMe} />
+                          <div className="-ml-1">
+                            <VoiceMessageBubble msg={msg} isMe={isMe} />
+                          </div>
                         ) : (
                           <span className="text-[14.2px] leading-snug break-words whitespace-pre-wrap inline-block">
                             {msg.content}
@@ -507,7 +509,13 @@ export default function ChatWindow() {
                             {format(msgDate, "h:mm a").toLowerCase()}
                           </span>
                           {isMe && (
-                            <span className="material-symbols-outlined text-[16px] text-wa-check-blue font-bold ml-[2px]">done_all</span>
+                            <span className={`material-symbols-outlined text-[16px] font-bold ml-[2px] ${
+                              msg.readBy && msg.readBy.length > 1 
+                                ? "text-wa-check-blue" 
+                                : "text-wa-text-secondary"
+                            }`}>
+                              done_all
+                            </span>
                           )}
                         </div>
                       </div>

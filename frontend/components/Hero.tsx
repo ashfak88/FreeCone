@@ -22,7 +22,7 @@ export default function Hero() {
   }, []);
 
   return (
-    <header className="relative overflow-hidden py-16 lg:py-24 bg-background-light dark:bg-background-dark">
+    <header className="relative overflow-hidden py-12 md:py-16 lg:py-24 bg-background-light dark:bg-background-dark">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div className="space-y-8">
@@ -30,7 +30,7 @@ export default function Hero() {
               <span className="material-symbols-outlined text-[14px]">verified</span>
               Vetted Elite Marketplace
             </div>
-            <h1 className="text-5xl lg:text-7xl font-extrabold tracking-tight leading-tight">
+            <h1 className="text-4xl sm:text-5xl lg:text-7xl font-extrabold tracking-tight leading-tight">
               Connect with <span className="text-primary">Elite Global</span> Talent
             </h1>
             <p className="text-lg text-slate-600 dark:text-slate-400 max-w-xl leading-relaxed">
@@ -39,13 +39,13 @@ export default function Hero() {
             <div className="flex flex-wrap gap-4">
               <button
                 onClick={() => router.push("/find-talent")}
-                className="bg-primary text-white px-8 py-4 rounded-xl font-bold text-lg hover:shadow-lg hover:shadow-primary/30 transition-all flex items-center gap-2"
+                className="bg-primary text-white px-6 md:px-8 py-3 md:py-4 rounded-xl font-bold text-base md:text-lg hover:shadow-lg hover:shadow-primary/30 transition-all flex items-center gap-2"
               >
                 Hire Talent <span className="material-symbols-outlined">arrow_forward</span>
               </button>
               <button
                 onClick={() => router.push("/find-work")}
-                className="bg-white border-2 border-primary/20 text-primary px-8 py-4 rounded-xl font-bold text-lg hover:bg-primary/5 transition-all"
+                className="bg-white border-2 border-primary/20 text-primary px-6 md:px-8 py-3 md:py-4 rounded-xl font-bold text-base md:text-lg hover:bg-primary/5 transition-all"
               >
                 Find Work
               </button>

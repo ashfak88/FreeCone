@@ -47,6 +47,14 @@ export interface User {
     timestamp: string;
     status: string;
   }[];
+  paymentAccount?: {
+    upiId?: string;
+    cardDetails?: {
+      holderName?: string;
+      last4?: string;
+      expiry?: string;
+    };
+  };
   createdAt: string;
 }
 
@@ -174,9 +182,9 @@ export interface Message {
   conversationId: string;
   sender: any;
   content: string;
-  type: "text" | "payment" | "confirmation";
+  type: "text" | "payment" | "confirmation" | "voice";
   metadata?: any;
-  isRead: boolean;
+  readBy: string[];
   createdAt: string;
 }
 
@@ -252,6 +260,7 @@ interface AppState {
   addMessage: (message: Message) => void;
   updateConversationLocally: (conversation: Conversation) => void;
   updateMessageLocally: (message: Message) => void;
+  markMessagesAsReadLocally: (conversationId: string, readerId: string) => void;
 }
 
 
@@ -967,6 +976,31 @@ export const useStore = create<AppState>((set, get) => {
         return mId === uId ? updatedMessage : m;
       });
       set({ messages: newMessages });
+    },
+    markMessagesAsReadLocally: (conversationId, readerId) => {
+      set((state) => ({
+        messages: state.messages.map((msg) => {
+          if (msg.conversationId === conversationId && !msg.readBy.includes(readerId)) {
+            return { ...msg, readBy: [...msg.readBy, readerId] };
+          }
+          return msg;
+        }),
+        conversations: state.conversations.map((conv) => {
+          if (conv._id === conversationId && conv.lastMessage) {
+            const readByArray = Array.isArray(conv.lastMessage.readBy) ? conv.lastMessage.readBy : [];
+            if (!readByArray.includes(readerId)) {
+              return {
+                ...conv,
+                lastMessage: {
+                  ...conv.lastMessage,
+                  readBy: [...readByArray, readerId]
+                }
+              };
+            }
+          }
+          return conv;
+        })
+      }));
     },
   }
 });

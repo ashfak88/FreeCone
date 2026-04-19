@@ -66,20 +66,20 @@ export default function JobsPage() {
       <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-10">
         {/* HERO SECTION */}
         <div className="mb-10 text-center md:text-left">
-          <h1 className="text-4xl md:text-5xl font-black mb-3 tracking-tight">Find your next project</h1>
-          <p className="text-slate-500 dark:text-slate-400 text-lg">Explore high-quality freelance opportunities posted by verified clients.</p>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-black mb-3 tracking-tight">Find your next project</h1>
+          <p className="text-slate-500 dark:text-slate-400 text-base sm:text-lg">Explore high-quality freelance opportunities posted by verified clients.</p>
         </div>
 
         {/* SEARCH & FILTERS */}
-        <div className="mb-8 sticky top-[73px] z-30 bg-[#f6f7f8]/90 dark:bg-[#101922]/90 backdrop-blur-xl py-4 transition-all border-b border-transparent">
+        <div className="mb-8 sticky top-[64px] md:top-[73px] z-30 bg-[#f6f7f8]/90 dark:bg-[#101922]/90 backdrop-blur-xl py-4 transition-all border-b border-transparent px-1">
           <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-3">
             <div className="flex-1 relative">
-              <label className="flex items-stretch rounded-2xl h-14 bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 overflow-hidden shadow-sm focus-within:ring-4 focus-within:ring-primary/10 focus-within:border-primary/30 transition-all">
-                <div className="flex items-center justify-center pl-5 text-slate-400">
+              <label className="flex items-stretch rounded-2xl h-12 md:h-14 bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 overflow-hidden shadow-sm focus-within:ring-4 focus-within:ring-primary/10 focus-within:border-primary/30 transition-all">
+                <div className="flex items-center justify-center pl-4 md:pl-5 text-slate-400">
                   <span className="material-symbols-outlined font-light">search</span>
                 </div>
                 <input
-                  className="flex w-full bg-transparent border-none focus:ring-0 px-4 text-base font-medium placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none"
+                  className="flex w-full bg-transparent border-none focus:ring-0 px-3 md:px-4 text-sm md:text-base font-medium placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none"
                   placeholder="Search for projects, skills, or keywords"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
@@ -91,7 +91,7 @@ export default function JobsPage() {
                 )}
               </label>
             </div>
-            <button className="bg-primary text-white px-10 h-14 rounded-2xl font-black flex items-center justify-center gap-2 hover:bg-opacity-90 transition-all shadow-xl shadow-primary/20 active:scale-95">
+            <button className="bg-primary text-white px-10 h-12 md:h-14 rounded-2xl font-black flex items-center justify-center gap-2 hover:bg-opacity-90 transition-all shadow-xl shadow-primary/20 active:scale-95 text-sm md:text-base">
               <span>Search</span>
             </button>
           </form>

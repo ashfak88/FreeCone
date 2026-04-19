@@ -199,10 +199,26 @@ export const markAsRead = async (req: any, res: Response): Promise<void> => {
     const { conversationId } = req.params;
     const userId = req.user._id;
 
+    // 1. Update database
     await Message.updateMany(
       { conversationId, readBy: { $ne: userId } },
       { $addToSet: { readBy: userId } }
     );
+
+    // 2. Find conversation to know who to notify
+    const conversation = await Conversation.findById(conversationId);
+    if (conversation) {
+      const io = getIO();
+      // Notify other participants that messages were read
+      conversation.participants.forEach((participantId: any) => {
+        if (participantId.toString() !== userId.toString()) {
+          io.to(participantId.toString()).emit("messagesRead", {
+            conversationId,
+            readerId: userId
+          });
+        }
+      });
+    }
 
     res.status(200).json({ message: "Messages marked as read" });
   } catch (error: any) {

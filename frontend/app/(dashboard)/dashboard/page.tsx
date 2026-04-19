@@ -138,7 +138,7 @@ export default function DashboardPage() {
       <main className="max-w-[1240px] mx-auto p-6 md:p-8 space-y-10">
 
         {/* Stats Row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
 
           <button 
             onClick={() => setHistoryModal({ isOpen: true, title: isClientRole ? "Spending History" : "Total Earnings", type: isClientRole ? "spending" : "earnings" })}
@@ -423,7 +423,7 @@ export default function DashboardPage() {
               </div>
 
               {notifications.length > 0 ? (
-                <div className="divide-y divide-slate-50 -mx-6">
+                <div className="divide-y divide-slate-50 -mx-4 md:-mx-6">
                   {notifications.slice(0, 5).map((activity) => (
                     <ActivityItem
                       key={activity._id}

@@ -71,7 +71,7 @@ export const updateProfile = async (req: Request, res: Response): Promise<any> =
 
     // Capture fields from request body
     const updates: any = {};
-    const allowedFields = ['name', 'title', 'bio', 'location', 'skills', 'rate', 'imageUrl', 'portfolio', 'socialLinks', 'resume', 'age'];
+    const allowedFields = ['name', 'title', 'bio', 'location', 'skills', 'rate', 'imageUrl', 'portfolio', 'socialLinks', 'resume', 'age', 'paymentAccount'];
 
     allowedFields.forEach(field => {
       if (req.body[field] !== undefined) {

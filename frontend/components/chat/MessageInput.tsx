@@ -312,7 +312,7 @@ export default function MessageInput({ conversationId, recipientId }: MessageInp
           <button
             type="button"
             onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-            className={`p-2 hover:bg-wa-bg-search/40 rounded-full transition-colors active:scale-95 ${showEmojiPicker ? 'text-wa-check-blue bg-wa-bg-search/40' : ''}`}
+            className={`p-2 hover:bg-wa-bg-search/40 rounded-full transition-colors active:scale-95 ${showEmojiPicker ? 'text-primary bg-wa-bg-search/40' : ''}`}
             title="Emoji"
           >
             <Smile className="size-6" />
@@ -359,7 +359,7 @@ export default function MessageInput({ conversationId, recipientId }: MessageInp
                 isRecording ? stopRecording() : handleSend();
               }}
               disabled={isSending}
-              style={{ backgroundColor: (content.trim() || isRecording) && !isSending ? '#53bdeb' : '#202c33' }}
+              style={{ backgroundColor: (content.trim() || isRecording) && !isSending ? '#6A6B4C' : '#202c33' }}
               className={`flex items-center justify-center size-12 rounded-full transition-all active:scale-90 shadow-lg text-white ${
                 (content.trim() || isRecording) && !isSending ? "hover:scale-105" : "opacity-50 cursor-not-allowed"
               }`}
@@ -379,7 +379,7 @@ export default function MessageInput({ conversationId, recipientId }: MessageInp
                 console.log("   [UI] Microphone button clicked");
                 startRecording();
               }}
-              style={{ backgroundColor: '#53bdeb' }}
+              style={{ backgroundColor: '#6A6B4C' }}
               className="flex items-center justify-center size-12 text-white rounded-full shadow-lg hover:scale-105 transition-all active:scale-95 cursor-pointer"
               title="Record voice message"
             >

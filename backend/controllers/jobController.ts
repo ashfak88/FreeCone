@@ -192,7 +192,7 @@ export const getProposalById = async (req: any, res: Response): Promise<any> => 
 
     const proposal = await Proposal.findById(id)
       .populate("job")
-      .populate("talent", "name email imageUrl title skills")
+      .populate("talent", "name email imageUrl title skills paymentAccount")
       .populate({
         path: "job",
         populate: { path: "user", select: "name email imageUrl" }
@@ -340,7 +340,8 @@ export const confirmProposalHandshake = async (req: any, res: Response): Promise
         proposalId: proposal._id,
         amount: proposal.proposedRate,
         jobTitle: job.title,
-        type: 'proposal'
+        type: 'proposal',
+        silent: true
       });
 
       // 2. Create Payment notification for client

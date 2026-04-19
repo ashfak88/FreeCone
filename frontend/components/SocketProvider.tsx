@@ -53,7 +53,12 @@ export default function SocketProvider({
         useStore.getState().fetchConversations();
         
         // Show popup ONLY for incoming messages that are NOT from the user themselves
-        if (message.sender?._id !== user?.id && message.sender?._id !== user?._id) {
+        // AND are NOT marked as silent
+        if (
+          message.sender?._id !== user?.id &&
+          message.sender?._id !== user?._id &&
+          !message.metadata?.silent
+        ) {
           useNotificationStore.getState().addNotification({
             title: `New Message from ${message.sender?.name || 'User'}`,
             message: message.content,
@@ -72,11 +77,17 @@ export default function SocketProvider({
         useStore.getState().updateConversationLocally(conversation);
       };
 
+      const onMessagesRead = ({ conversationId, readerId }: { conversationId: string, readerId: string }) => {
+        console.log("   [SOCKET] Messages read in conversation:", conversationId, "by user:", readerId);
+        useStore.getState().markMessagesAsReadLocally(conversationId, readerId);
+      };
+
       socket.on("newNotification", onNewNotification);
       socket.on("notificationUpdate", onNotificationUpdate);
       socket.on("newMessage", onNewMessage);
       socket.on("conversationUpdate", onConversationUpdate);
       socket.on("messageUpdate", onMessageUpdate);
+      socket.on("messagesRead", onMessagesRead);
 
       return () => {
         socket.off("connect", handleConnect);
@@ -85,6 +96,7 @@ export default function SocketProvider({
         socket.off("newMessage", onNewMessage);
         socket.off("conversationUpdate", onConversationUpdate);
         socket.off("messageUpdate", onMessageUpdate);
+        socket.off("messagesRead", onMessagesRead);
       };
     } else {
       socketService.disconnect();

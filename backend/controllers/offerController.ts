@@ -86,7 +86,7 @@ export const getMyOffers = async (req: Request, res: Response): Promise<any> => 
       $or: [{ client: userId }, { freelancer: userId }],
     })
       .populate("client", "name email imageUrl")
-      .populate("freelancer", "name email imageUrl role")
+      .populate("freelancer", "name email imageUrl role paymentAccount")
       .sort({ createdAt: -1 });
 
     res.status(200).json(offers);
@@ -110,7 +110,7 @@ export const getOfferById = async (req: Request, res: Response): Promise<any> =>
 
     const offer = await Offer.findById(id)
       .populate("client", "name email imageUrl")
-      .populate("freelancer", "name email imageUrl");
+      .populate("freelancer", "name email imageUrl paymentAccount");
 
     if (!offer) {
       return res.status(404).json({ message: "Offer not found" });
@@ -163,7 +163,7 @@ export const updateOfferStatus = async (req: Request, res: Response): Promise<an
       const clientId = offer.client._id || offer.client;
       // 1. Confirmation message
       const messageContent = `I have accepted your offer for '${offer.jobTitle}'. Let's get started! 🤝`;
-      await sendSystemMessage(userId, clientId, messageContent);
+      await sendSystemMessage(userId, clientId, messageContent, 'text', { silent: true });
 
       // 2. Payment Request message
       const paymentMsg = `Offer accepted! Please pay the advance of $${offer.budget} to start the project.`;
@@ -171,7 +171,8 @@ export const updateOfferStatus = async (req: Request, res: Response): Promise<an
         offerId: offer._id,
         amount: offer.budget,
         jobTitle: offer.jobTitle,
-        type: 'advance_payment'
+        type: 'advance_payment',
+        silent: true
       });
     }
 
