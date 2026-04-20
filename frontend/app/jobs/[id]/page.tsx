@@ -82,10 +82,10 @@ export default function ProjectDetailsPage() {
       <div className="flex p-4 bg-white dark:bg-slate-900/50 border-b border-primary/5">
         <div className="max-w-5xl mx-auto w-full flex flex-col gap-4 md:flex-row md:justify-between md:items-center">
           <div className="flex gap-4">
-            {job.imageUrl && (
+            {(job.imageUrl || job.client?.avatar) && (
               <div 
                 className="bg-center bg-no-repeat aspect-square bg-cover rounded-xl min-h-24 w-24 border border-primary/20 shadow-sm transition-transform hover:scale-105" 
-                style={{ backgroundImage: `url("${job.imageUrl}")` }}
+                style={{ backgroundImage: `url("${job.imageUrl || job.client?.avatar}")` }}
               ></div>
             )}
             <div className="flex flex-col justify-center">

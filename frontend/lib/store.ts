@@ -61,6 +61,7 @@ export interface User {
 export interface Job {
   _id: string;
   id?: string;
+  imageUrl?: string;
   title: string;
   description: string;
   budget: number;
