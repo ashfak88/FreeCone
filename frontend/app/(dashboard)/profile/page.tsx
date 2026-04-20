@@ -42,16 +42,13 @@ export default function ProfilePage() {
         title: user.title || "",
         bio: user.bio || "",
         location: user.location || "",
-        rate: user.rate || 0
-      });
-      setSkills(user.skills || []);
-      setFormData((prev) => ({
-        ...prev,
+        rate: user.rate || 0,
         upiId: user.paymentAccount?.upiId || "",
         cardHolderName: user.paymentAccount?.cardDetails?.holderName || "",
         cardLast4: user.paymentAccount?.cardDetails?.last4 || "",
         cardExpiry: user.paymentAccount?.cardDetails?.expiry || ""
-      }));
+      });
+      setSkills(user.skills || []);
     }
   }, [user]);
 
@@ -193,18 +190,15 @@ export default function ProfilePage() {
         title: user.title || "",
         bio: user.bio || "",
         location: user.location || "",
-        rate: user.rate || 0
-      });
-      setSkills(user.skills || []);
-      setSkillInput("");
-      setSaveStatus(null);
-      setFormData((prev) => ({
-        ...prev,
+        rate: user.rate || 0,
         upiId: user.paymentAccount?.upiId || "",
         cardHolderName: user.paymentAccount?.cardDetails?.holderName || "",
         cardLast4: user.paymentAccount?.cardDetails?.last4 || "",
         cardExpiry: user.paymentAccount?.cardDetails?.expiry || ""
-      }));
+      });
+      setSkills(user.skills || []);
+      setSkillInput("");
+      setSaveStatus(null);
     }
   };
 
