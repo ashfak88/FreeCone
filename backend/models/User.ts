@@ -49,6 +49,7 @@ export interface IUser extends Document {
       expiry?: string;
     };
   };
+  showAsFreelancer: boolean;
   createdAt: Date;
 }
 
@@ -165,6 +166,10 @@ const UserSchema: Schema = new mongoose.Schema(
         last4: { type: String, default: "" },
         expiry: { type: String, default: "" },
       },
+    },
+    showAsFreelancer: {
+      type: Boolean,
+      default: false,
     },
     createdAt: {
       type: Date,

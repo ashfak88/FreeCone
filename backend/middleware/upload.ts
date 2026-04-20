@@ -20,17 +20,18 @@ const profileStorage = new CloudinaryStorage({
 const resumeStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: async (req: any, file: any) => {
-    // Sanitize filename: remove extension and special characters
-    const cleanName = file.originalname
-      .split('.')
-      .slice(0, -1)
+    // Sanitize filename: remove extension and special characters for the base
+    const parts = file.originalname.split('.');
+    const ext = parts.length > 1 ? parts.pop().toLowerCase() : 'pdf';
+    const cleanName = parts
       .join('.')
       .replace(/[^a-zA-Z0-9]/g, '_');
-
+      
     return {
       folder: "resumes",
-      resource_type: "auto", // Better for various doc types
+      resource_type: "auto", // Automatically handles PDFs as images and others as raw
       public_id: `resume_${req.user?.id || req.user?._id || Date.now()}_${cleanName}`,
+      format: ext, // Forcing the format ensures the URL has the correct extension and headers
       access_mode: "public",
       type: "upload",
     };

@@ -13,7 +13,7 @@ interface MessageInputProps {
 export default function MessageInput({ conversationId, recipientId }: MessageInputProps) {
   const [content, setContent] = useState("");
   const [isSending, setIsSending] = useState(false);
-  const { user, addMessage, updateConversationLocally, fetchConversations, setActiveConversation, conversations } = useStore();
+  const { user, addMessage, removeMessage, updateConversationLocally, fetchConversations, setActiveConversation, conversations } = useStore();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Recording states
@@ -86,12 +86,26 @@ export default function MessageInput({ conversationId, recipientId }: MessageInp
     const token = typeof window !== 'undefined' ? localStorage.getItem("accessToken") : null;
 
     try {
-      console.log("   [SEND] Attempting send:", { conversationId, recipientId, contentSize: content.length });
-
       if (!token) {
         toast.error("Your session has expired. Please log in again.", { id: loadingToast });
         return;
       }
+
+      const tempId = `temp-${Date.now()}`;
+      const optimisticMessage = {
+        _id: tempId,
+        conversationId: conversationId || "temp",
+        content: content.trim(),
+        sender: user, // Use full user object for avatar rendering
+        createdAt: new Date().toISOString(),
+        readBy: [user?._id || user?.id],
+        type: 'text',
+        metadata: { status: 'sending', tempId }
+      };
+
+      addMessage(optimisticMessage as any);
+      setContent("");
+      textareaRef.current?.focus();
 
       const res = await fetch(`${api_url}/messages`, {
         method: "POST",
@@ -101,7 +115,7 @@ export default function MessageInput({ conversationId, recipientId }: MessageInp
         },
         body: JSON.stringify({
           recipientId: recipientId || undefined,
-          content: content.trim(),
+          content: optimisticMessage.content,
           conversationId: conversationId || undefined,
         }),
       });
@@ -116,9 +130,8 @@ export default function MessageInput({ conversationId, recipientId }: MessageInp
 
       if (res.ok) {
         console.log("   [SEND] Success:", responseData);
-        toast.success("Message sent", { id: loadingToast });
-
-        addMessage(responseData);
+        // addMessage will now replace the optimistic one using tempId
+        addMessage({ ...responseData, metadata: { ...responseData.metadata, tempId } });
 
         updateConversationLocally({
           _id: responseData.conversationId,
@@ -137,21 +150,19 @@ export default function MessageInput({ conversationId, recipientId }: MessageInp
             window.history.replaceState(null, "", "/messages");
           }
         }
-
-        setContent("");
-        textareaRef.current?.focus();
-      } else if (res.status === 401) {
-        console.error("   [SEND] Unauthorized Error (401). Token may be expired.");
-        toast.error("Your session has expired. Please log out and log back in.", { id: loadingToast, duration: 6000 });
-        // Optional: clear invalid token if you want to force logout on next refresh
-        // localStorage.removeItem("accessToken");
       } else {
-        console.error("   [SEND] API Error Status:", res.status);
-        console.error("   [SEND] API Error Body:", responseData);
-        console.error("   [SEND] API Error Raw:", responseText);
+        // Remove optimistic message on failure
+        removeMessage(tempId);
+        setContent(optimisticMessage.content); // Restore content for retry
 
-        const errorMsg = responseData.message || responseData.error || responseText.substring(0, 100) || "Failed to send";
-        toast.error(`Error: ${errorMsg}`, { id: loadingToast });
+        if (res.status === 401) {
+          console.error("   [SEND] Unauthorized Error (401). Token may be expired.");
+          toast.error("Your session has expired. Please log out and log back in.", { duration: 6000 });
+        } else {
+          console.error("   [SEND] API Error Status:", res.status);
+          const errorMsg = responseData.message || responseData.error || responseText.substring(0, 100) || "Failed to send";
+          toast.error(`Error: ${errorMsg}`);
+        }
       }
     } catch (err) {
       console.error("   [SEND] System Error:", err);
@@ -220,7 +231,21 @@ export default function MessageInput({ conversationId, recipientId }: MessageInp
     const api_url = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api").replace(/\/$/, "");
     const token = localStorage.getItem("accessToken");
 
+    const tempId = `temp-voice-${Date.now()}`;
     try {
+      // 0. Add optimistic voice message
+      const optimisticVoice = {
+        _id: tempId,
+        conversationId: conversationId || "temp",
+        content: URL.createObjectURL(audioBlob), // Local preview
+        sender: user, // Use full user object for avatar rendering
+        createdAt: new Date().toISOString(),
+        readBy: [user?._id || user?.id],
+        type: 'voice',
+        metadata: { status: 'sending', tempId }
+      };
+      addMessage(optimisticVoice as any);
+
       // 1. Upload the audio file
       const formData = new FormData();
       formData.append("voice", audioBlob, "voice_message.webm");
@@ -253,8 +278,7 @@ export default function MessageInput({ conversationId, recipientId }: MessageInp
 
       const responseData = await res.json();
       if (res.ok) {
-        toast.success("Voice message sent", { id: loadingToast });
-        addMessage(responseData);
+        addMessage({ ...responseData, metadata: { ...responseData.metadata, tempId } });
         updateConversationLocally({
           _id: responseData.conversationId,
           lastMessage: responseData,
@@ -265,7 +289,8 @@ export default function MessageInput({ conversationId, recipientId }: MessageInp
       }
     } catch (err: any) {
       console.error("   [VOICE SEND] Error:", err);
-      toast.error(err.message || "Failed to send voice message", { id: loadingToast });
+      removeMessage(tempId);
+      toast.error(err.message || "Failed to send voice message");
     } finally {
       setIsSending(false);
       setMediaRecorder(null);
@@ -320,7 +345,10 @@ export default function MessageInput({ conversationId, recipientId }: MessageInp
         </div>
 
         {/* Input Bar & Recording UI */}
-        <div className="flex-1 relative bg-wa-bg-search flex items-center rounded-xl px-4 py-2 focus-within:ring-1 focus-within:ring-wa-check-blue/20 transition-all min-h-[48px]">
+        <div 
+          onClick={() => textareaRef.current?.focus()}
+          className="flex-1 relative bg-wa-bg-sidebar/50 dark:bg-wa-bg-search flex items-center rounded-xl px-4 py-2 transition-all min-h-[48px] cursor-text"
+        >
           {isRecording ? (
             <div className="flex-1 flex items-center gap-4 px-1 animate-in fade-in slide-in-from-left-2 duration-300">
               <div className="flex items-center gap-2">
@@ -331,7 +359,7 @@ export default function MessageInput({ conversationId, recipientId }: MessageInp
               </div>
               <div className="flex-1 text-wa-text-secondary text-[14px]">Recording...</div>
               <button
-                onClick={cancelRecording}
+                onClick={(e) => { e.stopPropagation(); cancelRecording(); }}
                 className="p-2 hover:bg-red-500/10 rounded-full text-wa-text-secondary hover:text-red-500 transition-all active:scale-90"
                 title="Cancel"
               >
@@ -345,7 +373,9 @@ export default function MessageInput({ conversationId, recipientId }: MessageInp
               onChange={(e) => setContent(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Type a message"
-              className="w-full bg-transparent border-none focus:ring-0 text-[15px] text-wa-text-primary placeholder:text-wa-text-secondary py-1 px-0 resize-none font-normal leading-normal custom-scrollbar"
+              className="w-full bg-transparent border-none focus:ring-0 outline-none text-[15px] text-wa-text-primary placeholder:text-wa-text-secondary py-1 px-0 resize-none font-normal leading-normal scrollbar-none overflow-hidden"
+              rows={1}
+              style={{ minHeight: '24px', maxHeight: '120px' }}
             />
           )}
         </div>

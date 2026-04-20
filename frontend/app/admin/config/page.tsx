@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import AdminHeader from "@/components/AdminHeader";
 import BottomNavbar from "@/components/BottomNavbar";
 import { API_URL, handleResponse } from "@/lib/api";
+import Swal from "sweetalert2";
 
 export default function AdminConfigPage() {
   const [commission, setCommission] = useState<number>(0);
@@ -51,11 +52,23 @@ export default function AdminConfigPage() {
       });
       const data = await handleResponse(res);
       if (data) {
-        alert("Settings updated successfully!");
+        Swal.fire({
+          title: "Settings Saved",
+          text: "System configuration updated successfully.",
+          icon: "success",
+          confirmButtonColor: "#6A6B4C",
+          customClass: { popup: 'rounded-3xl' }
+        });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to save settings:", error);
-      alert("Error saving settings.");
+      Swal.fire({
+        title: "Error",
+        text: error.message || "Failed to save system settings.",
+        icon: "error",
+        confirmButtonColor: "#6A6B4C",
+        customClass: { popup: 'rounded-3xl' }
+      });
     } finally {
       setIsSaving(false);
     }
@@ -145,8 +158,17 @@ export default function AdminConfigPage() {
                 onClick={async () => {
                   const newState = !maintenanceMode;
                   if (newState) {
-                    const confirm = window.confirm("Are you sure you want to enable Maintenance Mode? This will block access for all regular users.");
-                    if (!confirm) return;
+                    const result = await Swal.fire({
+                      title: 'Enable Maintenance Mode?',
+                      text: "This will redirect all non-admin users. Are you sure?",
+                      icon: 'warning',
+                      showCancelButton: true,
+                      confirmButtonColor: '#6A6B4C',
+                      cancelButtonColor: '#94a3b8',
+                      confirmButtonText: 'Yes, Enable!',
+                      customClass: { popup: 'rounded-3xl' }
+                    });
+                    if (!result.isConfirmed) return;
                   }
                   
                   // Optimistic update
@@ -167,6 +189,13 @@ export default function AdminConfigPage() {
                   } catch (err) {
                     console.error("Failed to toggle maintenance mode:", err);
                     setMaintenanceMode(!newState); // revert
+                    Swal.fire({
+                      title: "Error",
+                      text: "Failed to update maintenance mode status.",
+                      icon: "error",
+                      confirmButtonColor: "#6A6B4C",
+                      customClass: { popup: 'rounded-3xl' }
+                    });
                   }
                 }}
                 className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-300 focus:outline-none ${maintenanceMode ? "bg-red-500" : "bg-slate-200 dark:bg-slate-700"}`}

@@ -9,19 +9,19 @@ import { useStore } from "@/lib/store";
 import { socketService } from "@/lib/socket";
 
 function MessagesContent() {
-  const { 
-    fetchConversations, 
+  const {
+    fetchConversations,
     conversations,
-    activeConversation, 
-    addMessage, 
-    updateConversationLocally, 
-    user, 
+    activeConversation,
+    addMessage,
+    updateConversationLocally,
+    user,
     setActiveConversation,
     setTempParticipant,
     talent,
     fetchTalent
   } = useStore();
-  
+
   const searchParams = useSearchParams();
   const targetUserId = searchParams.get("userId");
   const [isSidebarVisible, setIsSidebarVisible] = useState(true);
@@ -44,7 +44,7 @@ function MessagesContent() {
         // Update the conversation list
         updateConversationLocally({
           _id: message.conversationId,
-          participants: [], 
+          participants: [],
           lastMessage: message,
           updatedAt: new Date().toISOString(),
         } as any);
@@ -68,7 +68,7 @@ function MessagesContent() {
   // Handle target user from URL
   useEffect(() => {
     if (targetUserId && (conversations.length > 0 || talent.length > 0)) {
-      const existingConv = conversations.find(c => 
+      const existingConv = conversations.find(c =>
         c.participants.some(p => p._id === targetUserId || p.id === targetUserId)
       );
 

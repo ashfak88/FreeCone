@@ -262,11 +262,17 @@ interface AppState {
   updateConversationLocally: (conversation: Conversation) => void;
   updateMessageLocally: (message: Message) => void;
   markMessagesAsReadLocally: (conversationId: string, readerId: string) => void;
+  removeMessage: (messageId: string) => void;
+  isDarkMode: boolean;
+  setDarkMode: (isDark: boolean) => void;
+  logout: () => void;
 }
 
 
 export const useStore = create<AppState>((set, get) => {
   let initialUser = null;
+  let initialDarkMode = false;
+
   if (typeof window !== 'undefined') {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
@@ -276,9 +282,39 @@ export const useStore = create<AppState>((set, get) => {
         console.error('Failed to parse user from localStorage', e);
       }
     }
+
+    const storedTheme = localStorage.getItem('theme');
+    if (storedTheme) {
+      initialDarkMode = storedTheme === 'dark';
+    } else {
+      initialDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
   }
 
   return {
+    isDarkMode: initialDarkMode,
+    setDarkMode: (isDark: boolean) => {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+      }
+      set({ isDarkMode: isDark });
+    },
+    logout: () => {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('user');
+        localStorage.removeItem('accessToken');
+      }
+      set({ 
+        user: null, 
+        notifications: [], 
+        sentNotifications: [], 
+        jobs: [], 
+        myJobs: [], 
+        myProposals: [], 
+        conversations: [],
+        activeConversation: null 
+      });
+    },
     user: initialUser,
     setUser: (user) => {
       if (typeof window !== 'undefined') {
@@ -926,20 +962,26 @@ export const useStore = create<AppState>((set, get) => {
 
       console.log("   [STORE] addMessage check:", { currentActiveId, incomingConvId });
 
-      // If we are in a temporary chat with a participant, we should check if this message 
-      // belongs to the newly created conversation for that participant.
-      // But usually, MessageInput will set activeConversation once it gets the first response.
-
       if (currentActiveId && incomingConvId === currentActiveId) {
+        // Handle replacing an optimistic message
+        const tempId = message.metadata?.tempId;
+        if (tempId) {
+           const filtered = messages.filter(m => m._id !== tempId);
+           set({ messages: [...filtered, message] });
+           return;
+        }
+
         const isDuplicate = messages.some(m => m._id === message._id);
         if (!isDuplicate) {
           set({ messages: [...messages, message] });
         }
       } else if (!currentActiveId && tempParticipant) {
-        // This handles cases where the first message comes in via socket before the POST response
-        // Or for the recipient who doesn't have the conversation yet
         set({ messages: [...messages, message] });
       }
+    },
+    removeMessage: (messageId) => {
+      const { messages } = get();
+      set({ messages: messages.filter(m => m._id !== messageId) });
     },
     updateConversationLocally: (updatedConv) => {
       const { conversations } = get();

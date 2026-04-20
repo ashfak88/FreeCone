@@ -8,6 +8,7 @@ import ImageCropperModal from "@/components/ImageCropperModal";
 import Swal from "sweetalert2";
 import { API_URL, handleResponse } from "@/lib/api";
 import PaymentHistory from "@/components/PaymentHistory";
+import { openResume } from "@/lib/utils";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -22,7 +23,8 @@ export default function ProfilePage() {
     upiId: "",
     cardHolderName: "",
     cardLast4: "",
-    cardExpiry: ""
+    cardExpiry: "",
+    showAsFreelancer: false
   });
   const [skills, setSkills] = useState<string[]>([]);
   const [skillInput, setSkillInput] = useState("");
@@ -46,17 +48,42 @@ export default function ProfilePage() {
         upiId: user.paymentAccount?.upiId || "",
         cardHolderName: user.paymentAccount?.cardDetails?.holderName || "",
         cardLast4: user.paymentAccount?.cardDetails?.last4 || "",
-        cardExpiry: user.paymentAccount?.cardDetails?.expiry || ""
+        cardExpiry: user.paymentAccount?.cardDetails?.expiry || "",
+        showAsFreelancer: user.showAsFreelancer || false
       });
       setSkills(user.skills || []);
     }
   }, [user]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { id, value } = e.target;
+    const { id, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
+
+    // VALIDATION: If turning ON freelancer visibility, check for required fields
+    if (id === "showAsFreelancer" && checked) {
+      const missingFields = [];
+      if (!formData.title?.trim()) missingFields.push("Professional Title");
+      if (!formData.bio?.trim()) missingFields.push("Professional Bio");
+      if (!formData.location?.trim()) missingFields.push("Location");
+      if (formData.rate <= 0) missingFields.push("Hourly Rate (must be > 0)");
+      if (skills.length === 0) missingFields.push("At least one Skill");
+
+      if (missingFields.length > 0) {
+        Swal.fire({
+          title: "Profile Incomplete",
+          html: `To show as a freelancer, please fill in the following details first:<br/><br/><div class="text-left bg-slate-50 dark:bg-slate-800 p-4 rounded-xl text-sm border border-slate-200 dark:border-slate-700">${missingFields.map(f => `• ${f}`).join("<br/>")}</div>`,
+          icon: "warning",
+          confirmButtonColor: "#0ea5e9",
+          background: document.documentElement.classList.contains("dark") ? "#0f172a" : "#fff",
+          color: document.documentElement.classList.contains("dark") ? "#fff" : "#000",
+        });
+        return; // Prevent the toggle from turning on
+      }
+    }
+    
     setFormData((prev) => ({
       ...prev,
-      [id || e.target.name]: id === "rate" ? Number(value) : value
+      [id || e.target.name]: type === "checkbox" ? checked : (id === "rate" ? Number(value) : value)
     }));
   };
 
@@ -403,6 +430,29 @@ export default function ProfilePage() {
                 </div>
               </div>
             </div>
+            
+            {/* Visibility Settings - NEW */}
+            <div className="flex items-center justify-between p-4 bg-primary/5 dark:bg-primary/10 rounded-2xl border border-primary/10 border-dashed">
+              <div className="flex items-center gap-4">
+                <div className="size-10 rounded-full bg-primary/20 flex items-center justify-center text-primary">
+                  <span className="material-symbols-outlined text-xl">visibility</span>
+                </div>
+                <div>
+                  <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm">Freelancer Visibility</h4>
+                  <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider">Show my profile on the "Find Talent" page</p>
+                </div>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  id="showAsFreelancer"
+                  checked={formData.showAsFreelancer}
+                  onChange={handleInputChange} 
+                  className="sr-only peer" 
+                />
+                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-primary transition-colors"></div>
+              </label>
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
@@ -446,6 +496,21 @@ export default function ProfilePage() {
                   value={formData.location}
                   onChange={handleInputChange}
                 />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Hourly Rate ($)</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
+                  <input
+                    id="rate"
+                    placeholder="e.g. 50"
+                    className="w-full p-3 pl-7 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                    type="number"
+                    min="0"
+                    value={formData.rate || ""}
+                    onChange={handleInputChange}
+                  />
+                </div>
               </div>
               <div className="space-y-2 md:col-span-2">
                 <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Professional Bio</label>
@@ -612,15 +677,13 @@ export default function ProfilePage() {
                 </p>
                 {user.resume && (
                   <div className="pt-2">
-                    <a
-                      href={user.resume}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      onClick={() => openResume(user.resume)}
                       className="text-primary text-xs font-black uppercase tracking-widest hover:underline flex items-center justify-center md:justify-start gap-1"
                     >
                       <span className="material-symbols-outlined text-sm">open_in_new</span>
                       View Current Resume
-                    </a>
+                    </button>
                   </div>
                 )}
               </div>

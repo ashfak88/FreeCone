@@ -91,9 +91,23 @@ export default function AdminUserDetailPage() {
       const data = await handleResponse(res);
       if (data) {
         await fetchDetail();
+        Swal.fire({
+          title: "Status Updated",
+          text: `User is now ${newStatus}.`,
+          icon: "success",
+          confirmButtonColor: "#6A6B4C",
+          customClass: { popup: 'rounded-3xl' }
+        });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to update status:", error);
+      Swal.fire({
+        title: "Error",
+        text: error.message || "Failed to update user status.",
+        icon: "error",
+        confirmButtonColor: "#6A6B4C",
+        customClass: { popup: 'rounded-3xl' }
+      });
     } finally {
       setIsUpdating(false);
     }
@@ -114,9 +128,23 @@ export default function AdminUserDetailPage() {
       const data = await handleResponse(res);
       if (data) {
         await fetchDetail();
+        Swal.fire({
+          title: "Role Updated",
+          text: `User is now a ${newRole}.`,
+          icon: "success",
+          confirmButtonColor: "#6A6B4C",
+          customClass: { popup: 'rounded-3xl' }
+        });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to update role:", error);
+      Swal.fire({
+        title: "Error",
+        text: error.message || "Failed to update user role.",
+        icon: "error",
+        confirmButtonColor: "#6A6B4C",
+        customClass: { popup: 'rounded-3xl' }
+      });
     } finally {
       setIsUpdating(false);
     }

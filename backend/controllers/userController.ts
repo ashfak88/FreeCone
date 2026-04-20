@@ -23,6 +23,7 @@ export const getFreelancers = async (req: Request, res: Response): Promise<any> 
 
     let query: any = {
       role: { $in: ["talent", "user"] },
+      showAsFreelancer: true,
       _id: { $nin: busyOffers }
     };
 
@@ -71,7 +72,7 @@ export const updateProfile = async (req: Request, res: Response): Promise<any> =
 
     // Capture fields from request body
     const updates: any = {};
-    const allowedFields = ['name', 'title', 'bio', 'location', 'skills', 'rate', 'imageUrl', 'portfolio', 'socialLinks', 'resume', 'age', 'paymentAccount'];
+    const allowedFields = ['name', 'title', 'bio', 'location', 'skills', 'rate', 'imageUrl', 'portfolio', 'socialLinks', 'resume', 'age', 'paymentAccount', 'showAsFreelancer'];
 
     allowedFields.forEach(field => {
       if (req.body[field] !== undefined) {
@@ -82,6 +83,22 @@ export const updateProfile = async (req: Request, res: Response): Promise<any> =
     // Mark profile as complete if they've provided basic info
     if (updates.name || updates.title || (updates.skills && updates.skills.length > 0)) {
       updates.isProfileComplete = true;
+    }
+
+    // NEW: Enforce validation for freelancer visibility
+    if (updates.showAsFreelancer === true) {
+        const user = await User.findById(userId);
+        const title = updates.title || user?.title;
+        const bio = updates.bio || user?.bio;
+        const location = updates.location || user?.location;
+        const rate = updates.rate !== undefined ? updates.rate : user?.rate;
+        const skills = updates.skills || user?.skills;
+
+        if (!title || !bio || !location || !rate || rate <= 0 || !skills || skills.length === 0) {
+            return res.status(400).json({ 
+                message: "To show as a freelancer, you must have a title, bio, location, rate (>0), and at least one skill." 
+            });
+        }
     }
 
     console.log("   [DEBUG] Updates being applied:", Object.keys(updates));

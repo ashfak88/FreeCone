@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter, useParams, useSearchParams, notFound } from "next/navigation";
 import Link from "next/link";
 import { useStore, User, Review } from "@/lib/store";
+import { openResume } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function TalentProfilePage() {
@@ -311,18 +312,13 @@ export default function TalentProfilePage() {
                   </button>
 
                   {profile.resume && (
-                    <a
-                      href={profile.resume}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      onClick={() => openResume(profile.resume)}
                       className="w-full h-14 bg-emerald-500 hover:bg-emerald-600 text-white flex items-center justify-center rounded-2xl font-black text-lg transition-all active:scale-95 gap-2 shadow-lg shadow-emerald-500/20"
-                      onClick={(e) => {
-                        console.log("Opening resume:", profile.resume);
-                      }}
                     >
                       <span className="material-symbols-outlined text-2xl">description</span>
                       View Resume
-                    </a>
+                    </button>
                   )}
                 </div>
 

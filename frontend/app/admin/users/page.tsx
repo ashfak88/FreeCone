@@ -8,6 +8,7 @@ import { API_URL, handleResponse } from "@/lib/api";
 
 import BottomNavbar from "@/components/BottomNavbar";
 import AdminHeader from "@/components/AdminHeader";
+import Swal from "sweetalert2";
 
 interface User {
   _id: string;
@@ -76,9 +77,23 @@ export default function UserManagementPage() {
       const data = await handleResponse(res);
       if (data) {
         setUsers(users.map(u => u._id === userId ? { ...u, status: newStatus as any } : u));
+        Swal.fire({
+          title: "Status Updated",
+          text: `User is now ${newStatus}.`,
+          icon: "success",
+          confirmButtonColor: "#6A6B4C",
+          customClass: { popup: 'rounded-3xl' }
+        });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to update user status:", error);
+      Swal.fire({
+        title: "Error",
+        text: error.message || "Failed to update user status.",
+        icon: "error",
+        confirmButtonColor: "#6A6B4C",
+        customClass: { popup: 'rounded-3xl' }
+      });
     }
   };
 

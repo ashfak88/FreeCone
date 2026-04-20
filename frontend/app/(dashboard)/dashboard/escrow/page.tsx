@@ -265,14 +265,24 @@ export default function EscrowDashboard() {
                       </td>
                       <td className="px-8 py-6">
                         <div className="flex items-center gap-3">
-                           <img 
-                             src={tx.sender._id === user?._id ? tx.receiver.imageUrl : tx.sender.imageUrl} 
-                             className="size-7 rounded-full border border-slate-100 dark:border-slate-800 object-cover shadow-sm bg-slate-100"
-                             alt=""
-                           />
-                           <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                             {tx.sender._id === user?._id ? tx.receiver.name : tx.sender.name}
-                           </span>
+                           {(() => {
+                             const partner = tx.sender._id === user?._id ? tx.receiver : tx.sender;
+                             const partnerName = partner?.name || "User";
+                             const partnerImage = partner?.imageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(partnerName)}&background=0b141a&color=fff`;
+                             
+                             return (
+                               <>
+                                 <img 
+                                   src={partnerImage} 
+                                   className="size-7 rounded-full border border-slate-100 dark:border-slate-800 object-cover shadow-sm bg-slate-100"
+                                   alt={partnerName}
+                                 />
+                                 <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                                   {partnerName}
+                                 </span>
+                               </>
+                             );
+                           })()}
                         </div>
                       </td>
                       <td className="px-8 py-6">

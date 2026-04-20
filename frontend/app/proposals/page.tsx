@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useStore } from "@/lib/store";
 import DashboardHeader from "@/components/DashboardHeader";
+import { openResume } from "@/lib/utils";
 
 export default function ProposalsPage() {
   const router = useRouter();
@@ -145,15 +146,13 @@ export default function ProposalsPage() {
                           {proposal.direction === 'received' && (proposal.status === 'pending' || proposal.status === 'viewed') ? (
                             <div className="flex items-center gap-2">
                               {proposal.resume && (
-                                <a
-                                  href={proposal.resume}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
+                                <button
+                                  onClick={() => openResume(proposal.resume)}
                                   className="text-primary hover:bg-primary/5 p-1.5 rounded-lg transition-colors border border-primary/20 flex items-center justify-center"
                                   title="View Resume"
                                 >
                                   <span className="material-symbols-outlined text-sm">description</span>
-                                </a>
+                                </button>
                               )}
                               <button
                                 onClick={() => handleStatusUpdate(proposal._id, 'accepted')}
@@ -171,15 +170,13 @@ export default function ProposalsPage() {
                           ) : (
                             <div className="flex items-center gap-2">
                               {proposal.resume && (
-                                <a
-                                  href={proposal.resume}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
+                                <button
+                                  onClick={() => openResume(proposal.resume)}
                                   className="text-primary hover:bg-primary/5 p-1.5 rounded-lg transition-colors border border-primary/20 flex items-center justify-center"
                                   title="View Resume"
                                 >
                                   <span className="material-symbols-outlined text-sm">description</span>
-                                </a>
+                                </button>
                               )}
                               <button
                                 onClick={() => router.push(`/jobs/${proposal.job?._id || proposal.job}`)}

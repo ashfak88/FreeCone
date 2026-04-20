@@ -180,11 +180,29 @@ function VoiceMessageBubble({ msg, isMe }: { msg: any; isMe: boolean }) {
     }
   };
 
-  const onTimeUpdate = () => {
+  const requestRef = useRef<number>(null);
+
+  const updateProgress = () => {
     if (audioRef.current) {
-      setProgress((audioRef.current.currentTime / audioRef.current.duration) * 100);
+      const current = audioRef.current.currentTime;
+      const total = audioRef.current.duration;
+      if (total > 0) {
+        setProgress((current / total) * 100);
+      }
+      requestRef.current = requestAnimationFrame(updateProgress);
     }
   };
+
+  useEffect(() => {
+    if (isPlaying) {
+      requestRef.current = requestAnimationFrame(updateProgress);
+    } else {
+      if (requestRef.current) cancelAnimationFrame(requestRef.current);
+    }
+    return () => {
+      if (requestRef.current) cancelAnimationFrame(requestRef.current);
+    };
+  }, [isPlaying]);
 
   const onLoadedMetadata = () => {
     if (audioRef.current) {
@@ -226,17 +244,17 @@ function VoiceMessageBubble({ msg, isMe }: { msg: any; isMe: boolean }) {
   return (
     <div className="flex items-center gap-4 py-1.5 min-w-[260px] pr-2">
       <div className="relative shrink-0">
-        <img 
+        <img
           src={msg.sender?.imageUrl || msg.sender?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(msg.sender?.name || 'U')}&background=0b141a&color=fff`}
           alt="Avatar"
           className="size-10 rounded-full object-cover border border-wa-bg-search"
         />
         <div className="absolute -bottom-1 -right-1 bg-wa-bg-sidebar rounded-full p-1 border border-wa-bg-search">
-           <MicIcon className="size-3 text-primary fill-current" />
+          <MicIcon className="size-3 text-primary fill-current" />
         </div>
       </div>
 
-      <button 
+      <button
         onClick={togglePlay}
         className="size-11 flex items-center justify-center text-wa-text-secondary hover:text-wa-text-primary transition-colors bg-wa-bg-search/20 rounded-full"
       >
@@ -247,33 +265,34 @@ function VoiceMessageBubble({ msg, isMe }: { msg: any; isMe: boolean }) {
         )}
       </button>
 
-      <div className="flex-1 flex flex-col gap-1">
-        <input 
-          type="range" 
-          value={progress || 0}
-          onChange={handleSeek}
-          className="w-full h-1 bg-wa-bg-search rounded-lg appearance-none cursor-pointer accent-primary"
-          style={{
-            background: `linear-gradient(to right, #6A6B4C ${progress}%, #d1d7db ${progress}%)`
-          }}
-        />
-        <div className="flex justify-between items-center px-0.5">
-           <span className="text-[11px] font-medium text-wa-text-secondary">
-             {isPlaying ? formatTime(audioRef.current?.currentTime || 0) : formatTime(duration)}
-           </span>
-           <button 
-             onClick={toggleSpeed}
-             className="bg-wa-bg-search rounded-full px-1.5 py-0.5 text-[10px] font-black text-wa-text-primary hover:bg-wa-text-secondary/10 transition-colors"
-           >
-             {playbackRate}x
-           </button>
+      <div className="flex-1 flex flex-col h-11 justify-center min-w-0 pr-4">
+        <div className="h-full flex items-center">
+          <input
+            type="range"
+            value={progress || 0}
+            onChange={handleSeek}
+            className="w-full h-1 bg-wa-bg-search rounded-lg appearance-none cursor-pointer accent-primary"
+            style={{
+              background: `linear-gradient(to right, #6A6B4C ${progress}%, #d1d7db ${progress}%)`
+            }}
+          />
+        </div>
+        <div className="flex justify-between items-center px-0.5 -mt-2">
+          <span className="text-[11px] font-medium text-wa-text-secondary">
+            {isPlaying ? formatTime(audioRef.current?.currentTime || 0) : formatTime(duration)}
+          </span>
+          <button
+            onClick={toggleSpeed}
+            className="bg-wa-bg-search rounded-full px-1.5 py-0.5 text-[10px] font-black text-wa-text-primary hover:bg-wa-text-secondary/10 transition-colors"
+          >
+            {playbackRate}x
+          </button>
         </div>
       </div>
 
-      <audio 
+      <audio
         ref={audioRef}
         src={msg.content}
-        onTimeUpdate={onTimeUpdate}
         onLoadedMetadata={onLoadedMetadata}
         onEnded={onEnded}
       />
@@ -289,9 +308,24 @@ export default function ChatWindow() {
     user,
     fetchMessages,
     isLoadingMessages,
-    setActiveConversation
+    setActiveConversation,
+    isDarkMode,
+    setDarkMode
   } = useStore();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   useEffect(() => {
     if (activeConversation?._id) {
@@ -322,17 +356,17 @@ export default function ChatWindow() {
       title: 'Report this User',
       html:
         '<div class="flex flex-col gap-4 text-left p-1">' +
-          '<label class="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">Reason for report</label>' +
-          '<select id="report-category" class="swal2-input !mt-0 !w-full !text-sm !h-11 !rounded-xl">' +
-            '<option value="user_report">Harassment / Bullying</option>' +
-            '<option value="message">Scam / Fraud</option>' +
-            '<option value="message">Spam / Advertising</option>' +
-            '<option value="other">Inappropriate Content</option>' +
-          '</select>' +
-          '<label class="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1 mt-4">Subject</label>' +
-          '<input id="report-subject" class="swal2-input !mt-0 !w-full !text-sm !h-11 !rounded-xl" placeholder="Brief summary">' +
-          '<label class="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1 mt-4">Details</label>' +
-          '<textarea id="report-message" class="swal2-textarea !mt-0 !w-full !text-sm !rounded-xl !h-24" placeholder="Explain the situation..."></textarea>' +
+        '<label class="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">Reason for report</label>' +
+        '<select id="report-category" class="swal2-input !mt-0 !w-full !text-sm !h-11 !rounded-xl">' +
+        '<option value="user_report">Harassment / Bullying</option>' +
+        '<option value="message">Scam / Fraud</option>' +
+        '<option value="message">Spam / Advertising</option>' +
+        '<option value="other">Inappropriate Content</option>' +
+        '</select>' +
+        '<label class="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1 mt-4">Subject</label>' +
+        '<input id="report-subject" class="swal2-input !mt-0 !w-full !text-sm !h-11 !rounded-xl" placeholder="Brief summary">' +
+        '<label class="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1 mt-4">Details</label>' +
+        '<textarea id="report-message" class="swal2-textarea !mt-0 !w-full !text-sm !rounded-xl !h-24" placeholder="Explain the situation..."></textarea>' +
         '</div>',
       focusConfirm: false,
       showCancelButton: true,
@@ -428,18 +462,58 @@ export default function ChatWindow() {
           </div>
         </div>
 
-        <div className="flex items-center gap-6 text-wa-text-secondary">
+        <div className="flex items-center gap-2 text-wa-text-secondary relative" ref={menuRef}>
           <button 
-            onClick={handleReport}
-            className="hover:text-red-500 transition-colors flex items-center gap-1.5 px-3 py-1.5 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg group"
-            title="Report this user"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className={`size-10 flex items-center justify-center rounded-full transition-all ${isMenuOpen ? 'bg-wa-bg-search text-wa-text-primary' : 'hover:bg-wa-bg-search/50 hover:text-wa-text-primary'}`}
           >
-            <span className="material-symbols-outlined text-xl group-hover:scale-110 transition-transform">report</span>
-            <span className="text-[10px] font-black uppercase tracking-widest hidden sm:block mt-0.5">Report</span>
+            <span className="material-symbols-outlined text-2xl">more_vert</span>
           </button>
-          <button className="hover:text-wa-text-primary transition-colors">
-            <span className="material-symbols-outlined text-xl">more_vert</span>
-          </button>
+
+          {isMenuOpen && (
+            <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-[#233138] border border-slate-100 dark:border-slate-700/50 rounded-2xl shadow-2xl z-50 py-2 animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="px-3 py-2 border-b border-slate-50 dark:border-slate-800/50 mb-1">
+                <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Options</span>
+              </div>
+              
+              <button 
+                onClick={() => {
+                  handleReport();
+                  setIsMenuOpen(false);
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors text-left group"
+              >
+                <span className="material-symbols-outlined text-[20px] text-slate-500 group-hover:text-red-500 transition-colors">report</span>
+                <div className="flex flex-col">
+                  <span className="text-[13px] font-bold text-slate-700 dark:text-slate-200 group-hover:text-red-500 transition-colors">Report User</span>
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500">Flag inappropriate behavior</span>
+                </div>
+              </button>
+
+              <div className="my-1 border-t border-slate-50 dark:border-slate-800/50" />
+
+              <button 
+                onClick={() => {
+                  setDarkMode(!isDarkMode);
+                  setIsMenuOpen(false);
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors text-left group"
+              >
+                <span className="material-symbols-outlined text-[20px] text-slate-500 group-hover:text-primary transition-colors">
+                  {isDarkMode ? 'light_mode' : 'dark_mode'}
+                </span>
+                <div className="flex flex-col">
+                  <span className="text-[13px] font-bold text-slate-700 dark:text-slate-200 group-hover:text-primary transition-colors">
+                    {isDarkMode ? 'Light appearance' : 'Dark appearance'}
+                  </span>
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                    Switch to {isDarkMode ? 'light' : 'dark'} theme
+                  </span>
+                </div>
+                <div className={`ml-auto size-2 rounded-full ${isDarkMode ? 'bg-primary' : 'bg-slate-300'}`} />
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -480,8 +554,8 @@ export default function ChatWindow() {
                   <div className={`flex w-full mb-0.5 ${isMe ? "justify-end" : "justify-start"}`}>
                     <div
                       className={`relative px-2 py-1.5 min-w-[80px] max-w-[85%] sm:max-w-[65%] shadow-sm ${isMe
-                          ? "bg-wa-bubble-sent text-wa-text-primary rounded-lg rounded-tr-none"
-                          : "bg-wa-bubble-received text-wa-text-primary rounded-lg rounded-tl-none"
+                        ? "bg-wa-bubble-sent text-wa-text-primary rounded-lg rounded-tr-none"
+                        : "bg-wa-bubble-received text-wa-text-primary rounded-lg rounded-tl-none"
                         }`}
                     >
                       <div className={`absolute top-0 w-2 h-4 overflow-hidden transform ${isMe ? "right-[-7px] rotate-0" : "left-[-7px] rotate-0"
@@ -490,7 +564,7 @@ export default function ChatWindow() {
                           }`}></div>
                       </div>
 
-                      <div className={`relative flex flex-col pb-[2px] pt-[2px] min-w-[85px] max-w-full ${isMe ? 'pr-[70px]' : 'pr-[50px]'}`}>
+                      <div className={`relative flex flex-col pb-[2px] pt-[2px] min-w-[85px] max-w-full ${isMe ? 'pr-[70px]' : 'pr-[50px]'} ${msg.metadata?.status === 'sending' ? 'opacity-70' : ''}`}>
                         {msg.type === 'payment' ? (
                           <PaymentMessageBubble msg={msg} />
                         ) : msg.type === 'confirmation' ? (
@@ -509,13 +583,16 @@ export default function ChatWindow() {
                             {format(msgDate, "h:mm a").toLowerCase()}
                           </span>
                           {isMe && (
-                            <span className={`material-symbols-outlined text-[16px] font-bold ml-[2px] ${
-                              msg.readBy && msg.readBy.length > 1 
-                                ? "text-wa-check-blue" 
+                            msg.metadata?.status === 'sending' ? (
+                              <span className="material-symbols-outlined text-[14px] ml-[2px] text-wa-text-secondary animate-pulse">schedule</span>
+                            ) : (
+                              <span className={`material-symbols-outlined text-[16px] font-bold ml-[2px] ${msg.readBy && msg.readBy.length > 1
+                                ? "text-wa-check-blue"
                                 : "text-wa-text-secondary"
-                            }`}>
-                              done_all
-                            </span>
+                                }`}>
+                                done_all
+                              </span>
+                            )
                           )}
                         </div>
                       </div>
