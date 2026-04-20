@@ -19,7 +19,7 @@ export default function TalentProfilePage() {
   useEffect(() => {
     const loadProfile = async () => {
       setLoading(true);
-      
+
       // Fetch profile and reviews in parallel
       const [userData, userReviews] = await Promise.all([
         fetchUserById(params.id as string),
@@ -225,9 +225,9 @@ export default function TalentProfilePage() {
                 <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-100 dark:border-slate-800">
                   <span className="text-xs font-black text-slate-900 dark:text-white">{profile.rating?.toFixed(1) || '0.0'}</span>
                   <div className="flex text-yellow-500">
-                     {[...Array(5)].map((_, i) => (
-                       <span key={i} className={`material-symbols-outlined text-xs ${i < Math.round(profile.rating || 0) ? 'fill-icon' : 'opacity-20'}`} style={{ fontVariationSettings: i < Math.round(profile.rating || 0) ? "'FILL' 1" : "'FILL' 0" }}>star</span>
-                     ))}
+                    {[...Array(5)].map((_, i) => (
+                      <span key={i} className={`material-symbols-outlined text-xs ${i < Math.round(profile.rating || 0) ? 'fill-icon' : 'opacity-20'}`} style={{ fontVariationSettings: i < Math.round(profile.rating || 0) ? "'FILL' 1" : "'FILL' 0" }}>star</span>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -235,8 +235,8 @@ export default function TalentProfilePage() {
               <div className="space-y-6">
                 {reviews.length > 0 ? (
                   reviews.map((review, idx) => (
-                    <motion.div 
-                      key={review._id} 
+                    <motion.div
+                      key={review._id}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: idx * 0.1 }}
@@ -245,9 +245,9 @@ export default function TalentProfilePage() {
                       <div className="flex justify-between items-start mb-4">
                         <div className="flex items-center gap-3">
                           <div className="size-10 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-700">
-                            <img 
-                              src={review.reviewer?.imageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(review.reviewer?.name || 'Client')}&background=0ea5e9&color=fff`} 
-                              alt={review.reviewer?.name} 
+                            <img
+                              src={review.reviewer?.imageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(review.reviewer?.name || 'Client')}&background=0ea5e9&color=fff`}
+                              alt={review.reviewer?.name}
                               className="w-full h-full object-cover"
                             />
                           </div>
@@ -257,9 +257,9 @@ export default function TalentProfilePage() {
                           </div>
                         </div>
                         <div className="flex gap-0.5 text-yellow-500">
-                           {[...Array(5)].map((_, i) => (
-                             <span key={i} className={`material-symbols-outlined text-[10px] ${i < review.rating ? 'fill-icon' : 'opacity-20'}`} style={{ fontVariationSettings: i < review.rating ? "'FILL' 1" : "'FILL' 0" }}>star</span>
-                           ))}
+                          {[...Array(5)].map((_, i) => (
+                            <span key={i} className={`material-symbols-outlined text-[10px] ${i < review.rating ? 'fill-icon' : 'opacity-20'}`} style={{ fontVariationSettings: i < review.rating ? "'FILL' 1" : "'FILL' 0" }}>star</span>
+                          ))}
                         </div>
                       </div>
                       <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed italic">"{review.comment}"</p>
@@ -267,8 +267,8 @@ export default function TalentProfilePage() {
                   ))
                 ) : (
                   <div className="py-12 text-center bg-slate-50/50 dark:bg-slate-800/20 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800">
-                     <span className="material-symbols-outlined text-4xl text-slate-200 dark:text-slate-700 mb-2">rate_review</span>
-                     <p className="text-xs font-bold text-slate-400">No reviews found for this freelancer yet.</p>
+                    <span className="material-symbols-outlined text-4xl text-slate-200 dark:text-slate-700 mb-2">rate_review</span>
+                    <p className="text-xs font-bold text-slate-400">No reviews found for this freelancer yet.</p>
                   </div>
                 )}
               </div>
@@ -288,7 +288,7 @@ export default function TalentProfilePage() {
                   </div>
                 </div>
 
-                 <div className="space-y-3">
+                <div className="space-y-3">
                   {!searchParams.get('hideHire') && (profile._id || profile.id) !== (user?._id || user?.id) && (
                     <button
                       onClick={() => {

@@ -26,7 +26,7 @@ const resumeStorage = new CloudinaryStorage({
       .slice(0, -1)
       .join('.')
       .replace(/[^a-zA-Z0-9]/g, '_');
-      
+
     return {
       folder: "resumes",
       resource_type: "auto", // Better for various doc types

@@ -8,14 +8,14 @@ import DashboardHeader from "@/components/DashboardHeader";
 
 export default function ProposalsPage() {
   const router = useRouter();
-  const { 
-    user, 
-    myProposals, 
-    fetchMyProposals, 
-    receivedProposals, 
-    fetchReceivedProposals, 
+  const {
+    user,
+    myProposals,
+    fetchMyProposals,
+    receivedProposals,
+    fetchReceivedProposals,
     updateProposalStatus,
-    isLoadingMyData 
+    isLoadingMyData
   } = useStore();
 
   useEffect(() => {
@@ -61,7 +61,7 @@ export default function ProposalsPage() {
       />
 
       <main className="max-w-[1240px] mx-auto p-6 md:p-8 space-y-6">
-        
+
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <h3 className="font-bold text-slate-900 text-lg">
@@ -91,11 +91,10 @@ export default function ProposalsPage() {
                   {allProposals.map((proposal: any) => (
                     <tr key={proposal._id} className="hover:bg-slate-50 transition-colors group">
                       <td className="px-6 py-5">
-                        <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-tighter ${
-                          proposal.direction === 'received' 
-                            ? 'bg-blue-50 text-blue-600 border border-blue-100' 
+                        <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-tighter ${proposal.direction === 'received'
+                            ? 'bg-blue-50 text-blue-600 border border-blue-100'
                             : 'bg-slate-50 text-slate-600 border border-slate-100'
-                        }`}>
+                          }`}>
                           {proposal.direction}
                         </span>
                       </td>
@@ -116,8 +115,8 @@ export default function ProposalsPage() {
                           </div>
                         ) : (
                           <div>
-                            <p 
-                              className="font-bold text-slate-900 text-sm hover:text-primary transition-colors cursor-pointer line-clamp-1" 
+                            <p
+                              className="font-bold text-slate-900 text-sm hover:text-primary transition-colors cursor-pointer line-clamp-1"
                               onClick={() => router.push(`/jobs/${proposal.job?._id || proposal.job}`)}
                             >
                               {proposal.job?.title || "Project Title"}
@@ -146,9 +145,9 @@ export default function ProposalsPage() {
                           {proposal.direction === 'received' && (proposal.status === 'pending' || proposal.status === 'viewed') ? (
                             <div className="flex items-center gap-2">
                               {proposal.resume && (
-                                <a 
-                                  href={proposal.resume} 
-                                  target="_blank" 
+                                <a
+                                  href={proposal.resume}
+                                  target="_blank"
                                   rel="noopener noreferrer"
                                   className="text-primary hover:bg-primary/5 p-1.5 rounded-lg transition-colors border border-primary/20 flex items-center justify-center"
                                   title="View Resume"
@@ -156,13 +155,13 @@ export default function ProposalsPage() {
                                   <span className="material-symbols-outlined text-sm">description</span>
                                 </a>
                               )}
-                              <button 
+                              <button
                                 onClick={() => handleStatusUpdate(proposal._id, 'accepted')}
                                 className="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1 rounded-lg text-xs font-bold transition-colors shadow-sm"
                               >
                                 Accept
                               </button>
-                              <button 
+                              <button
                                 onClick={() => handleStatusUpdate(proposal._id, 'rejected')}
                                 className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-xs font-bold transition-colors shadow-sm"
                               >
@@ -172,9 +171,9 @@ export default function ProposalsPage() {
                           ) : (
                             <div className="flex items-center gap-2">
                               {proposal.resume && (
-                                <a 
-                                  href={proposal.resume} 
-                                  target="_blank" 
+                                <a
+                                  href={proposal.resume}
+                                  target="_blank"
                                   rel="noopener noreferrer"
                                   className="text-primary hover:bg-primary/5 p-1.5 rounded-lg transition-colors border border-primary/20 flex items-center justify-center"
                                   title="View Resume"
@@ -182,7 +181,7 @@ export default function ProposalsPage() {
                                   <span className="material-symbols-outlined text-sm">description</span>
                                 </a>
                               )}
-                              <button 
+                              <button
                                 onClick={() => router.push(`/jobs/${proposal.job?._id || proposal.job}`)}
                                 className="text-primary font-bold text-xs hover:bg-primary/5 px-3 py-1.5 rounded-lg transition-colors border border-primary/20"
                               >

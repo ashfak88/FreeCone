@@ -101,8 +101,8 @@ export default function ProfilePage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ 
-          ...formData, 
+        body: JSON.stringify({
+          ...formData,
           skills,
           paymentAccount: {
             upiId: formData.upiId,
@@ -472,7 +472,7 @@ export default function ProfilePage() {
                 <span className="material-symbols-outlined text-primary font-bold">payments</span>
                 <h4 className="font-black text-slate-900 dark:text-slate-100 uppercase tracking-widest text-[10px]">Payment & Payout Methods</h4>
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-2">
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">UPI ID (e.g. user@okaxis)</label>
