@@ -96,87 +96,95 @@ export default function AdminPaymentsPage() {
       <main className="flex-1 max-w-5xl mx-auto w-full pb-32">
         {/* Stats Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 p-4">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="flex flex-col gap-2 rounded-xl p-5 bg-white dark:bg-slate-800 shadow-sm border border-primary/5 hover:border-primary/20 transition-all"
-          >
-            <div className="flex justify-between items-start">
-              <p className="text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest">Total Volume</p>
-              <span className="text-emerald-600 dark:text-emerald-400 text-[9px] font-black bg-emerald-50 dark:bg-emerald-900/30 px-2 py-0.5 rounded-full">+12%</span>
-            </div>
-            <p className="text-xl font-extrabold tracking-tight">${(stats.totalRevenue || 0).toLocaleString()}</p>
-            <div className="w-full bg-slate-100 dark:bg-slate-700 h-1 rounded-full mt-2 overflow-hidden">
+          {isLoading ? (
+            Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-32 bg-white dark:bg-slate-800 rounded-xl border border-primary/5 animate-pulse" />
+            ))
+          ) : (
+            <>
               <motion.div 
-                initial={{ width: 0 }}
-                animate={{ width: "75%" }}
-                transition={{ duration: 1 }}
-                className="bg-primary h-full rounded-full"
-              />
-            </div>
-          </motion.div>
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="flex flex-col gap-2 rounded-xl p-5 bg-white dark:bg-slate-800 shadow-sm border border-primary/5 hover:border-primary/20 transition-all"
+              >
+                <div className="flex justify-between items-start">
+                  <p className="text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest">Total Volume</p>
+                  <span className="text-emerald-600 dark:text-emerald-400 text-[9px] font-black bg-emerald-50 dark:bg-emerald-900/30 px-2 py-0.5 rounded-full">+12%</span>
+                </div>
+                <p className="text-xl font-extrabold tracking-tight">${(stats.totalRevenue || 0).toLocaleString()}</p>
+                <div className="w-full bg-slate-100 dark:bg-slate-700 h-1 rounded-full mt-2 overflow-hidden">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: "75%" }}
+                    transition={{ duration: 1 }}
+                    className="bg-primary h-full rounded-full"
+                  />
+                </div>
+              </motion.div>
 
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
-            className="flex flex-col gap-2 rounded-xl p-5 bg-primary text-white shadow-xl shadow-primary/20 border border-primary/10 transition-all"
-          >
-            <div className="flex justify-between items-start">
-              <p className="text-white/70 text-[10px] font-black uppercase tracking-widest">Platform Commission</p>
-              <span className="material-symbols-outlined text-sm">verified</span>
-            </div>
-            <p className="text-xl font-extrabold tracking-tight">${(stats.platformCommission || 0).toLocaleString()}</p>
-            <div className="w-full bg-white/20 h-1 rounded-full mt-2 overflow-hidden">
               <motion.div 
-                initial={{ width: 0 }}
-                animate={{ width: "100%" }}
-                transition={{ duration: 1, delay: 0.5 }}
-                className="bg-white h-full rounded-full"
-              />
-            </div>
-          </motion.div>
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 }}
+                className="flex flex-col gap-2 rounded-xl p-5 bg-primary text-white shadow-xl shadow-primary/20 border border-primary/10 transition-all"
+              >
+                <div className="flex justify-between items-start">
+                  <p className="text-white/70 text-[10px] font-black uppercase tracking-widest">Platform Commission</p>
+                  <span className="material-symbols-outlined text-sm">verified</span>
+                </div>
+                <p className="text-xl font-extrabold tracking-tight">${(stats.platformCommission || 0).toLocaleString()}</p>
+                <div className="w-full bg-white/20 h-1 rounded-full mt-2 overflow-hidden">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: "100%" }}
+                    transition={{ duration: 1, delay: 0.5 }}
+                    className="bg-white h-full rounded-full"
+                  />
+                </div>
+              </motion.div>
 
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="flex flex-col gap-2 rounded-xl p-5 bg-white dark:bg-slate-800 shadow-sm border border-primary/5 hover:border-primary/20 transition-all"
-          >
-            <div className="flex justify-between items-start">
-              <p className="text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest">Pending Escrow</p>
-            </div>
-            <p className="text-xl font-extrabold tracking-tight">${(stats.pendingEscrow || 0).toLocaleString()}</p>
-            <div className="w-full bg-slate-100 dark:bg-slate-700 h-1 rounded-full mt-2 overflow-hidden">
               <motion.div 
-                initial={{ width: 0 }}
-                animate={{ width: "40%" }}
-                transition={{ duration: 1 }}
-                className="bg-amber-500 h-full rounded-full"
-              />
-            </div>
-          </motion.div>
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="flex flex-col gap-2 rounded-xl p-5 bg-white dark:bg-slate-800 shadow-sm border border-primary/5 hover:border-primary/20 transition-all"
+              >
+                <div className="flex justify-between items-start">
+                  <p className="text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest">Pending Escrow</p>
+                </div>
+                <p className="text-xl font-extrabold tracking-tight">${(stats.pendingEscrow || 0).toLocaleString()}</p>
+                <div className="w-full bg-slate-100 dark:bg-slate-700 h-1 rounded-full mt-2 overflow-hidden">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: "40%" }}
+                    transition={{ duration: 1 }}
+                    className="bg-amber-500 h-full rounded-full"
+                  />
+                </div>
+              </motion.div>
 
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="flex flex-col gap-2 rounded-xl p-5 bg-white dark:bg-slate-800 shadow-sm border border-primary/5 hover:border-primary/20 transition-all"
-          >
-            <div className="flex justify-between items-start">
-              <p className="text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest">Completed Payouts</p>
-            </div>
-            <p className="text-xl font-extrabold tracking-tight">${(stats.completedPayouts || 0).toLocaleString()}</p>
-            <div className="w-full bg-slate-100 dark:bg-slate-700 h-1 rounded-full mt-2 overflow-hidden">
               <motion.div 
-                initial={{ width: 0 }}
-                animate={{ width: "60%" }}
-                transition={{ duration: 1, delay: 0.9 }}
-                className="bg-primary/60 h-full rounded-full"
-              />
-            </div>
-          </motion.div>
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="flex flex-col gap-2 rounded-xl p-5 bg-white dark:bg-slate-800 shadow-sm border border-primary/5 hover:border-primary/20 transition-all"
+              >
+                <div className="flex justify-between items-start">
+                  <p className="text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest">Completed Payouts</p>
+                </div>
+                <p className="text-xl font-extrabold tracking-tight">${(stats.completedPayouts || 0).toLocaleString()}</p>
+                <div className="w-full bg-slate-100 dark:bg-slate-700 h-1 rounded-full mt-2 overflow-hidden">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: "60%" }}
+                    transition={{ duration: 1, delay: 0.9 }}
+                    className="bg-primary/60 h-full rounded-full"
+                  />
+                </div>
+              </motion.div>
+            </>
+          )}
         </div>
 
         {/* Search & Filter Section */}
@@ -222,8 +230,22 @@ export default function AdminPaymentsPage() {
           <div className="flex flex-col gap-4">
             <AnimatePresence mode="popLayout">
               {isLoading ? (
-                Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="h-24 bg-slate-100 dark:bg-slate-800 animate-pulse rounded-2xl" />
+                Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="h-32 bg-white dark:bg-slate-800 rounded-2xl border border-primary/5 animate-pulse p-5">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-4">
+                        <div className="size-12 rounded-full bg-slate-100 dark:bg-slate-700"></div>
+                        <div className="space-y-2">
+                           <div className="h-4 w-24 bg-slate-100 dark:bg-slate-700 rounded"></div>
+                           <div className="h-2 w-32 bg-slate-50 dark:bg-slate-700/50 rounded"></div>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end gap-2">
+                         <div className="h-5 w-16 bg-slate-100 dark:bg-slate-700 rounded"></div>
+                         <div className="h-3 w-12 bg-slate-50 dark:bg-slate-700/50 rounded-full"></div>
+                      </div>
+                    </div>
+                  </div>
                 ))
               ) : (
                 transactions.map((txn, idx) => (

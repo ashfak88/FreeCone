@@ -305,15 +305,15 @@ export const useStore = create<AppState>((set, get) => {
         localStorage.removeItem('user');
         localStorage.removeItem('accessToken');
       }
-      set({ 
-        user: null, 
-        notifications: [], 
-        sentNotifications: [], 
-        jobs: [], 
-        myJobs: [], 
-        myProposals: [], 
+      set({
+        user: null,
+        notifications: [],
+        sentNotifications: [],
+        jobs: [],
+        myJobs: [],
+        myProposals: [],
         conversations: [],
-        activeConversation: null 
+        activeConversation: null
       });
     },
     user: initialUser,
@@ -967,9 +967,9 @@ export const useStore = create<AppState>((set, get) => {
         // Handle replacing an optimistic message
         const tempId = message.metadata?.tempId;
         if (tempId) {
-           const filtered = messages.filter(m => m._id !== tempId);
-           set({ messages: [...filtered, message] });
-           return;
+          const filtered = messages.filter(m => m._id !== tempId);
+          set({ messages: [...filtered, message] });
+          return;
         }
 
         const isDuplicate = messages.some(m => m._id === message._id);

@@ -138,9 +138,18 @@ export default function UserManagementPage() {
 
           {/* Users Grid */}
           {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-32 gap-6">
-              <div className="w-14 h-14 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-              <p className="text-slate-500 font-bold uppercase tracking-[0.2em] text-[10px] animate-pulse">Syncing Database Assets</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="h-64 bg-white dark:bg-slate-900 rounded-[32px] border border-slate-100 dark:border-slate-800 animate-pulse flex flex-col p-8 items-center text-center">
+                  <div className="size-20 rounded-full bg-slate-100 dark:bg-slate-800 mb-4"></div>
+                  <div className="h-5 w-32 bg-slate-100 dark:bg-slate-800 rounded-lg mb-2"></div>
+                  <div className="h-3 w-40 bg-slate-50 dark:bg-slate-800/50 rounded-md mb-6"></div>
+                  <div className="mt-auto flex gap-2 w-full">
+                     <div className="h-10 flex-1 bg-slate-50 dark:bg-slate-800 rounded-xl"></div>
+                     <div className="h-10 flex-1 bg-slate-50 dark:bg-slate-800 rounded-xl"></div>
+                  </div>
+                </div>
+              ))}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

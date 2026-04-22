@@ -14,10 +14,10 @@ export default function SocketProvider({
 
   useEffect(() => {
     const userId = user?.id || user?._id;
-    
+
     if (userId) {
       const socket = socketService.connect();
-      
+
       // Crucial: Use the service's joinRoom so it re-joins on automatic reconnect
       socketService.joinRoom(userId);
 
@@ -26,7 +26,7 @@ export default function SocketProvider({
         useNotificationStore.getState().addNotification({
           title: notification.title || "New Notification",
           message: notification.message || "You have a new update",
-          type: "success"
+          type: notification.type || "success"
         });
         fetchNotifications('received');
       };
@@ -41,15 +41,15 @@ export default function SocketProvider({
         console.log("   [SOCKET] New message received:", message);
         useStore.getState().addMessage(message);
         useStore.getState().fetchConversations();
-        
+
         if (
           message.sender?._id !== user?.id &&
           message.sender?._id !== user?._id &&
           !message.metadata?.silent
         ) {
           // Fix: Check for voice message type to show descriptive text instead of the URL
-          const displayMessage = message.type === 'voice' 
-            ? "🎤 Voice Message" 
+          const displayMessage = message.type === 'voice'
+            ? "🎤 Voice Message"
             : message.content;
 
           useNotificationStore.getState().addNotification({
@@ -59,7 +59,7 @@ export default function SocketProvider({
           });
         }
       };
-      
+
       const onMessageUpdate = (message: any) => {
         console.log("   [SOCKET] Message update received:", message);
         useStore.getState().updateMessageLocally(message);
@@ -97,7 +97,7 @@ export default function SocketProvider({
       socket.on("newConversation", onNewConversation);
       socket.on("messageUpdate", onMessageUpdate);
       socket.on("messagesRead", onMessagesRead);
-      
+
       // Listen for all possible status update events from backend
       socket.on("proposalUpdate", onStatusUpdate);
       socket.on("offerUpdate", onStatusUpdate);
@@ -112,7 +112,7 @@ export default function SocketProvider({
         socket.off("newConversation", onNewConversation);
         socket.off("messageUpdate", onMessageUpdate);
         socket.off("messagesRead", onMessagesRead);
-        
+
         socket.off("proposalUpdate", onStatusUpdate);
         socket.off("offerUpdate", onStatusUpdate);
         socket.off("escrowUpdate", onStatusUpdate);

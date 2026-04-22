@@ -61,6 +61,7 @@ export const createOffer = async (req: Request, res: Response): Promise<any> => 
       message: `You sent an offer for '${jobTitle}' to the talent.`,
     });
     await clientNotification.save();
+    emitToUser(clientId, "newNotification", clientNotification);
     emitToUser(clientId, "offerUpdate", savedOffer);
 
     res.status(201).json(savedOffer);

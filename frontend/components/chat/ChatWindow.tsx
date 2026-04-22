@@ -100,11 +100,21 @@ function ConfirmationMessageBubble({ msg }: { msg: any }) {
 }
 
 function PaymentMessageBubble({ msg }: { msg: any }) {
-  const [isPaid, setIsPaid] = useState<boolean | null>(null);
+  const metadataPaid = msg.metadata?.isPaid === true || msg.metadata?.status === 'paid';
+  const [isPaid, setIsPaid] = useState<boolean>(metadataPaid);
   const offerId = msg.metadata?.offerId || msg.metadata?.proposalId;
 
+  // Sync state if msg.metadata changes (e.g. via Socket)
   useEffect(() => {
-    if (!offerId) return;
+    if (metadataPaid) {
+      setIsPaid(true);
+    }
+  }, [metadataPaid]);
+
+  useEffect(() => {
+    // Only fetch if we don't already know it's paid from metadata
+    if (isPaid || !offerId) return;
+    
     const token = localStorage.getItem("accessToken");
     const endpoint = msg.metadata?.type === 'proposal' ? `/jobs/proposals/${offerId}` : `/offers/${offerId}`;
 
@@ -113,10 +123,10 @@ function PaymentMessageBubble({ msg }: { msg: any }) {
     })
       .then((r) => r.json())
       .then((data) => {
-        if (data?.isPaid !== undefined) setIsPaid(data.isPaid);
+        if (data?.isPaid === true) setIsPaid(true);
       })
       .catch(() => { });
-  }, [offerId, msg.metadata?.type]);
+  }, [offerId, msg.metadata?.type, isPaid]);
 
   const handlePay = () => {
     const type = msg.metadata?.type === 'proposal' ? 'proposal' : 'offer';
@@ -426,14 +436,42 @@ export default function ChatWindow() {
 
   if (!activeConversation && !tempParticipant) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center bg-wa-bg-main p-12 text-center select-none border-b-[6px] border-primary">
-        <div className="size-64 mb-8 opacity-20 filter grayscale drop-shadow-2xl">
-          <span className="material-symbols-outlined text-[180px] text-wa-text-secondary leading-none">settings_ethernet</span>
+      <div className="flex-1 flex flex-col items-center justify-center bg-wa-bg-main p-12 text-center select-none relative overflow-hidden">
+        {/* Subtle Mesh Gradient Background */}
+        <div className="absolute inset-0 opacity-20 dark:opacity-30 pointer-events-none">
+          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/40 blur-[100px] rounded-full animate-pulse"></div>
+          <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-amber-500/20 blur-[100px] rounded-full"></div>
         </div>
-        <h2 className="text-3xl font-extralight text-wa-text-primary tracking-tight mb-4">Select a chat</h2>
-        <p className="text-sm text-wa-text-secondary max-w-sm leading-relaxed">
-          Connect with your team and freelancers in real-time. All your communications are strictly end-to-end encrypted.
-        </p>
+
+        <div className="relative z-10 flex flex-col items-center">
+          <div className="size-48 bg-gradient-to-br from-wa-bg-search to-wa-bg-sidebar rounded-[3rem] flex items-center justify-center mb-8 shadow-2xl border border-wa-bg-search/50 group hover:scale-105 transition-transform duration-700">
+            <div className="size-24 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:rotate-12 transition-transform">
+              <span className="material-symbols-outlined text-[64px] font-bold">lock</span>
+            </div>
+          </div>
+
+          <h2 className="text-4xl font-black text-wa-text-primary tracking-tight mb-4">Secure Conversations</h2>
+          <p className="text-[15px] text-wa-text-secondary max-w-sm leading-relaxed font-medium">
+            Connect with your workforce in a strictly private environment. All communications are protected by <span className="text-amber-500 font-bold">256-bit end-to-end encryption</span>.
+          </p>
+
+          <div className="mt-10 flex items-center gap-6 opacity-40">
+            <div className="flex flex-col items-center gap-2">
+              <span className="material-symbols-outlined text-2xl">verified_user</span>
+              <span className="text-[9px] font-black uppercase tracking-widest">Verified</span>
+            </div>
+            <div className="w-px h-8 bg-wa-text-secondary/20"></div>
+            <div className="flex flex-col items-center gap-2">
+              <span className="material-symbols-outlined text-2xl">encrypted</span>
+              <span className="text-[9px] font-black uppercase tracking-widest">Protected</span>
+            </div>
+            <div className="w-px h-8 bg-wa-text-secondary/20"></div>
+            <div className="flex flex-col items-center gap-2">
+              <span className="material-symbols-outlined text-2xl">shutter_speed</span>
+              <span className="text-[9px] font-black uppercase tracking-widest">Real-time</span>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -458,12 +496,11 @@ export default function ChatWindow() {
             <h3 className="text-[15px] font-medium text-wa-text-primary truncate leading-tight">
               {otherUser?.name}
             </h3>
-            <span className="text-[11px] text-wa-text-secondary">click here for info</span>
           </div>
         </div>
 
         <div className="flex items-center gap-2 text-wa-text-secondary relative" ref={menuRef}>
-          <button 
+          <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             className={`size-10 flex items-center justify-center rounded-full transition-all ${isMenuOpen ? 'bg-wa-bg-search text-wa-text-primary' : 'hover:bg-wa-bg-search/50 hover:text-wa-text-primary'}`}
           >
@@ -475,7 +512,7 @@ export default function ChatWindow() {
               <div className="px-3 py-2 border-b border-slate-50 dark:border-slate-800/50 mb-1">
                 <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Options</span>
               </div>
-              
+
               <button 
                 onClick={() => {
                   handleReport();
@@ -488,29 +525,6 @@ export default function ChatWindow() {
                   <span className="text-[13px] font-bold text-slate-700 dark:text-slate-200 group-hover:text-red-500 transition-colors">Report User</span>
                   <span className="text-[10px] text-slate-400 dark:text-slate-500">Flag inappropriate behavior</span>
                 </div>
-              </button>
-
-              <div className="my-1 border-t border-slate-50 dark:border-slate-800/50" />
-
-              <button 
-                onClick={() => {
-                  setDarkMode(!isDarkMode);
-                  setIsMenuOpen(false);
-                }}
-                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors text-left group"
-              >
-                <span className="material-symbols-outlined text-[20px] text-slate-500 group-hover:text-primary transition-colors">
-                  {isDarkMode ? 'light_mode' : 'dark_mode'}
-                </span>
-                <div className="flex flex-col">
-                  <span className="text-[13px] font-bold text-slate-700 dark:text-slate-200 group-hover:text-primary transition-colors">
-                    {isDarkMode ? 'Light appearance' : 'Dark appearance'}
-                  </span>
-                  <span className="text-[10px] text-slate-400 dark:text-slate-500">
-                    Switch to {isDarkMode ? 'light' : 'dark'} theme
-                  </span>
-                </div>
-                <div className={`ml-auto size-2 rounded-full ${isDarkMode ? 'bg-primary' : 'bg-slate-300'}`} />
               </button>
             </div>
           )}
@@ -604,9 +618,14 @@ export default function ChatWindow() {
           ) : (
             !activeConversation && !isLoadingMessages && (
               <div className="flex justify-center my-10">
-                <div className="bg-[#182229] px-4 py-2 rounded-lg text-center shadow-md">
-                  <p className="text-[12.5px] text-[#ffd279] uppercase tracking-wide font-medium">Messages are end-to-end encrypted</p>
-                  <p className="text-[12px] text-wa-text-secondary mt-1">No one outside of this chat, not even FreeCone, can read them.</p>
+                <div className="bg-amber-500/5 dark:bg-amber-500/10 px-6 py-4 rounded-2xl border border-amber-500/10 dark:border-amber-500/20 flex flex-col items-center max-w-[320px] shadow-sm backdrop-blur-sm group hover:bg-amber-500/10 transition-all duration-300">
+                  <div className="size-9 rounded-xl bg-amber-500/20 flex items-center justify-center mb-3 text-amber-500 group-hover:scale-110 transition-transform">
+                    <span className="material-symbols-outlined text-[20px] font-bold">lock</span>
+                  </div>
+                  <p className="text-[10px] font-black text-amber-600 dark:text-amber-500 uppercase tracking-[0.2em] mb-1.5">End-to-end encrypted</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 text-center leading-relaxed font-medium">
+                    Messages and calls are secured with end-to-end encryption. No one outside of this chat, not even FreeCone, can read or listen to them.
+                  </p>
                 </div>
               </div>
             )

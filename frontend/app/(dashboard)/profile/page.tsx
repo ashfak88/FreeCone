@@ -14,19 +14,19 @@ export default function ProfilePage() {
   const router = useRouter();
   const { user, updateUser } = useStore();
   const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    title: "",
-    bio: "",
-    location: "",
-    rate: 0,
-    upiId: "",
-    cardHolderName: "",
-    cardLast4: "",
-    cardExpiry: "",
-    showAsFreelancer: false
+    name: user?.name || "",
+    email: user?.email || "",
+    title: user?.title || "",
+    bio: user?.bio || "",
+    location: user?.location || "",
+    rate: user?.rate || 0,
+    upiId: user?.paymentAccount?.upiId || "",
+    cardHolderName: user?.paymentAccount?.cardDetails?.holderName || "",
+    cardLast4: user?.paymentAccount?.cardDetails?.last4 || "",
+    cardExpiry: user?.paymentAccount?.cardDetails?.expiry || "",
+    showAsFreelancer: user?.showAsFreelancer || false
   });
-  const [skills, setSkills] = useState<string[]>([]);
+  const [skills, setSkills] = useState<string[]>(user?.skills || []);
   const [skillInput, setSkillInput] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<null | "success" | "error">(null);
@@ -36,8 +36,10 @@ export default function ProfilePage() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [showCropper, setShowCropper] = useState(false);
 
+  // Initialize from user if it becomes available later (e.g. hydration/fetch)
+  // But only if currently empty to avoid overwriting edits
   useEffect(() => {
-    if (user) {
+    if (user && !formData.name && !formData.email) {
       setFormData({
         name: user.name || "",
         email: user.email || "",
@@ -78,7 +80,55 @@ export default function ProfilePage() {
           color: document.documentElement.classList.contains("dark") ? "#fff" : "#000",
         });
         return; // Prevent the toggle from turning on
+      } else {
+        // All fields filled - Show confirmation
+        Swal.fire({
+          title: 'Become Visible?',
+          text: "Enabling this will make your professional profile visible to all potential clients on FreeCone. Are you ready?",
+          icon: 'info',
+          showCancelButton: true,
+          confirmButtonColor: '#0ea5e9',
+          cancelButtonColor: '#94a3b8',
+          confirmButtonText: 'Yes, make me visible',
+          cancelButtonText: 'Not yet',
+          background: document.documentElement.classList.contains("dark") ? "#0f172a" : "#fff",
+          color: document.documentElement.classList.contains("dark") ? "#fff" : "#000",
+        }).then((result) => {
+          if (result.isConfirmed) {
+            const updatedFormData = {
+              ...formData,
+              showAsFreelancer: true
+            };
+            setFormData(updatedFormData);
+            handleSave(updatedFormData);
+          }
+        });
+        return; // Return early to wait for Swal result
       }
+    } else if (id === "showAsFreelancer" && !checked) {
+      // Turning OFF visibility - Show confirmation
+      Swal.fire({
+        title: 'Hide Profile?',
+        text: "Your profile will no longer be visible to potential clients on the Find Talent page. You can turn this back on at any time.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#94a3b8',
+        confirmButtonText: 'Yes, hide me',
+        cancelButtonText: 'Keep visible',
+        background: document.documentElement.classList.contains("dark") ? "#0f172a" : "#fff",
+        color: document.documentElement.classList.contains("dark") ? "#fff" : "#000",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          const updatedFormData = {
+              ...formData,
+              showAsFreelancer: false
+            };
+            setFormData(updatedFormData);
+            handleSave(updatedFormData);
+        }
+      });
+      return; 
     }
     
     setFormData((prev) => ({
@@ -110,7 +160,7 @@ export default function ProfilePage() {
     }
   };
 
-  const handleSave = async () => {
+  const handleSave = async (customFormData?: any) => {
     setIsSaving(true);
     setSaveStatus(null);
     try {
@@ -119,6 +169,8 @@ export default function ProfilePage() {
         throw new Error("You are not logged in. Please sign in again.");
       }
 
+      const activeData = customFormData || formData;
+
       const response = await fetch(`${API_URL}/users/profile`, {
         method: "PUT",
         headers: {
@@ -126,14 +178,14 @@ export default function ProfilePage() {
           Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
-          ...formData,
+          ...activeData,
           skills,
           paymentAccount: {
-            upiId: formData.upiId,
+            upiId: activeData.upiId,
             cardDetails: {
-              holderName: formData.cardHolderName,
-              last4: formData.cardLast4,
-              expiry: formData.cardExpiry
+              holderName: activeData.cardHolderName,
+              last4: activeData.cardLast4,
+              expiry: activeData.cardExpiry
             }
           }
         })
@@ -329,17 +381,23 @@ export default function ProfilePage() {
 
           <button
             type="button"
-            onClick={handleSave}
+            onClick={() => handleSave()}
             disabled={isSaving}
-            className={`hidden sm:block ${isSaving ? "opacity-50 cursor-not-allowed" : "hover:bg-primary/90"} bg-primary text-white px-6 py-2 rounded-xl font-bold transition-all shadow-sm flex items-center gap-2`}
+            className={`flex items-center gap-2 ${
+              isSaving ? "opacity-50 cursor-not-allowed bg-primary" : 
+              saveStatus === "success" ? "bg-green-500 hover:bg-green-600 shadow-green-500/20" : 
+              "bg-primary hover:bg-primary/90"
+            } text-white px-4 sm:px-6 py-2 rounded-xl font-bold transition-all shadow-sm`}
           >
             {isSaving ? (
               <>
                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                Saving...
+                <span>Saving...</span>
               </>
+            ) : saveStatus === "success" ? (
+              "Saved"
             ) : (
-              "Save Changes"
+              <span>Save<span className="hidden sm:inline"> Changes</span></span>
             )}
           </button>
         </div>

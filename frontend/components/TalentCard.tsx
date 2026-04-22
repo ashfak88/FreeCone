@@ -94,17 +94,6 @@ export default function TalentCard({ talent }: { talent: User }) {
           </div>
         </div>
         <div className="flex gap-3">
-          {talent.resume && (
-            <a
-              href={talent.resume}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-4 py-3 text-primary font-bold border-2 border-primary/10 rounded-2xl hover:bg-primary/5 transition-all flex items-center justify-center"
-              title="View Resume"
-            >
-              <span className="material-symbols-outlined text-xl">description</span>
-            </a>
-          )}
           <a
             href={`/talent/${talent._id || talent.id}`}
             onClick={(e) => handleAuthRedirect(e, `/talent/${talent._id || talent.id}`)}

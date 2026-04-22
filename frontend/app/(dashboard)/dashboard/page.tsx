@@ -36,7 +36,9 @@ export default function DashboardPage() {
     fetchTransactions,
     fetchProfile,
     notifications,
-    fetchNotifications
+    sentNotifications,
+    fetchNotifications,
+    isDarkMode
   } = useStore();
 
   const [escrow, setEscrow] = useState<EscrowSummary | null>(null);
@@ -71,7 +73,8 @@ export default function DashboardPage() {
     fetchReceivedProposals();
     fetchEscrow();
     fetchTransactions();
-    fetchNotifications();
+    fetchNotifications('received');
+    fetchNotifications('sent');
 
     // Socket.io Real-time Listeners
     const socket = socketService.getSocket();
@@ -82,7 +85,8 @@ export default function DashboardPage() {
         fetchMyProposals();
         fetchReceivedProposals();
         fetchProfile();
-        fetchNotifications();
+        fetchNotifications('received');
+        fetchNotifications('sent');
       };
       const handleEscrowUpdate = () => {
         fetchEscrow();
@@ -124,6 +128,18 @@ export default function DashboardPage() {
   const totalFinancial = isClientRole
     ? (escrow?.totalSpent ?? 0)
     : (escrow?.totalEarned ?? 0);
+  
+  // Combine sent and received notifications for Recent Activity
+  const combinedActivity = React.useMemo(() => {
+    const all = [
+      ...(Array.isArray(notifications) ? notifications : []),
+      ...(Array.isArray(sentNotifications) ? sentNotifications : [])
+    ];
+    // Sort by createdAt descending
+    return all.sort((a: any, b: any) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }, [notifications, sentNotifications]);
 
   return (
     <div>
@@ -422,9 +438,9 @@ export default function DashboardPage() {
                 </Link>
               </div>
 
-              {notifications.length > 0 ? (
+              {combinedActivity.length > 0 ? (
                 <div className="divide-y divide-slate-50 -mx-4 md:-mx-6">
-                  {notifications.slice(0, 5).map((activity) => (
+                  {combinedActivity.slice(0, 5).map((activity) => (
                     <ActivityItem
                       key={activity._id}
                       type={activity.type}

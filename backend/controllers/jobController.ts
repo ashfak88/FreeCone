@@ -134,6 +134,7 @@ export const applyForJob = async (req: any, res: Response): Promise<void> => {
       message: `You sent a proposal for '${job.title}' with a rate of $${proposedRate}.`,
     });
     await talentNotification.save();
+    emitToUser(talentId.toString(), "newNotification", talentNotification);
     emitToUser(talentId.toString(), "proposalUpdate", savedProposal);
 
     res.status(201).json({ message: "Application submitted successfully", proposal: savedProposal });

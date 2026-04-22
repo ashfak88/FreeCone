@@ -16,11 +16,24 @@ export default function RegisterPage() {
   });
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
+
+    if (formData.password.length < 6) {
+      setError("Password must be at least 6 characters long");
+      setIsLoading(false);
+      return;
+    }
+
+    const hasLetter = /[a-zA-Z]/.test(formData.password);
+    const hasNumber = /[0-9]/.test(formData.password);
+    if (!hasLetter || !hasNumber) {
+      setError("Password must contain both letters and numbers");
+      setIsLoading(false);
+      return;
+    }
 
     try {
       const res = await fetch(`${API_URL}/auth/register`, {
@@ -149,6 +162,9 @@ export default function RegisterPage() {
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
+              <p className="text-[10px] text-slate-400 font-medium ml-1">
+                At least 6 characters with letters and numbers
+              </p>
             </div>
           </div>
 

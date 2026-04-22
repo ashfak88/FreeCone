@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import AdminHeader from "@/components/AdminHeader";
 import BottomNavbar from "@/components/BottomNavbar";
@@ -17,6 +18,7 @@ interface Project {
 }
 
 export default function AdminProjectsPage() {
+  const router = useRouter();
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -124,8 +126,21 @@ export default function AdminProjectsPage() {
         <div className="space-y-4">
           <AnimatePresence mode="popLayout">
             {isLoading ? (
-              Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="h-48 bg-white dark:bg-slate-800 rounded-2xl border border-primary/5 animate-pulse" />
+              Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="h-48 bg-white dark:bg-slate-800 rounded-3xl border border-primary/10 animate-pulse relative overflow-hidden p-6 flex flex-col md:flex-row gap-6">
+                   <div className="md:w-56 h-40 md:h-full bg-slate-100 dark:bg-slate-700 rounded-2xl"></div>
+                   <div className="flex-1 space-y-4">
+                      <div className="flex justify-between">
+                         <div className="h-3 w-16 bg-slate-100 dark:bg-slate-700 rounded"></div>
+                         <div className="h-6 w-24 bg-slate-100 dark:bg-slate-700 rounded"></div>
+                      </div>
+                      <div className="h-8 w-3/4 bg-slate-100 dark:bg-slate-700 rounded-xl"></div>
+                      <div className="grid grid-cols-2 gap-4">
+                         <div className="h-10 bg-slate-50 dark:bg-slate-700/50 rounded-lg"></div>
+                         <div className="h-10 bg-slate-50 dark:bg-slate-700/50 rounded-lg"></div>
+                      </div>
+                   </div>
+                </div>
               ))
             ) : projects.length > 0 ? (
               projects.map((project, idx) => (
@@ -178,7 +193,10 @@ export default function AdminProjectsPage() {
                       </div>
 
                       <div className="mt-6 flex justify-end">
-                        <button className="px-6 py-3 bg-primary text-white text-[11px] font-black uppercase tracking-widest rounded-2xl hover:brightness-110 hover:shadow-lg hover:shadow-primary/20 transition-all flex items-center gap-2">
+                        <button 
+                          onClick={() => router.push(`/admin/projects/${project._id}`)}
+                          className="px-6 py-3 bg-primary text-white text-[11px] font-black uppercase tracking-widest rounded-2xl hover:brightness-110 hover:shadow-lg hover:shadow-primary/20 transition-all flex items-center gap-2"
+                        >
                           Manage Project
                           <span className="material-symbols-outlined text-sm">arrow_forward</span>
                         </button>

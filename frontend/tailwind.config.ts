@@ -17,7 +17,7 @@ const config: Config = {
         "on-primary-fixed": "#212210",
         "on-primary-fixed-variant": "#4f5035",
         "on-primary-container": "#1d1e11",
-        
+
         secondary: "#5d5f50",
         "secondary-fixed": "#e2e4d2",
         "secondary-fixed-dim": "#c6c8b7",
@@ -43,7 +43,7 @@ const config: Config = {
 
         background: "#f6f7f8",
         "on-background": "#0f172a",
-        
+
         surface: "#ffffff",
         "surface-dim": "#f6f7f8",
         "surface-bright": "#ffffff",

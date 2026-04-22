@@ -21,6 +21,41 @@ export default function FindTalentPage() {
     setIsMounted(true);
   }, []);
 
+  // Show Visibility Reminder Swal on load
+  useEffect(() => {
+    const showReminder = async () => {
+      if (isMounted && user && user.role === 'user' && !user.showAsFreelancer) {
+        const hasShown = sessionStorage.getItem('visibility_reminder_find_talent');
+        if (!hasShown) {
+          const Swal = (await import('sweetalert2')).default;
+          Swal.fire({
+            title: 'Boost Your Visibility!',
+            text: 'Clients currently cannot find your profile. Enable your visibility now to start appearing in search results and receiving offers.',
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonColor: '#0ea5e9',
+            cancelButtonColor: '#94a3b8',
+            confirmButtonText: 'Enable Visibility',
+            cancelButtonText: 'Later',
+            background: document.documentElement.classList.contains("dark") ? "#0f172a" : "#fff",
+            color: document.documentElement.classList.contains("dark") ? "#fff" : "#000",
+            customClass: {
+                popup: 'rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl',
+                confirmButton: 'rounded-xl px-6 py-3 font-bold uppercase tracking-wider text-[11px] ml-2',
+                cancelButton: 'rounded-xl px-6 py-3 font-bold uppercase tracking-wider text-[11px]'
+            }
+          }).then((result) => {
+            if (result.isConfirmed) {
+              router.push("/profile");
+            }
+            sessionStorage.setItem('visibility_reminder_find_talent', 'true');
+          });
+        }
+      }
+    };
+    showReminder();
+  }, [isMounted, user, router]);
+
 
   // Refetch when filters change (Debounced Search)
   useEffect(() => {
@@ -115,6 +150,28 @@ export default function FindTalentPage() {
             )}
           </div>
         </div>
+
+        {/* Visibility Reminder Card - Simple Tip Style */}
+        {user && user.role === 'user' && !user.showAsFreelancer && (
+          <div className="bg-[#fefce8] border border-yellow-200/50 rounded-2xl p-6 space-y-3 max-w-lg">
+            <div className="flex items-center gap-2 text-yellow-800">
+              <span className="material-symbols-outlined text-xl">lightbulb</span>
+              <h4 className="font-bold text-sm">Visibility Tip</h4>
+            </div>
+
+            <p className="text-slate-600 text-sm leading-relaxed">
+              Enabling your freelancer visibility can increase your profile views by up to 40%. Clients are currently unable to find you in search results.
+            </p>
+
+            <button
+              onClick={() => router.push("/profile")}
+              className="group flex items-center gap-2 text-yellow-800 font-bold text-sm hover:text-yellow-900 transition-colors"
+            >
+              Update Profile
+              <span className="material-symbols-outlined text-lg transition-transform group-hover:translate-x-1">arrow_right_alt</span>
+            </button>
+          </div>
+        )}
 
         {/* Results Info */}
         <div className="flex justify-between items-center px-2">

@@ -14,6 +14,41 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const [isHydrated, setIsHydrated] = useState(false);
   const { isMobileSidebarOpen, closeMobileSidebar } = useDashboard();
 
+  const handleLogout = async () => {
+    const Swal = (await import('sweetalert2')).default;
+    
+    const result = await Swal.fire({
+      title: 'Sign Out?',
+      text: "Are you sure you want to log out of your dashboard?",
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Yes, Sign out',
+      cancelButtonText: 'Stay here',
+      background: document.documentElement.classList.contains('dark') ? '#0f172a' : '#fff',
+      color: document.documentElement.classList.contains('dark') ? '#fff' : '#000',
+      customClass: {
+        popup: 'rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-2xl',
+        confirmButton: 'rounded-xl px-6 py-3 font-bold uppercase tracking-wider text-[11px] ml-2',
+        cancelButton: 'rounded-xl px-6 py-3 font-bold uppercase tracking-wider text-[11px]'
+      }
+    });
+
+    if (result.isConfirmed) {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
+      try {
+        await fetch(`${API_URL}/auth/logout`, {
+          method: "POST",
+          credentials: "include",
+        });
+      } catch (_) { }
+      setUser(null);
+      if (isMobileSidebarOpen) closeMobileSidebar();
+      router.push("/login");
+    }
+  };
+
   useEffect(() => {
     setIsHydrated(true);
 
@@ -44,18 +79,6 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     fetchProfile();
   }, [user?.id, router, updateUser]);
 
-  const handleLogout = async () => {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
-    try {
-      await fetch(`${API_URL}/auth/logout`, {
-        method: "POST",
-        credentials: "include",
-      });
-    } catch (_) { }
-    setUser(null);
-    router.push("/login");
-  };
-
   const pathname = usePathname();
   const isProjectDetails = pathname.startsWith('/projects/') && pathname !== '/projects';
 
@@ -71,16 +94,16 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-display">
       {/* Sidebar Overlay for Mobile */}
       {isMobileSidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[45] lg:hidden animate-in fade-in duration-300"
           onClick={closeMobileSidebar}
         />
       )}
 
       {!isProjectDetails && (
-        <Sidebar 
-          user={user} 
-          onLogout={handleLogout} 
+        <Sidebar
+          user={user}
+          onLogout={handleLogout}
           isMobileOpen={isMobileSidebarOpen}
           onClose={closeMobileSidebar}
         />

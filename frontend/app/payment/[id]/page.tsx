@@ -67,6 +67,7 @@ export default function PaymentPage() {
 
         if (data) {
           if (type === "proposal") {
+            const isPaid = data.isPaid || false;
             setOffer({
               _id: data._id,
               jobTitle: data.job?.title || "Project Payment",
@@ -74,10 +75,12 @@ export default function PaymentPage() {
               freelancer: data.talent,
               client: data.job?.user,
               description: data.coverLetter,
-              isPaid: data.isPaid || false,
+              isPaid: isPaid,
             });
+            if (isPaid) setSuccess(true);
           } else {
             setOffer(data);
+            if (data.isPaid) setSuccess(true);
           }
         }
       } catch (err: any) {
@@ -155,7 +158,7 @@ export default function PaymentPage() {
         currency: orderData.currency,
         name: "FreeCone",
         description: `Payment for ${offer.jobTitle}`,
-        image: "https://your-logo-url.com/logo.png",
+        image: "", // Use merchant default logo from Razorpay dashboard
         order_id: orderData.order_id,
         handler: async function (response: any) {
           // 3. Verify Payment
@@ -169,6 +172,7 @@ export default function PaymentPage() {
               body: JSON.stringify({
                 ...response,
                 offerId: id,
+                type: searchParams.get("type") || "advance_payment",
               }),
             });
 
@@ -524,15 +528,14 @@ export default function PaymentPage() {
                     </motion.p>
                   </div>
 
-                  {/* Action Buttons */}
-                  <motion.div
+                               <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 1 }}
                     className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full"
                   >
                     <button
-                      onClick={() => router.push("/")}
+                      onClick={() => router.replace("/")}
                       className="flex flex-col items-center justify-center gap-3 p-6 bg-slate-50 hover:bg-slate-100 rounded-3xl transition-all group border border-slate-100"
                     >
                       <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
@@ -540,9 +543,8 @@ export default function PaymentPage() {
                       </div>
                       <span className="font-bold text-slate-900">Go to Home</span>
                     </button>
-
                     <button
-                      onClick={() => router.push("/dashboard")}
+                      onClick={() => router.replace("/dashboard")}
                       className="flex flex-col items-center justify-center gap-3 p-6 bg-primary/5 hover:bg-primary/10 rounded-3xl transition-all group border border-primary/10"
                     >
                       <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
@@ -550,9 +552,8 @@ export default function PaymentPage() {
                       </div>
                       <span className="font-bold text-slate-900">Dashboard</span>
                     </button>
-
                     <button
-                      onClick={() => router.push("/messages")}
+                      onClick={() => router.replace("/messages")}
                       className="flex flex-col items-center justify-center gap-3 p-6 bg-slate-900 hover:bg-slate-800 rounded-3xl transition-all group shadow-xl shadow-slate-200"
                     >
                       <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">

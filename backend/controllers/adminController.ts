@@ -332,6 +332,53 @@ export const getAdminProjects = async (req: Request, res: Response): Promise<any
   }
 };
 
+export const getAdminProjectDetail = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const { id } = req.params;
+    const project = await Job.findById(id)
+      .populate("user", "name email imageUrl role")
+      .populate("freelancer", "name email imageUrl role");
+    
+    if (!project) {
+      return res.status(404).json({ message: "Project not found" });
+    }
+
+    // Also fetch related transactions
+    const transactions = await Transaction.find({ job: id })
+      .populate("sender", "name email")
+      .populate("receiver", "name email");
+
+    res.json({ project, transactions });
+  } catch (error: any) {
+    console.error("Error fetching admin project detail:", error.message);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+export const updateAdminProjectStatus = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!["pending", "active", "completed", "disputed"].includes(status)) {
+      return res.status(400).json({ message: "Invalid status" });
+    }
+
+    const project = await Job.findByIdAndUpdate(id, { status }, { new: true })
+      .populate("user", "name email")
+      .populate("freelancer", "name email");
+
+    if (!project) {
+      return res.status(404).json({ message: "Project not found" });
+    }
+
+    res.json(project);
+  } catch (error: any) {
+    console.error("Error updating admin project status:", error.message);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
 export const getAdminComplaints = async (req: Request, res: Response): Promise<any> => {
   try {
     const { status, category } = req.query;
@@ -373,19 +420,21 @@ export const updateComplaintStatus = async (req: Request, res: Response): Promis
     // Create a real-time notification for the user who filed the complaint
     try {
       const admin = (req as any).user;
+      const recipientId = (complaint.user as any)._id || complaint.user;
+      
       const notification = new Notification({
-        recipient: complaint.user,
-        sender: admin?._id || admin?.id || complaint.user, // Fallback if admin info is missing
-        type: "other",
-        title: "Complaint Status Updated",
-        message: `Your complaint regarding "${complaint.subject}" is now ${status}.`,
+        recipient: recipientId,
+        sender: admin?._id || admin?.id || recipientId, 
+        type: "audit",
+        title: "Complaint Update",
+        message: `The status of your complaint ("${complaint.subject}") has been updated to: ${status.toUpperCase()}.`,
         relatedId: complaint._id
       });
 
       const savedNotification = await notification.save();
 
       // Emit real-time notification via Socket.io
-      emitToUser(complaint.user.toString(), 'newNotification', savedNotification);
+      emitToUser(recipientId.toString(), 'newNotification', savedNotification);
     } catch (notifError: any) {
       console.error("Error creating complaint update notification:", notifError.message);
       // We don't fail the request if notification fails, but we log it
@@ -410,7 +459,7 @@ export const getSettings = async (req: Request, res: Response): Promise<any> => 
     if (!maintenance) {
       maintenance = await SystemConfig.create({ key: "maintenanceMode", value: false });
     }
-    
+
     res.json({
       platformCommission: commission.value,
       maintenanceMode: maintenance.value
@@ -425,7 +474,7 @@ export const updateSettings = async (req: Request, res: Response): Promise<any> 
   try {
     const { platformCommission, maintenanceMode } = req.body;
     console.log("   [ADMIN] Update Settings Request:", req.body);
-    
+
     const updates = [];
 
     if (platformCommission !== undefined) {
@@ -470,7 +519,7 @@ export const broadcastMessage = async (req: Request, res: Response): Promise<any
     }
 
     const users = await User.find({ status: { $ne: "blocked" }, role: { $ne: "admin" } }).select("_id");
-    
+
     const notifications = users.map(u => ({
       recipient: u._id,
       sender: adminId,
@@ -493,7 +542,7 @@ export const broadcastMessage = async (req: Request, res: Response): Promise<any
       });
     }
 
-    res.status(200).json({ 
+    res.status(200).json({
       message: `Broadcast successfully sent to ${users.length} users.`,
       count: users.length
     });

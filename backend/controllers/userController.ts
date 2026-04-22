@@ -72,13 +72,23 @@ export const updateProfile = async (req: Request, res: Response): Promise<any> =
 
     // Capture fields from request body
     const updates: any = {};
-    const allowedFields = ['name', 'title', 'bio', 'location', 'skills', 'rate', 'imageUrl', 'portfolio', 'socialLinks', 'resume', 'age', 'paymentAccount', 'showAsFreelancer'];
+    const allowedFields = ['name', 'email', 'title', 'bio', 'location', 'skills', 'rate', 'imageUrl', 'portfolio', 'socialLinks', 'resume', 'age', 'paymentAccount', 'showAsFreelancer'];
 
     allowedFields.forEach(field => {
       if (req.body[field] !== undefined) {
         updates[field] = req.body[field];
       }
     });
+
+    // Validating Email Uniqueness if updated
+    if (updates.email) {
+      const emailLower = updates.email.toLowerCase().trim();
+      const existingUser = await User.findOne({ email: emailLower, _id: { $ne: userId } });
+      if (existingUser) {
+        return res.status(400).json({ message: "Email already in use by another account." });
+      }
+      updates.email = emailLower;
+    }
 
     // Mark profile as complete if they've provided basic info
     if (updates.name || updates.title || (updates.skills && updates.skills.length > 0)) {
@@ -285,6 +295,13 @@ export const changePassword = async (req: Request, res: Response): Promise<any> 
       if (!isMatch) {
         return res.status(400).json({ message: "Incorrect current password" });
       }
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: "New password must be at least 6 characters long" });
+    }
+    if (!/[a-zA-Z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
+      return res.status(400).json({ message: "New password must contain both letters and numbers" });
     }
 
     // Hash new password

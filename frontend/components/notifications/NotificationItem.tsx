@@ -2,7 +2,7 @@
 
 import React from "react";
 import { motion } from "framer-motion";
-import { X, Bell, CheckCircle, AlertCircle, MessageSquare } from "lucide-react";
+import { X, Bell, CheckCircle, AlertCircle, MessageSquare, Shield } from "lucide-react";
 import { Notification, NotificationType, useNotificationStore } from "@/lib/notificationStore";
 import { cn } from "@/lib/utils";
 
@@ -12,6 +12,7 @@ const iconMap: Record<NotificationType, React.ReactNode> = {
   info: <Bell className="w-4 h-4 text-sky-400" />,
   warning: <AlertCircle className="w-4 h-4 text-amber-400" />,
   message: <MessageSquare className="w-4 h-4 text-indigo-400" />,
+  audit: <Shield className="w-4 h-4 text-orange-400" />,
 };
 
 export default function NotificationItem({ notification }: { notification: Notification }) {
@@ -68,7 +69,8 @@ export default function NotificationItem({ notification }: { notification: Notif
           notification.type === 'error' && "bg-rose-500",
           notification.type === 'info' && "bg-sky-500",
           notification.type === 'warning' && "bg-amber-500",
-          notification.type === 'message' && "bg-indigo-500"
+          notification.type === 'message' && "bg-indigo-500",
+          notification.type === 'audit' && "bg-orange-500"
         )}
       />
     </motion.div>

@@ -12,6 +12,8 @@ import {
   updateComplaintStatus,
   getSettings,
   updateSettings,
+  getAdminProjectDetail,
+  updateAdminProjectStatus,
   broadcastMessage,
   notifyUser
 } from "../controllers/adminController";
@@ -30,6 +32,8 @@ router.get("/projects", protect, isAdmin, getAdminProjects);
 router.get("/complaints", protect, isAdmin, getAdminComplaints);
 router.patch("/complaints/:id/status", protect, isAdmin, updateComplaintStatus);
 router.get("/system-settings", protect, isAdmin, getSettings);
+router.get("/projects/:id", protect, isAdmin, getAdminProjectDetail);
+router.patch("/projects/:id/status", protect, isAdmin, updateAdminProjectStatus);
 router.put("/system-settings", protect, isAdmin, updateSettings);
 router.post("/broadcast", protect, isAdmin, broadcastMessage);
 

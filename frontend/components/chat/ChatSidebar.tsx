@@ -205,7 +205,29 @@ export default function ChatSidebar() {
                 {openDropdownId === chat._id && (
                   <div className="absolute right-0 top-6 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-100 dark:border-slate-700 overflow-hidden z-[60]" onClick={(e) => e.stopPropagation()}>
                     <button
-                      onClick={() => { deleteConversation(chat._id); setOpenDropdownId(null); }}
+                      onClick={async () => {
+                        const result = await Swal.fire({
+                          title: 'Delete Chat?',
+                          text: "You will lose all messages in this conversation.",
+                          icon: 'warning',
+                          showCancelButton: true,
+                          confirmButtonColor: '#ef4444',
+                          cancelButtonColor: '#94a3b8',
+                          confirmButtonText: 'Yes, delete',
+                          background: document.documentElement.classList.contains('dark') ? '#0f172a' : '#fff',
+                          color: document.documentElement.classList.contains('dark') ? '#fff' : '#000',
+                          customClass: {
+                            popup: 'rounded-3xl border border-slate-100 dark:border-slate-800 shadow-2xl',
+                            confirmButton: 'rounded-xl px-6 py-2.5 text-xs font-black uppercase tracking-widest',
+                            cancelButton: 'rounded-xl px-6 py-2.5 text-xs font-black uppercase tracking-widest'
+                          }
+                        });
+
+                        if (result.isConfirmed) {
+                          deleteConversation(chat._id);
+                          setOpenDropdownId(null);
+                        }
+                      }}
                       className="w-full text-left px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center justify-between"
                     >
                       Delete chat
@@ -247,7 +269,41 @@ export default function ChatSidebar() {
             {headerDropdownOpen && (
               <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-100 dark:border-slate-700 overflow-hidden z-[70]">
                 <button
-                  onClick={() => { if(confirm("Delete all chats? This cannot be undone.")) { deleteAllConversations(); setHeaderDropdownOpen(false); } }}
+                  onClick={async () => {
+                    const result = await Swal.fire({
+                      title: 'Delete All Chats?',
+                      text: "This cannot be undone. You will lose all conversation history.",
+                      icon: 'warning',
+                      showCancelButton: true,
+                      confirmButtonColor: '#ef4444',
+                      cancelButtonColor: '#94a3b8',
+                      confirmButtonText: 'Yes, delete all',
+                      background: document.documentElement.classList.contains('dark') ? '#0f172a' : '#fff',
+                      color: document.documentElement.classList.contains('dark') ? '#fff' : '#000',
+                      customClass: {
+                        popup: 'rounded-3xl border border-slate-100 dark:border-slate-800 shadow-2xl',
+                        confirmButton: 'rounded-xl px-6 py-2.5 text-xs font-black uppercase tracking-widest',
+                        cancelButton: 'rounded-xl px-6 py-2.5 text-xs font-black uppercase tracking-widest'
+                      }
+                    });
+
+                    if (result.isConfirmed) {
+                      deleteAllConversations();
+                      setHeaderDropdownOpen(false);
+                      Swal.fire({
+                        title: 'Conversations Cleared',
+                        text: 'All your chats have been successfully deleted.',
+                        icon: 'success',
+                        confirmButtonColor: '#6A6B4C',
+                        background: document.documentElement.classList.contains('dark') ? '#0f172a' : '#fff',
+                        color: document.documentElement.classList.contains('dark') ? '#fff' : '#000',
+                        customClass: {
+                          popup: 'rounded-3xl border border-slate-100 dark:border-slate-800 shadow-2xl',
+                          confirmButton: 'rounded-xl px-8 py-3 text-[10px] font-black uppercase tracking-widest',
+                        }
+                      });
+                    }
+                  }}
                   className="w-full text-left px-4 py-3 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center justify-between"
                 >
                   Delete all chat

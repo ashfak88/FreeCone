@@ -75,6 +75,7 @@ export const verifyPayment = async (req: Request, res: Response): Promise<any> =
       razorpay_payment_id,
       razorpay_signature,
       offerId,
+      type: paymentType // "proposal" or "offer"/"advance_payment"
     } = req.body;
 
     const userId = (req as any).user?.id || (req as any).user?._id;
@@ -89,99 +90,152 @@ export const verifyPayment = async (req: Request, res: Response): Promise<any> =
       return res.status(400).json({ message: "Invalid payment signature" });
     }
 
-    // Payment verified! Now update the Offer and create Transactions
-    const offer = await Offer.findById(offerId).populate("freelancer", "name") as any;
-    if (!offer) {
-      return res.status(404).json({ message: "Offer not found" });
+    // 1. Find the relevant document (Offer or Proposal)
+    let paymentDoc: any = null;
+    let freelancerId: any = null;
+    let jobTitle: string = "";
+    let amount: number = 0;
+    let jobId: any = null;
+
+    if (paymentType === "proposal") {
+      const Proposal = (await import("../models/Proposal")).default;
+      paymentDoc = await Proposal.findById(offerId).populate("talent", "name");
+      if (!paymentDoc) return res.status(404).json({ message: "Proposal not found" });
+
+      freelancerId = paymentDoc.talent._id || paymentDoc.talent;
+      amount = paymentDoc.proposedRate;
+      jobId = paymentDoc.job;
+
+      const Job = (await import("../models/Job")).default;
+      const job = await Job.findById(jobId);
+      jobTitle = job?.title || "Project Payment";
+    } else {
+      paymentDoc = await Offer.findById(offerId).populate("freelancer", "name");
+      if (!paymentDoc) return res.status(404).json({ message: "Offer not found" });
+
+      freelancerId = paymentDoc.freelancer._id || paymentDoc.freelancer;
+      amount = paymentDoc.budget;
+      jobTitle = paymentDoc.jobTitle || "Project Payment";
+      jobId = paymentDoc.job;
     }
 
-    if (offer.isPaid) {
+    if (paymentDoc.isPaid) {
       return res.status(200).json({ success: true, message: "Already paid" });
     }
 
-    // Business Logic - same as payOffer in offerController
-    offer.isPaid = true;
-    offer.projectStatus = "active";
-    offer.updates.push({
-      text: "Project started! Payment verified and funds held in escrow.",
-      type: "status_change",
-    });
-    await offer.save();
+    // 2. Mark as Paid and Activate Project
+    paymentDoc.isPaid = true;
+    if (paymentType !== "proposal") {
+      paymentDoc.projectStatus = "active";
+      paymentDoc.updates.push({
+        text: "Project started! Payment verified and funds held in escrow.",
+        type: "status_change",
+      });
+    }
+    await paymentDoc.save();
 
-    // Increment stats
+    // 3. Activate associated Job and increment user stats
     const User = (await import("../models/User")).default;
-    await User.findByIdAndUpdate(userId, { $inc: { totalProjectsStarted: 1 } });
-    await User.findByIdAndUpdate(offer.freelancer._id || offer.freelancer, { $inc: { totalProjectsStarted: 1 } });
-
-    // Handle Job creation/update
     const Job = (await import("../models/Job")).default;
-    if (offer.job) {
-      await Job.findByIdAndUpdate(offer.job, {
-        freelancer: offer.freelancer._id || offer.freelancer,
+
+    await User.findByIdAndUpdate(userId, { $inc: { totalProjectsStarted: 1 } });
+    await User.findByIdAndUpdate(freelancerId, { $inc: { totalProjectsStarted: 1 } });
+
+    if (jobId) {
+      await Job.findByIdAndUpdate(jobId, {
+        freelancer: freelancerId,
         status: "active"
       });
-    } else {
-      const newJob = new Job({
-        user: userId,
-        freelancer: offer.freelancer._id || offer.freelancer,
-        title: offer.jobTitle,
-        description: offer.description,
-        budget: offer.budget,
-        status: "active"
-      });
-      await newJob.save();
-      offer.job = newJob._id;
-      await offer.save();
     }
 
-    // Create Transaction Record for Escrow (THE BUDGET)
+    // 4. Activate associated Offer if this was a Proposal payment
+    if (paymentType === "proposal") {
+      const associatedOffer = await Offer.findOne({ job: jobId, freelancer: freelancerId });
+      if (associatedOffer) {
+        associatedOffer.isPaid = true;
+        associatedOffer.projectStatus = "active";
+        associatedOffer.updates.push({
+          text: "Project started! Funds are now in escrow.",
+          type: "status_change",
+        });
+        await associatedOffer.save();
+      }
+    }
+
+    // 5. Create Transaction Record for Escrow
     const transaction = new Transaction({
       txnId: razorpay_payment_id,
-      amount: offer.budget,
-      currency: "USD", // We track internally in USD
+      amount: amount,
+      currency: "USD",
       sender: userId,
-      receiver: offer.freelancer._id,
+      receiver: freelancerId,
       status: "Escrow",
       type: "Deposit",
-      description: `Razorpay Payment (${razorpay_payment_id}) for '${offer.jobTitle}'`,
-      job: offer.job
+      description: `Razorpay Payment (${razorpay_payment_id}) for '${jobTitle}'`,
+      job: jobId
     });
     await transaction.save();
 
-    // Calculate the fee based on the stored project budget
+    // 6. Create Transaction Record for Platform Commission
     const config = await SystemConfig.findOne({ key: "platformCommission" });
     const platformFeePercent = config ? config.value / 100 : 0.05;
+    const commissionAmount = Math.round(amount * platformFeePercent * 100) / 100;
 
-    // Create Transaction Record for Platform Commission (THE FEE)
-    const commissionAmount = Math.round(offer.budget * platformFeePercent * 100) / 100;
     const commissionTxn = new Transaction({
       txnId: `${razorpay_payment_id}_fee`,
       amount: commissionAmount,
       currency: "USD",
       sender: userId,
-      receiver: userId, // Sender is the source, it goes to "us" (system)
+      receiver: userId,
       status: "Pending",
       type: "Commission",
-      description: `Platform Commission for '${offer.jobTitle}'`,
-      job: offer.job
+      description: `Platform Commission for '${jobTitle}'`,
+      job: jobId
     });
     await commissionTxn.save();
 
-    // Notifications
+    // 7. Notifications
     const paymentConfirmNotif = new Notification({
-      recipient: offer.freelancer._id,
+      recipient: freelancerId,
       sender: userId,
       type: "payment",
-      relatedId: offer._id,
+      relatedId: paymentDoc._id,
       title: "Payment Received",
-      message: `Payment of $${offer.budget} received for '${offer.jobTitle}'. Project is now active!`,
+      message: `Payment of $${amount} received for '${jobTitle}'. Project is now active!`,
     });
     await paymentConfirmNotif.save();
-    emitToUser(offer.freelancer._id, "newNotification", paymentConfirmNotif);
+    emitToUser(freelancerId.toString(), "newNotification", paymentConfirmNotif);
 
-    // Emit updates
-    emitToUser(userId, "escrowUpdate", { offerId: offer._id, amount: offer.budget });
-    emitToUser(offer.freelancer._id, "escrowUpdate", { offerId: offer._id, amount: offer.budget });
+    // 8. Emit updates and update chat message specifically
+    emitToUser(userId.toString(), "escrowUpdate", { offerId: paymentDoc._id, amount: amount });
+    emitToUser(freelancerId.toString(), "escrowUpdate", { offerId: paymentDoc._id, amount: amount });
+
+    // Sync Chat Card Status
+    try {
+      const Message = (await import("../models/Message")).default;
+      const idToSearch = paymentDoc._id.toString();
+
+      const relatedMessages = await Message.find({
+        $or: [
+          { "metadata.offerId": idToSearch },
+          { "metadata.proposalId": idToSearch }
+        ]
+      });
+
+      for (const msg of relatedMessages) {
+        if (!msg.metadata) msg.metadata = {};
+        msg.metadata.isPaid = true;
+        msg.metadata.status = "paid";
+        msg.markModified("metadata");
+        await msg.save();
+
+        const populatedMsg = await Message.findById(msg._id).populate("sender", "name imageUrl");
+        emitToUser(userId.toString(), "messageUpdate", populatedMsg);
+        emitToUser(freelancerId.toString(), "messageUpdate", populatedMsg);
+      }
+    } catch (msgErr) {
+      console.error("   [ERROR] Failed to sync chat message status:", msgErr);
+    }
 
     res.status(200).json({
       success: true,

@@ -345,7 +345,7 @@ export default function MessageInput({ conversationId, recipientId }: MessageInp
         </div>
 
         {/* Input Bar & Recording UI */}
-        <div 
+        <div
           onClick={() => textareaRef.current?.focus()}
           className="flex-1 relative bg-wa-bg-sidebar/50 dark:bg-wa-bg-search flex items-center rounded-xl px-4 py-2 transition-all min-h-[48px] cursor-text"
         >
@@ -390,9 +390,8 @@ export default function MessageInput({ conversationId, recipientId }: MessageInp
               }}
               disabled={isSending}
               style={{ backgroundColor: (content.trim() || isRecording) && !isSending ? '#6A6B4C' : '#202c33' }}
-              className={`flex items-center justify-center size-12 rounded-full transition-all active:scale-90 shadow-lg text-white ${
-                (content.trim() || isRecording) && !isSending ? "hover:scale-105" : "opacity-50 cursor-not-allowed"
-              }`}
+              className={`flex items-center justify-center size-12 rounded-full transition-all active:scale-90 shadow-lg text-white ${(content.trim() || isRecording) && !isSending ? "hover:scale-105" : "opacity-50 cursor-not-allowed"
+                }`}
               title={isRecording ? "Stop recording" : "Send message"}
             >
               {isSending ? (

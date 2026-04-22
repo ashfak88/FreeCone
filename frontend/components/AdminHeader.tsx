@@ -23,17 +23,39 @@ export default function AdminHeader() {
   }, []);
 
   const handleLogout = async () => {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
-    try {
-      await fetch(`${API_URL}/auth/logout`, {
-        method: "POST",
-        credentials: "include",
-      })
-    } catch (_) { }
-    setUser(null)
-    setDropdownOpen(false);
-    router.push("/")
-  }
+    const Swal = (await import('sweetalert2')).default;
+    
+    const result = await Swal.fire({
+      title: 'Ready to Leave?',
+      text: "Are you sure you want to log out of the admin panel?",
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Yes, Log out',
+      cancelButtonText: 'Stay logged in',
+      background: document.documentElement.classList.contains('dark') ? '#0f172a' : '#fff',
+      color: document.documentElement.classList.contains('dark') ? '#fff' : '#000',
+      customClass: {
+        popup: 'rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-2xl',
+        confirmButton: 'rounded-xl px-6 py-3 font-bold uppercase tracking-wider text-[11px] ml-2',
+        cancelButton: 'rounded-xl px-6 py-3 font-bold uppercase tracking-wider text-[11px]'
+      }
+    });
+
+    if (result.isConfirmed) {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
+      try {
+        await fetch(`${API_URL}/auth/logout`, {
+          method: "POST",
+          credentials: "include",
+        });
+      } catch (_) { }
+      setUser(null);
+      setDropdownOpen(false);
+      router.push("/");
+    }
+  };
 
   if (!hasMounted || !user) return null;
 
@@ -59,9 +81,6 @@ export default function AdminHeader() {
       </div>
 
       <div className="flex items-center gap-2 justify-end">
-        <button className="flex size-9 items-center justify-center rounded-full bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-primary transition-colors">
-          <span className="material-symbols-outlined text-[20px]">notifications</span>
-        </button>
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
@@ -87,13 +106,6 @@ export default function AdminHeader() {
                 >
                   <span className="material-symbols-outlined text-[18px]">campaign</span>
                   Broadcast Center
-                </button>
-                <button
-                  onClick={() => { router.push("/admin/dashboard"); setDropdownOpen(false); }}
-                  className="w-full text-left px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors flex items-center gap-2"
-                >
-                  <span className="material-symbols-outlined text-[18px]">dashboard</span>
-                  Dashboard
                 </button>
               </div>
               <div className="border-t border-slate-100 dark:border-slate-700">

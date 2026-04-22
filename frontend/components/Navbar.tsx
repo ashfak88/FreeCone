@@ -12,7 +12,6 @@ export default function Navbar() {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const [isMounted, setIsMounted] = useState(false)
-  const [showProfilePrompt, setShowProfilePrompt] = useState(false)
   const [isExiting, setIsExiting] = useState(false)
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -46,25 +45,6 @@ export default function Navbar() {
     return !isRead;
   }).length;
 
-  const dismissPrompt = () => {
-    setIsExiting(true)
-    setTimeout(() => {
-      setShowProfilePrompt(false)
-      if (user) {
-        localStorage.setItem(`first_login_prompt_seen_${user.id}`, "true");
-      }
-    }, 500)
-  }
-
-  useEffect(() => {
-    if (isMounted && user && !user.isProfileComplete && !localStorage.getItem(`first_login_prompt_seen_${user.id}`)) {
-      setShowProfilePrompt(true);
-      const timer = setTimeout(() => {
-        dismissPrompt();
-      }, 5000); // 7 seconds of visibility
-      return () => clearTimeout(timer);
-    }
-  }, [isMounted, user]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -77,16 +57,38 @@ export default function Navbar() {
   }, []);
 
   const handleLogout = async () => {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
-    try {
-      await fetch(`${API_URL}/auth/logout`, {
-        method: "POST",
-        credentials: "include",
-      });
-    } catch (_) { }
-    setUser(null);
-    setDropdownOpen(false);
-    router.push("/");
+    const Swal = (await import('sweetalert2')).default;
+
+    const result = await Swal.fire({
+      title: 'Sign Out?',
+      text: "Are you sure you want to log out of FreeCone?",
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Yes, Sign out',
+      cancelButtonText: 'Stay',
+      background: document.documentElement.classList.contains('dark') ? '#0f172a' : '#fff',
+      color: document.documentElement.classList.contains('dark') ? '#fff' : '#000',
+      customClass: {
+        popup: 'rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-2xl',
+        confirmButton: 'rounded-xl px-6 py-3 font-bold uppercase tracking-wider text-[11px] ml-2',
+        cancelButton: 'rounded-xl px-6 py-3 font-bold uppercase tracking-wider text-[11px]'
+      }
+    });
+
+    if (result.isConfirmed) {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
+      try {
+        await fetch(`${API_URL}/auth/logout`, {
+          method: "POST",
+          credentials: "include",
+        });
+      } catch (_) { }
+      setUser(null);
+      setDropdownOpen(false);
+      router.push("/");
+    }
   };
 
   return (
@@ -151,7 +153,6 @@ export default function Navbar() {
                       title="Profile"
                       onClick={() => {
                         setDropdownOpen(!dropdownOpen);
-                        if (showProfilePrompt) dismissPrompt();
                       }}
                       className="h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
                     >
@@ -162,12 +163,6 @@ export default function Navbar() {
                       />
                     </div>
 
-                    {showProfilePrompt && (
-                      <div className={`absolute right-0 top-full mt-3 whitespace-nowrap bg-green-700 text-white text-[13px] font-black px-5 py-2 rounded-full shadow-2xl shadow-green-500/30 transition-all duration-500 ${isExiting ? "opacity-0 scale-90 -translate-y-2" : "opacity-100 scale-100 translate-y-0 animate-in fade-in slide-in-from-top-2 duration-300"} pointer-events-none z-[60]`}>
-                        Complete your profile 🚀
-                        <div className="absolute bottom-full right-4 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[8px] border-b-green-500"></div>
-                      </div>
-                    )}
 
                     {dropdownOpen && (
                       <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-100 dark:border-slate-700 overflow-hidden z-50">

@@ -23,15 +23,25 @@ export const registerUser = async (req: Request, res: Response): Promise<any> =>
       return res.status(400).json({ message: "Please enter all required fields" });
     }
 
+    if (password.length < 6) {
+      return res.status(400).json({ message: "Password must be at least 6 characters long" });
+    }
+
+    const hasLetter = /[a-zA-Z]/.test(password);
+    const hasDigit = /[0-9]/.test(password);
+    if (!hasLetter || !hasDigit) {
+      return res.status(400).json({ message: "Password must contain both letters and numbers" });
+    }
+
     // CHECK MAINTENANCE MODE: Only admins can register (though usually admins are created differently, 
     // but this prevents regular users from registering during maintenance)
     const maintenance = await SystemConfig.findOne({ key: "maintenanceMode" });
     const isMaintenance = maintenance ? (maintenance.value === true || String(maintenance.value).toLowerCase() === "true") : false;
 
     if (isMaintenance) {
-      return res.status(503).json({ 
+      return res.status(503).json({
         message: "System is under maintenance. Registration is temporarily disabled.",
-        maintenance: true 
+        maintenance: true
       });
     }
 
@@ -100,12 +110,12 @@ export const loginUser = async (req: Request, res: Response): Promise<any> => {
     if (isMaintenance) {
       const role = (user.role || "").toLowerCase();
       console.log(`   [MAINTENANCE] Login attempt by role: ${role}`);
-      
+
       if (role !== "admin") {
         console.log(`   [MAINTENANCE] BLOCKING non-admin login: ${user.email}`);
-        return res.status(503).json({ 
+        return res.status(503).json({
           message: "System is under maintenance. Only administrators can login at this time.",
-          maintenance: true 
+          maintenance: true
         });
       }
       console.log(`   [MAINTENANCE] ALLOWING admin login: ${user.email}`);
@@ -120,7 +130,7 @@ export const loginUser = async (req: Request, res: Response): Promise<any> => {
       timestamp: new Date(),
       status: "Successful"
     });
-    
+
     // Keep only last 10 entries
     if (user.loginHistory.length > 10) {
       user.loginHistory = user.loginHistory.slice(0, 10);
@@ -179,14 +189,14 @@ export const refreshToken = async (req: Request, res: Response): Promise<any> =>
     const isMaintenance = maintenance ? (maintenance.value === true || String(maintenance.value).toLowerCase() === "true") : false;
 
     if (isMaintenance) {
-       const role = (user.role || "").toLowerCase();
-       if (role !== "admin") {
-         console.log(`   [MAINTENANCE] BLOCKING non-admin refresh: ${user.email}`);
-         return res.status(503).json({ 
-           message: "System is under maintenance. Access restricted to administrators.",
-           maintenance: true 
-         });
-       }
+      const role = (user.role || "").toLowerCase();
+      if (role !== "admin") {
+        console.log(`   [MAINTENANCE] BLOCKING non-admin refresh: ${user.email}`);
+        return res.status(503).json({
+          message: "System is under maintenance. Access restricted to administrators.",
+          maintenance: true
+        });
+      }
     }
 
     const newAccessToken = jwt.sign({ id: user._id, role: user.role }, accessSecret, { expiresIn: "24h" });
@@ -226,7 +236,7 @@ export const googleCallback = async (req: Request, res: Response) => {
   if (isMaintenanceActive) {
     const role = (user.role || "").toLowerCase();
     console.log(`   [MAINTENANCE] Google login attempt by role: ${role}`);
-    
+
     if (role !== "admin") {
       console.log(`   [MAINTENANCE] BLOCKING non-admin Google login: ${user.email}`);
       const targetFrontend = process.env.FRONTEND_URL;

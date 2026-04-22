@@ -68,20 +68,16 @@ export default function EnterprisePage() {
               transition={{ delay: 0.7 }}
               className="pt-8 flex flex-col md:flex-row items-center justify-center gap-4"
             >
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.98 }}
-                className="bg-primary text-on-primary px-10 py-5 rounded-2xl font-black text-sm uppercase tracking-widest shadow-2xl shadow-primary/30 flex items-center gap-2 group"
-              >
-                Talk to Sales <span className="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.05, backgroundColor: "var(--color-surface-container)" }}
-                whileTap={{ scale: 0.98 }}
-                className="bg-surface text-on-surface border border-outline-variant px-10 py-5 rounded-2xl font-black text-sm uppercase tracking-widest transition-colors"
-              >
-                View Solutions
-              </motion.button>
+              <Link href="#solutions">
+                <motion.button
+                  whileHover={{ scale: 1.05, backgroundColor: "var(--color-surface-container)", y: -8 }}
+                  whileTap={{ scale: 0.98 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                  className="bg-surface text-on-surface border border-outline-variant px-10 py-5 rounded-2xl font-black text-sm uppercase tracking-widest transition-colors shadow-xl"
+                >
+                  View Solutions
+                </motion.button>
+              </Link>
             </motion.div>
           </motion.div>
 
@@ -128,7 +124,7 @@ export default function EnterprisePage() {
         </section>
 
         {/* Value Proposition Grid */}
-        <section className="py-32 bg-surface-dim relative overflow-hidden">
+        <section id="solutions" className="py-32 bg-surface-dim relative overflow-hidden">
           <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -mr-48 -mt-48"></div>
 
           <div className="max-w-7xl mx-auto px-4 grid md:grid-cols-2 gap-20 items-center">
@@ -326,22 +322,17 @@ export default function EnterprisePage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.7 }}
-              className="flex flex-col sm:flex-row gap-6 justify-center"
+              className="flex justify-center"
             >
-              <motion.button
-                whileHover={{ scale: 1.05 }}
+              <motion.a
+                whileHover={{ scale: 1.05, y: -8 }}
                 whileTap={{ scale: 0.95 }}
+                transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                href="mailto:ashfakkp232@gmail.com"
                 className="bg-primary text-on-primary px-12 py-6 rounded-[2rem] font-black text-sm uppercase tracking-widest shadow-2xl shadow-primary/40 flex items-center justify-center gap-2"
               >
                 Contact Strategy Team
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.05, backgroundColor: "var(--color-surface-dim)" }}
-                whileTap={{ scale: 0.95 }}
-                className="bg-white border border-outline px-12 py-6 rounded-[2rem] font-black text-sm uppercase tracking-widest transition-all"
-              >
-                Request a Demo
-              </motion.button>
+              </motion.a>
             </motion.div>
 
             <motion.p

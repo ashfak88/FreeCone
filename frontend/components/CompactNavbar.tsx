@@ -38,16 +38,38 @@ export default function CompactNavbar({ title }: CompactNavbarProps) {
   }, []);
 
   const handleLogout = async () => {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
-    try {
-      await fetch(`${API_URL}/auth/logout`, {
-        method: "POST",
-        credentials: "include",
-      });
-    } catch (_) { }
-    setUser(null);
-    setDropdownOpen(false);
-    router.push("/");
+    const Swal = (await import('sweetalert2')).default;
+    
+    const result = await Swal.fire({
+      title: 'Ready to Leave?',
+      text: "Are you sure you want to log out?",
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Yes, Log out',
+      cancelButtonText: 'Stay',
+      background: document.documentElement.classList.contains('dark') ? '#0f172a' : '#fff',
+      color: document.documentElement.classList.contains('dark') ? '#fff' : '#000',
+      customClass: {
+        popup: 'rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-2xl',
+        confirmButton: 'rounded-xl px-6 py-3 font-bold uppercase tracking-wider text-[11px] ml-2',
+        cancelButton: 'rounded-xl px-6 py-3 font-bold uppercase tracking-wider text-[11px]'
+      }
+    });
+
+    if (result.isConfirmed) {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
+      try {
+        await fetch(`${API_URL}/auth/logout`, {
+          method: "POST",
+          credentials: "include",
+        });
+      } catch (_) { }
+      setUser(null);
+      setDropdownOpen(false);
+      router.push("/");
+    }
   };
 
   if (!isMounted) return null;
@@ -58,8 +80,8 @@ export default function CompactNavbar({ title }: CompactNavbarProps) {
         <div className="flex justify-between h-16 items-center">
           {/* Left: Back Button */}
           <div className="flex-1 flex justify-start -ml-2">
-            <button 
-              onClick={() => router.back()} 
+            <button
+              onClick={() => router.back()}
               className="flex items-center justify-center rounded-full w-10 h-10 text-slate-500 hover:text-primary hover:bg-primary/10 transition-all duration-300"
               title="Go Back"
             >
@@ -144,13 +166,13 @@ export default function CompactNavbar({ title }: CompactNavbarProps) {
               </>
             ) : (
               <div className="flex items-center gap-3">
-                <button 
+                <button
                   onClick={() => router.push("/login")}
                   className="text-sm font-semibold text-slate-700 dark:text-slate-300 hover:text-primary transition-colors"
                 >
                   Log In
                 </button>
-                <button 
+                <button
                   onClick={() => router.push("/register")}
                   className="bg-primary text-white px-5 py-2 rounded-lg text-sm font-bold hover:bg-primary/90 transition-all shadow-sm"
                 >

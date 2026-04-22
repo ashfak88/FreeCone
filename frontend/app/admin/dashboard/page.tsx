@@ -76,11 +76,52 @@ export default function AdminDashboard() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-background-light dark:bg-background-dark">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-slate-500 font-medium animate-pulse">Loading Platform Data...</p>
-        </div>
+      <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display">
+        <AdminHeader />
+        <main className="flex-1 pb-32">
+          {/* Skeleton Hero */}
+          <section className="p-4 bg-primary/95 animate-pulse mb-6 rounded-b-[40px]">
+            <div className="flex flex-col gap-2">
+              <div className="h-4 w-40 bg-white/20 rounded-lg"></div>
+              <div className="h-8 w-60 bg-white/30 rounded-xl"></div>
+            </div>
+            <div className="mt-8 grid grid-cols-2 gap-3">
+              <div className="h-32 bg-white/10 backdrop-blur-md rounded-2xl border border-white/5"></div>
+              <div className="h-32 bg-white/10 backdrop-blur-md rounded-2xl border border-white/5"></div>
+            </div>
+          </section>
+
+          {/* Skeleton Metrics */}
+          <section className="px-4 space-y-4">
+            <div className="h-6 w-32 bg-slate-200 dark:bg-slate-800 rounded-lg animate-pulse"></div>
+            <div className="grid grid-cols-1 gap-4">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="h-24 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 animate-pulse"></div>
+              ))}
+            </div>
+          </section>
+
+          {/* Skeleton Chart */}
+          <section className="mt-8 px-4">
+            <div className="h-64 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 animate-pulse relative overflow-hidden">
+               <div className="absolute inset-0 bg-gradient-to-t from-transparent via-slate-50/10 to-transparent animate-shimmer"></div>
+            </div>
+          </section>
+
+          {/* Skeleton List */}
+          <section className="mt-8 px-4">
+            <div className="flex items-center justify-between mb-4">
+              <div className="h-6 w-40 bg-slate-200 dark:bg-slate-800 rounded-lg animate-pulse"></div>
+              <div className="h-4 w-20 bg-slate-100 dark:bg-slate-800 rounded-lg animate-pulse"></div>
+            </div>
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-20 bg-white dark:bg-slate-900 rounded-xl border border-slate-50 dark:border-slate-800 animate-pulse"></div>
+              ))}
+            </div>
+          </section>
+        </main>
+        <BottomNavbar />
       </div>
     );
   }

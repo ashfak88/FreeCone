@@ -5,11 +5,13 @@ import DashboardHeader from "@/components/DashboardHeader";
 import { useStore } from "@/lib/store";
 import Swal from "sweetalert2";
 import { API_URL, handleResponse } from "@/lib/api";
+import ChangePasswordModal from "@/components/ChangePasswordModal";
 
 type SecurityActionType = "success" | "info" | "warning" | "error" | "question";
 
 export default function SecurityPage() {
   const { user } = useStore();
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
 
   // Simulated handlers for UI interaction
@@ -26,60 +28,8 @@ export default function SecurityPage() {
     });
   };
 
-  const handleChangePassword = async () => {
-    const { value: formValues } = await Swal.fire({
-      title: 'Update Password',
-      html:
-        '<div class="space-y-4">' +
-        '<input id="old-pass" type="password" class="swal2-input !mx-0 !w-full" placeholder="Current Password">' +
-        '<input id="new-pass" type="password" class="swal2-input !mx-0 !w-full" placeholder="New Password">' +
-        '<input id="confirm-pass" type="password" class="swal2-input !mx-0 !w-full" placeholder="Confirm New Password">' +
-        '</div>',
-      focusConfirm: false,
-      showCancelButton: true,
-      confirmButtonText: 'Update Now',
-      confirmButtonColor: '#6A6B4C',
-      preConfirm: () => {
-        const oldPass = (document.getElementById('old-pass') as HTMLInputElement).value;
-        const newPass = (document.getElementById('new-pass') as HTMLInputElement).value;
-        const confirmPass = (document.getElementById('confirm-pass') as HTMLInputElement).value;
-
-        if (!oldPass || !newPass || !confirmPass) {
-          Swal.showValidationMessage('Please fill in all fields');
-          return false;
-        }
-        if (newPass !== confirmPass) {
-          Swal.showValidationMessage('New passwords do not match');
-          return false;
-        }
-        if (newPass.length < 6) {
-          Swal.showValidationMessage('Password must be at least 6 characters');
-          return false;
-        }
-        return { oldPassword: oldPass, newPassword: newPass };
-      }
-    });
-
-    if (formValues) {
-      try {
-        const token = localStorage.getItem("accessToken");
-        const res = await fetch(`${API_URL}/users/change-password`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
-          },
-          body: JSON.stringify(formValues)
-        });
-
-        const data = await handleResponse(res);
-        if (data) {
-          handleAction("Success", "Your password has been updated successfully.", "success");
-        }
-      } catch (err: any) {
-        handleAction("Error", err.message || "Failed to update password.", "error");
-      }
-    }
+  const handleChangePassword = () => {
+    setIsPasswordModalOpen(true);
   };
 
 
@@ -151,10 +101,11 @@ export default function SecurityPage() {
                 }
               }
             }}
-            className="absolute top-4 right-4 z-20 bg-slate-100 dark:bg-slate-800 p-2 rounded-lg hover:bg-primary hover:text-white transition-all group"
+            className="absolute top-4 right-4 z-20 bg-slate-100 dark:bg-slate-800 px-3 py-2 rounded-lg hover:bg-red-500 hover:text-white transition-all group flex items-center gap-1.5"
             title="Report to Admin"
           >
-            <span className="material-symbols-outlined">report_gmailerrorred</span>
+            <span className="material-symbols-outlined text-lg">report_gmailerrorred</span>
+            <span className="text-[10px] font-black uppercase tracking-wider">Report</span>
           </button>
         </section>
 
@@ -255,6 +206,10 @@ export default function SecurityPage() {
           </div>
         </div>
       </main>
+      <ChangePasswordModal 
+        isOpen={isPasswordModalOpen} 
+        onClose={() => setIsPasswordModalOpen(false)} 
+      />
     </div>
   );
 }

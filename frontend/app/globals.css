@@ -119,3 +119,11 @@ custom-scrollbar::-webkit-scrollbar-track {
   animation: logo-jump 3s ease-in-out infinite;
   animation-delay: 0.2s;
 }
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
