@@ -55,6 +55,7 @@ export interface User {
       expiry?: string;
     };
   };
+  showAsFreelancer?: boolean;
   createdAt: string;
 }
 

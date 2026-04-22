@@ -221,7 +221,8 @@ export default function ProfilePage() {
         upiId: user.paymentAccount?.upiId || "",
         cardHolderName: user.paymentAccount?.cardDetails?.holderName || "",
         cardLast4: user.paymentAccount?.cardDetails?.last4 || "",
-        cardExpiry: user.paymentAccount?.cardDetails?.expiry || ""
+        cardExpiry: user.paymentAccount?.cardDetails?.expiry || "",
+        showAsFreelancer: user.showAsFreelancer || false
       });
       setSkills(user.skills || []);
       setSkillInput("");
