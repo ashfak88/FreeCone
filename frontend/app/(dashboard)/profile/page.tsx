@@ -37,25 +37,27 @@ export default function ProfilePage() {
   const [showCropper, setShowCropper] = useState(false);
 
   // Initialize from user if it becomes available later (e.g. hydration/fetch)
-  // But only if currently empty to avoid overwriting edits
   useEffect(() => {
-    if (user && !formData.name && !formData.email) {
-      setFormData({
-        name: user.name || "",
-        email: user.email || "",
-        title: user.title || "",
-        bio: user.bio || "",
-        location: user.location || "",
-        rate: user.rate || 0,
-        upiId: user.paymentAccount?.upiId || "",
-        cardHolderName: user.paymentAccount?.cardDetails?.holderName || "",
-        cardLast4: user.paymentAccount?.cardDetails?.last4 || "",
-        cardExpiry: user.paymentAccount?.cardDetails?.expiry || "",
-        showAsFreelancer: user.showAsFreelancer || false
-      });
-      setSkills(user.skills || []);
+    if (user) {
+      setFormData((prev) => ({
+        ...prev,
+        // Only fill if empty to avoid overwriting user edits
+        name: prev.name || user.name || "",
+        email: prev.email || user.email || "",
+        title: prev.title || user.title || "",
+        bio: prev.bio || user.bio || "",
+        location: prev.location || user.location || "",
+        rate: prev.rate || user.rate || 0,
+        upiId: prev.upiId || user.paymentAccount?.upiId || "",
+        cardHolderName: prev.cardHolderName || user.paymentAccount?.cardDetails?.holderName || "",
+        cardLast4: prev.cardLast4 || user.paymentAccount?.cardDetails?.last4 || "",
+        cardExpiry: prev.cardExpiry || user.paymentAccount?.cardDetails?.expiry || "",
+        // Sync visibility from store
+        showAsFreelancer: user.showAsFreelancer ?? false
+      }));
+      setSkills((prev) => prev.length === 0 ? (user.skills || []) : prev);
     }
-  }, [user]);
+  }, [user?.id, user?.showAsFreelancer]); // Re-run if user ID or visibility setting changes in store
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value, type } = e.target;

@@ -25,7 +25,7 @@ export default function PaymentPage() {
   const { id } = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user } = useStore();
+  const { user, updateOfferLocally, updateProposalLocally } = useStore();
 
   const [offer, setOffer] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -179,7 +179,15 @@ export default function PaymentPage() {
             const verifyData = await handleResponse(verifyRes);
             if (verifyData) {
               setSuccess(true);
-              setOffer((prev: any) => ({ ...prev, isPaid: true }));
+              const updated = verifyData.updatedDoc || { ...offer, isPaid: true };
+              setOffer(updated);
+              
+              // Update global store instantly
+              if (searchParams.get("type") === "proposal") {
+                updateProposalLocally(updated);
+              } else {
+                updateOfferLocally(updated);
+              }
             }
           } catch (err: any) {
             setPayError("Verification connection error. Please contact support.");

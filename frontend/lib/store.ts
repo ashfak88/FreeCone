@@ -234,6 +234,7 @@ interface AppState {
   markNotificationAsRead: (id: string) => Promise<void>;
   markAllNotificationsAsRead: () => Promise<void>;
   markAllNotificationsAsUnread: () => Promise<void>;
+  addNotificationLocally: (notification: any) => void;
 
   // User-specific Job/Proposal State
   myJobs: Job[];
@@ -245,6 +246,8 @@ interface AppState {
   fetchReceivedProposals: () => Promise<void>;
   updateProposalStatus: (id: string, status: 'accepted' | 'rejected') => Promise<void>;
   markProposalAsViewed: (id: string) => Promise<void>;
+  updateProposalLocally: (proposal: any) => void;
+  updateOfferLocally: (offer: any) => void;
 
   // Chat/Message State
   conversations: Conversation[];
@@ -1046,5 +1049,62 @@ export const useStore = create<AppState>((set, get) => {
         })
       }));
     },
+    addNotificationLocally: (notification) => {
+      const { notifications, sentNotifications, user } = get();
+      if (!user) return;
+      const myId = user._id || user.id;
+      
+      const isRecipient = notification.recipient === myId || (typeof notification.recipient === 'object' && (notification.recipient._id === myId || notification.recipient.id === myId));
+      const isSender = notification.sender === myId || (typeof notification.sender === 'object' && (notification.sender._id === myId || notification.sender.id === myId));
+
+      if (isRecipient) {
+        const exists = notifications.some(n => n._id === notification._id);
+        if (!exists) {
+          set({ notifications: [notification, ...notifications] });
+        }
+      }
+      if (isSender) {
+        const exists = sentNotifications.some(n => n._id === notification._id);
+        if (!exists) {
+          set({ sentNotifications: [notification, ...sentNotifications] });
+        }
+      }
+    },
+    updateOfferLocally: (offer) => {
+      const { offers } = get();
+      const exists = offers.some(o => o._id === offer._id);
+      if (exists) {
+        set({ offers: offers.map(o => o._id === offer._id ? offer : o) });
+      } else {
+        set({ offers: [offer, ...offers] });
+      }
+    },
+    updateProposalLocally: (proposal) => {
+      const { myProposals, receivedProposals, user } = get();
+      if (!user) return;
+      const myId = user._id || user.id;
+
+      // Check if it's my proposal (sent)
+      const isMyProp = (proposal.talent?._id || proposal.talent) === myId;
+      if (isMyProp) {
+        const exists = myProposals.some(p => p._id === proposal._id);
+        if (exists) {
+          set({ myProposals: myProposals.map(p => p._id === proposal._id ? proposal : p) });
+        } else {
+          set({ myProposals: [proposal, ...myProposals] });
+        }
+      }
+
+      // Check if it's received proposal (on my job)
+      const isReceived = (proposal.job?.user === myId || proposal.job?.user?._id === myId);
+      if (isReceived) {
+        const exists = receivedProposals.some(p => p._id === proposal._id);
+        if (exists) {
+          set({ receivedProposals: receivedProposals.map(p => p._id === proposal._id ? proposal : p) });
+        } else {
+          set({ receivedProposals: [proposal, ...receivedProposals] });
+        }
+      }
+    }
   }
 });

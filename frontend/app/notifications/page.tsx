@@ -48,10 +48,14 @@ export default function NotificationsPage() {
       await markNotificationAsRead(notif.id);
     }
 
-    if (notif.type === "offer") {
-      const offer = offers.find(o => o._id === notif.relatedId || o._id === notif.id);
-      if (offer) {
-        setSelectedOffer(offer);
+    if (notif.type === "offer" || notif.type === "completion_request") {
+      if (notif.relatedId) {
+        router.push(`/projects/${notif.relatedId}`);
+      } else {
+        const offer = offers.find(o => o._id === notif.relatedId || o._id === notif.id);
+        if (offer) {
+          setSelectedOffer(offer);
+        }
       }
     } else if (notif.type === "proposal") {
       setSelectedProposal(notif);

@@ -20,9 +20,9 @@ interface EscrowSummary {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { 
-    user, 
-    fetchOffers, 
+  const {
+    user,
+    fetchOffers,
     fetchMyJobs,
     fetchMyProposals,
     fetchReceivedProposals,
@@ -38,6 +38,9 @@ export default function DashboardPage() {
     notifications,
     sentNotifications,
     fetchNotifications,
+    addNotificationLocally,
+    updateOfferLocally,
+    updateProposalLocally,
     isDarkMode
   } = useStore();
 
@@ -70,6 +73,7 @@ export default function DashboardPage() {
   useEffect(() => {
     fetchOffers();
     fetchMyJobs();
+    fetchMyProposals();
     fetchReceivedProposals();
     fetchEscrow();
     fetchTransactions();
@@ -79,32 +83,43 @@ export default function DashboardPage() {
     // Socket.io Real-time Listeners
     const socket = socketService.getSocket();
     if (socket) {
-      const handleUpdate = () => {
-        fetchOffers();
-        fetchMyJobs();
-        fetchMyProposals();
-        fetchReceivedProposals();
-        fetchProfile();
+      // Use local updates for immediate smoothness
+      const handleNewNotification = (notif: any) => {
+        addNotificationLocally(notif);
+      };
+
+      const handleNotificationUpdate = (notif: any) => {
+        // Sync both directions if a notification status changed
         fetchNotifications('received');
         fetchNotifications('sent');
       };
+
+      const handleOfferUpdate = (offer: any) => {
+        updateOfferLocally(offer);
+        fetchEscrow(); // Sync financial stats which might depend on offer status
+      };
+
+      const handleProposalUpdate = (proposal: any) => {
+        updateProposalLocally(proposal);
+      };
+
       const handleEscrowUpdate = () => {
         fetchEscrow();
         fetchTransactions();
         fetchProfile();
       };
 
-      socket.on("newNotification", handleUpdate);
-      socket.on("notificationUpdate", handleUpdate);
-      socket.on("offerUpdate", handleUpdate);
-      socket.on("proposalUpdate", handleUpdate);
+      socket.on("newNotification", handleNewNotification);
+      socket.on("notificationUpdate", handleNotificationUpdate);
+      socket.on("offerUpdate", handleOfferUpdate);
+      socket.on("proposalUpdate", handleProposalUpdate);
       socket.on("escrowUpdate", handleEscrowUpdate);
 
       return () => {
-        socket.off("newNotification", handleUpdate);
-        socket.off("notificationUpdate", handleUpdate);
-        socket.off("offerUpdate", handleUpdate);
-        socket.off("proposalUpdate", handleUpdate);
+        socket.off("newNotification", handleNewNotification);
+        socket.off("notificationUpdate", handleNotificationUpdate);
+        socket.off("offerUpdate", handleOfferUpdate);
+        socket.off("proposalUpdate", handleProposalUpdate);
         socket.off("escrowUpdate", handleEscrowUpdate);
       };
     }
@@ -128,18 +143,80 @@ export default function DashboardPage() {
   const totalFinancial = isClientRole
     ? (escrow?.totalSpent ?? 0)
     : (escrow?.totalEarned ?? 0);
-  
-  // Combine sent and received notifications for Recent Activity
+
+  // Combine notifications, offers, and proposals for Recent Activity
   const combinedActivity = React.useMemo(() => {
-    const all = [
+    const rawNotifications = [
       ...(Array.isArray(notifications) ? notifications : []),
       ...(Array.isArray(sentNotifications) ? sentNotifications : [])
     ];
+
+    // Track related IDs of notifications to avoid duplicates mapping
+    const notifiedRelatedIds = new Set(
+      rawNotifications.map(n => n.relatedId?.toString()).filter(Boolean)
+    );
+
+    // Map raw Offers to activity items if they don't have a notification
+    const offerActivity = (Array.isArray(offers) ? offers : [])
+      .filter(o => !notifiedRelatedIds.has(o._id?.toString()))
+      .map(o => ({
+        _id: o._id,
+        type: "offer",
+        title: (o.client?._id === user?.id || o.client === user?.id) ? "Offer Sent" : "New Offer Received",
+        message: `Project: ${o.jobTitle} - Budget: $${o.budget}`,
+        createdAt: o.createdAt,
+        isRead: true // Offers handled directly are seen in their respective pages
+      }));
+
+    // Map received proposals that aren't already in notifications
+    const receivedProposalActivity = (Array.isArray(receivedProposals) ? receivedProposals : [])
+      .filter(p => !notifiedRelatedIds.has(p._id?.toString()))
+      .map(p => ({
+        _id: p._id,
+        type: "proposal",
+        title: "New Proposal Received",
+        message: `Job: ${p.job?.title || 'Project'} - Proposed Rate: $${p.proposedRate}`,
+        createdAt: p.createdAt,
+        isRead: true
+      }));
+
+    // Map sent proposals that aren't already in notifications
+    const myProposalActivity = (Array.isArray(myProposals) ? myProposals : [])
+      .filter(p => !notifiedRelatedIds.has(p._id?.toString()))
+      .map(p => ({
+        _id: p._id,
+        type: "proposal",
+        title: "Proposal Sent",
+        message: `Applied for: ${p.job?.title || 'Project'} @ $${p.proposedRate}`,
+        createdAt: p.createdAt,
+        isRead: true
+      }));
+
+    const all = [
+      ...rawNotifications,
+      ...offerActivity,
+      ...receivedProposalActivity,
+      ...myProposalActivity
+    ];
+
     // Sort by createdAt descending
-    return all.sort((a: any, b: any) => 
+    return all.sort((a: any, b: any) =>
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
-  }, [notifications, sentNotifications]);
+  }, [notifications, sentNotifications, offers, myProposals, receivedProposals, user?.id]);
+
+  const handleActivityClick = (activity: any) => {
+    const type = activity.type;
+    const relatedId = activity.relatedId || activity._id;
+
+    if (type === 'offer' || type === 'completion_request' || type === 'payment') {
+      router.push(`/projects/${relatedId}`);
+    } else if (type === 'proposal') {
+      router.push(`/proposals`);
+    } else if (type === 'message') {
+      router.push('/messages');
+    }
+  };
 
   return (
     <div>
@@ -156,7 +233,7 @@ export default function DashboardPage() {
         {/* Stats Row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
 
-          <button 
+          <button
             onClick={() => setHistoryModal({ isOpen: true, title: isClientRole ? "Spending History" : "Total Earnings", type: isClientRole ? "spending" : "earnings" })}
             className="bg-white hover:bg-slate-50 transition-all cursor-pointer rounded-xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between text-left group"
           >
@@ -178,13 +255,12 @@ export default function DashboardPage() {
           </button>
 
           {/* Card 2 — Escrow Balance */}
-          <button 
+          <button
             onClick={() => setHistoryModal({ isOpen: true, title: "Escrow History", type: "escrow" })}
-            className={`rounded-xl border p-6 shadow-sm flex flex-col justify-between text-left group transition-all cursor-pointer ${
-            escrowBalance > 0
+            className={`rounded-xl border p-6 shadow-sm flex flex-col justify-between text-left group transition-all cursor-pointer ${escrowBalance > 0
               ? "bg-gradient-to-br from-amber-50 to-yellow-50 border-amber-200 hover:shadow-lg hover:shadow-amber-100"
               : "bg-white border-slate-200 hover:border-slate-300"
-          }`}>
+              }`}>
             <div className="flex justify-between items-start mb-4">
               <p className="text-sm font-semibold text-slate-500">In Escrow</p>
               <span className={`material-symbols-outlined text-xl group-hover:scale-110 transition-transform ${escrowBalance > 0 ? "text-amber-500" : "text-slate-400"}`}>
@@ -334,8 +410,8 @@ export default function DashboardPage() {
                 {myProposals.length > 0 ? (
                   <div className="space-y-4">
                     {myProposals.slice(0, 3).map((proposal: any) => (
-                      <div 
-                        key={proposal._id} 
+                      <div
+                        key={proposal._id}
                         onClick={() => router.push(`/jobs/${proposal.job?._id || proposal.job}`)}
                         className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:border-primary transition-all cursor-pointer"
                       >
@@ -348,12 +424,11 @@ export default function DashboardPage() {
                               <span className="text-xs text-slate-400 font-medium">{new Date(proposal.createdAt).toLocaleDateString()}</span>
                             </div>
                           </div>
-                          <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-lg ${
-                            proposal.status === 'pending' ? 'bg-amber-100 text-amber-600' :
+                          <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-lg ${proposal.status === 'pending' ? 'bg-amber-100 text-amber-600' :
                             proposal.status === 'viewed' ? 'bg-blue-100 text-blue-600' :
-                            proposal.status === 'accepted' ? 'bg-emerald-100 text-emerald-600' :
-                            'bg-red-100 text-red-600'
-                          }`}>
+                              proposal.status === 'accepted' ? 'bg-emerald-100 text-emerald-600' :
+                                'bg-red-100 text-red-600'
+                            }`}>
                             {proposal.status}
                           </span>
                         </div>
@@ -448,6 +523,7 @@ export default function DashboardPage() {
                       message={activity.message}
                       createdAt={activity.createdAt}
                       isRead={activity.isRead}
+                      onClick={() => handleActivityClick(activity)}
                     />
                   ))}
                 </div>
@@ -487,7 +563,7 @@ export default function DashboardPage() {
         title={historyModal.title}
         type={historyModal.type}
         transactions={
-          historyModal.type === 'escrow' 
+          historyModal.type === 'escrow'
             ? transactions.filter(t => t.status === 'Escrow')
             : transactions.filter(t => t.status === 'Success')
         }

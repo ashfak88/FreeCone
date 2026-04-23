@@ -208,7 +208,13 @@ export const verifyPayment = async (req: Request, res: Response): Promise<any> =
 
     // 8. Emit updates and update chat message specifically
     emitToUser(userId.toString(), "escrowUpdate", { offerId: paymentDoc._id, amount: amount });
-    emitToUser(freelancerId.toString(), "escrowUpdate", { offerId: paymentDoc._id, amount: amount });
+    if (paymentType === "proposal") {
+      emitToUser(userId.toString(), "proposalUpdate", paymentDoc);
+      emitToUser(freelancerId.toString(), "proposalUpdate", paymentDoc);
+    } else {
+      emitToUser(userId.toString(), "offerUpdate", paymentDoc);
+      emitToUser(freelancerId.toString(), "offerUpdate", paymentDoc);
+    }
 
     // Sync Chat Card Status
     try {
@@ -240,7 +246,8 @@ export const verifyPayment = async (req: Request, res: Response): Promise<any> =
     res.status(200).json({
       success: true,
       message: "Payment verified successfully",
-      transactionId: transaction._id
+      transactionId: transaction._id,
+      updatedDoc: paymentDoc
     });
 
   } catch (error: any) {

@@ -375,9 +375,6 @@ export default function AdminUserDetailPage() {
                     <span className="material-symbols-outlined text-sm">campaign</span>
                     Send Direct Notification
                   </button>
-                  <button className="w-full bg-white/10 dark:bg-slate-900/10 border border-white/20 dark:border-slate-900/20 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all">
-                    Reset Security Keys
-                  </button>
                 </div>
               </div>
 

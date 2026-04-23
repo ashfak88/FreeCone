@@ -56,22 +56,14 @@ export const registerUser = async (req: Request, res: Response): Promise<any> =>
     user = new User({ name, email, password: hashedPassword });
     await user.save();
 
+    const userObject = user.toObject();
+    delete userObject.password;
+
     res.status(201).json({
       message: "User registered successfully",
       user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        title: user.title,
-        bio: user.bio,
-        location: user.location,
-        skills: user.skills,
-        rate: user.rate,
-        imageUrl: user.imageUrl,
-        portfolio: user.portfolio,
-        socialLinks: user.socialLinks,
-        isProfileComplete: user.isProfileComplete
+        ...userObject,
+        id: user._id
       },
     });
   } catch (err: any) {
@@ -140,25 +132,15 @@ export const loginUser = async (req: Request, res: Response): Promise<any> => {
 
     const accessToken = generateAccessToken(String(user._id), user.role);
 
+    const userObject = user.toObject();
+    delete userObject.password;
+
     res.json({
       message: "Logged in successfully",
       accessToken,
-
       user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        title: user.title,
-        bio: user.bio,
-        location: user.location,
-        skills: user.skills,
-        rate: user.rate,
-        imageUrl: user.imageUrl,
-        portfolio: user.portfolio,
-        socialLinks: user.socialLinks,
-        loginHistory: user.loginHistory, // Include in response
-        isProfileComplete: user.isProfileComplete
+        ...userObject,
+        id: user._id
       },
     });
   } catch (err: any) {
@@ -259,18 +241,12 @@ export const googleCallback = async (req: Request, res: Response) => {
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 
+  const userObject = user.toObject();
+  delete userObject.password;
+  
   const userInfo = {
-    id: user._id,
-    name: user.name,
-    email: user.email,
-    role: user.role,
-    title: user.title,
-    bio: user.bio,
-    location: user.location,
-    skills: user.skills,
-    rate: user.rate,
-    imageUrl: user.imageUrl,
-    isProfileComplete: user.isProfileComplete
+    ...userObject,
+    id: user._id
   };
 
   const targetFrontend = process.env.FRONTEND_URL;

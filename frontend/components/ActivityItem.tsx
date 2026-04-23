@@ -18,6 +18,7 @@ interface ActivityItemProps {
   message: string;
   createdAt: string;
   isRead: boolean;
+  onClick?: () => void;
 }
 
 const typeConfig: Record<string, { icon: any; color: string; bgColor: string }> = {
@@ -58,12 +59,18 @@ const typeConfig: Record<string, { icon: any; color: string; bgColor: string }> 
   },
 };
 
-export default function ActivityItem({ type, title, message, createdAt, isRead }: ActivityItemProps) {
+export default function ActivityItem({ type, title, message, createdAt, isRead, onClick }: ActivityItemProps) {
   const config = typeConfig[type] || typeConfig.other;
   const Icon = config.icon;
 
   return (
-    <div className="flex gap-4 p-4 hover:bg-slate-50/80 transition-all rounded-xl border border-transparent hover:border-slate-100 group cursor-default">
+    <div 
+      onClick={onClick}
+      className={cn(
+        "flex gap-4 p-4 hover:bg-slate-50/80 transition-all rounded-xl border border-transparent hover:border-slate-100 group",
+        onClick ? "cursor-pointer" : "cursor-default"
+      )}
+    >
       <div className={cn(
         "w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-105",
         config.bgColor
