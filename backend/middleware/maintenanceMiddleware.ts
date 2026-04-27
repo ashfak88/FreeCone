@@ -7,11 +7,8 @@ export const checkMaintenance = async (req: Request, res: Response, next: NextFu
     const maintenance = await SystemConfig.findOne({ key: "maintenanceMode" });
     const isMaintenance = maintenance ? (maintenance.value === true || String(maintenance.value).toLowerCase() === "true") : false;
 
-    // Use originalUrl to be safe with full paths, normalize to lowercase
     const fullPath = (req.originalUrl || req.url || "").toLowerCase();
     
-    // EXEMPTIONS: Always allow admin, config, and AUTH routes to prevent lockout
-    // Also allow OPTIONS requests for CORS
     if (
       req.method === "OPTIONS" ||
       fullPath.includes("/admin") || 
@@ -27,7 +24,6 @@ export const checkMaintenance = async (req: Request, res: Response, next: NextFu
     if (isMaintenance) {
       console.log(`   [MAINTENANCE] Checking access for: ${req.method} ${fullPath}`);
       
-      // Check if user is already logged in as admin
       const authHeader = req.headers.authorization;
       if (authHeader && authHeader.startsWith("Bearer ")) {
         const token = authHeader.split(" ")[1];
@@ -43,11 +39,10 @@ export const checkMaintenance = async (req: Request, res: Response, next: NextFu
 
           if (role === "admin") {
             console.log(`   [MAINTENANCE] ALLOWING admin user: ${fullPath}`);
-            return next(); // Allow admin even during maintenance
+            return next(); 
           }
         } catch (err: any) {
           console.log(`   [MAINTENANCE] Token check failed: ${err.message}`);
-          // Token invalid or expired, proceed to block if maintenance is on
         }
       }
 
@@ -64,3 +59,10 @@ export const checkMaintenance = async (req: Request, res: Response, next: NextFu
     next();
   }
 };
+
+
+
+
+
+
+

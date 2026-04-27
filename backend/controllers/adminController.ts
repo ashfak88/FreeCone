@@ -2,11 +2,11 @@ import { Request, Response } from "express";
 import mongoose from "mongoose";
 import User from "../models/User";
 import Job from "../models/Job";
-import Transaction from "../models/Transaction";
-import Complaint from "../models/Complaint";
-import Notification from "../models/Notification";
-import SystemConfig from "../models/Config";
-import { emitToUser } from "../config/socket";
+import Transaction from "../models/Transaction"
+import Complaint from "../models/Complaint"
+import Notification from "../models/Notification"
+import SystemConfig from "../models/Config"
+import { emitToUser } from "../config/socket"
 
 export const getDashboardStats = async (req: Request, res: Response): Promise<any> => {
   try {
@@ -59,7 +59,7 @@ export const getDashboardStats = async (req: Request, res: Response): Promise<an
       createdAt: { $gte: startOfPrevMonth, $lt: startOfMonth }
     });
     const userGrowth = prevMonthUsers === 0 ? (currentMonthUsers > 0 ? 100 : 0) :
-      ((currentMonthUsers - prevMonthUsers) / prevMonthUsers) * 100;
+      ((currentMonthUsers - prevMonthUsers) / prevMonthUsers) * 100
 
     const currentMonthRevenueResult = await Transaction.aggregate([
       { $match: { createdAt: { $gte: startOfMonth }, type: "Commission", status: "Success" } },
@@ -68,14 +68,14 @@ export const getDashboardStats = async (req: Request, res: Response): Promise<an
     const prevMonthRevenueResult = await Transaction.aggregate([
       { $match: { createdAt: { $gte: startOfPrevMonth, $lt: startOfMonth }, type: "Commission", status: "Success" } },
       { $group: { _id: null, total: { $sum: "$amount" } } }
-    ]);
+    ])
 
     const currentMonthRevenue = currentMonthRevenueResult[0]?.total || 0;
     const prevMonthRevenue = prevMonthRevenueResult[0]?.total || 0;
     const revenueGrowth = prevMonthRevenue === 0 ? (currentMonthRevenue > 0 ? 100 : 0) :
-      ((currentMonthRevenue - prevMonthRevenue) / prevMonthRevenue) * 100;
+      ((currentMonthRevenue - prevMonthRevenue) / prevMonthRevenue) * 100
 
-    const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+    const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1)
     const monthlyStats = await Transaction.aggregate([
       { $match: { createdAt: { $gte: sixMonthsAgo }, type: "Commission", status: "Success" } },
       {

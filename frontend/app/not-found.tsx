@@ -23,10 +23,10 @@ export default function NotFound() {
     let i = 0;
     const interval = setInterval(() => {
       if (i < mockLogs.length) {
-        setLogs(prev => [...prev.slice(-4), mockLogs[i]]);
-        i++;
+        setLogs(prev => [...prev.slice(-4), mockLogs[i]])
+        i++
       } else {
-        i = 0;
+        i = 0
         setLogs([]);
       }
     }, 1500);
@@ -36,14 +36,12 @@ export default function NotFound() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-6 font-mono text-slate-800 dark:text-slate-300 overflow-hidden relative">
       
-      {/* Background Grid Pattern */}
       <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.07] pointer-events-none" 
         style={{ backgroundImage: 'radial-gradient(circle, currentColor 1px, transparent 1px)', backgroundSize: '32px 32px' }}>
       </div>
 
       <div className="max-w-2xl w-full space-y-12 z-10">
         
-        {/* Technical Header */}
         <div className="space-y-4 text-center">
           <div className="inline-flex items-center gap-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-emerald-500/20">
             <span className="relative flex h-2 w-2">
@@ -64,7 +62,6 @@ export default function NotFound() {
           </p>
         </div>
 
-        {/* Industrial Terminal Component */}
         <div className="bg-slate-900 rounded-3xl p-6 shadow-2xl border-4 border-slate-800 relative overflow-hidden group">
           <div className="absolute top-0 left-0 right-0 h-8 bg-slate-800 flex items-center px-4 gap-1.5">
             <div className="w-2.5 h-2.5 rounded-full bg-red-500/50"></div>
@@ -85,13 +82,11 @@ export default function NotFound() {
             <div className="animate-pulse text-emerald-500">_</div>
           </div>
           
-          {/* Decorative Corner Element */}
           <div className="absolute bottom-4 right-4 text-[80px] opacity-10 rotate-12 pointer-events-none">
             <span className="material-symbols-outlined">settings_suggest</span>
           </div>
         </div>
 
-        {/* Navigation Actions */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center font-sans tracking-tight">
           <Link 
             href="/"
@@ -108,7 +103,6 @@ export default function NotFound() {
           </Link>
         </div>
 
-        {/* Site Metadata Footer */}
         <div className="pt-8 text-center">
           <div className="flex items-center justify-center gap-4 text-slate-400 text-[10px] font-black uppercase tracking-[0.3em]">
             <span className="w-12 h-px bg-slate-200 dark:bg-slate-800"></span>
@@ -118,8 +112,7 @@ export default function NotFound() {
         </div>
       </div>
       
-      {/* Subtle Scanline Overlay */}
       <div className="fixed inset-0 pointer-events-none opacity-[0.02] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-50 bg-[length:100%_2px,3px_100%]"></div>
     </div>
-  );
+  )
 }

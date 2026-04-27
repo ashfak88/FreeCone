@@ -2,7 +2,6 @@ import multer from "multer";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
 import cloudinary from "../config/cloudinary";
 
-// ---------------- PROFILE PHOTO STORAGE ----------------
 const profileStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: async (req: any, file: any) => {
@@ -16,11 +15,9 @@ const profileStorage = new CloudinaryStorage({
   },
 });
 
-// ---------------- RESUME STORAGE ----------------
 const resumeStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: async (req: any, file: any) => {
-    // Sanitize filename: remove extension and special characters for the base
     const parts = file.originalname.split('.');
     const ext = parts.length > 1 ? parts.pop().toLowerCase() : 'pdf';
     const cleanName = parts

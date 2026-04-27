@@ -81,7 +81,6 @@ export default function EnterprisePage() {
             </motion.div>
           </motion.div>
 
-          {/* Bento-esque Visual Elements */}
           <motion.div
             variants={staggerContainer}
             initial="initial"

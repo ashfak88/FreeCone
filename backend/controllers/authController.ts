@@ -33,8 +33,6 @@ export const registerUser = async (req: Request, res: Response): Promise<any> =>
       return res.status(400).json({ message: "Password must contain both letters and numbers" });
     }
 
-    // CHECK MAINTENANCE MODE: Only admins can register (though usually admins are created differently, 
-    // but this prevents regular users from registering during maintenance)
     const maintenance = await SystemConfig.findOne({ key: "maintenanceMode" });
     const isMaintenance = maintenance ? (maintenance.value === true || String(maintenance.value).toLowerCase() === "true") : false;
 
@@ -42,7 +40,7 @@ export const registerUser = async (req: Request, res: Response): Promise<any> =>
       return res.status(503).json({
         message: "System is under maintenance. Registration is temporarily disabled.",
         maintenance: true
-      });
+      })
     }
 
     let user = await User.findOne({ email });
@@ -95,7 +93,6 @@ export const loginUser = async (req: Request, res: Response): Promise<any> => {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    // CHECK MAINTENANCE MODE: Only admins can login
     const maintenance = await SystemConfig.findOne({ key: "maintenanceMode" });
     const isMaintenance = maintenance ? (maintenance.value === true || String(maintenance.value).toLowerCase() === "true") : false;
 
@@ -113,17 +110,15 @@ export const loginUser = async (req: Request, res: Response): Promise<any> => {
       console.log(`   [MAINTENANCE] ALLOWING admin login: ${user.email}`);
     }
 
-    // Log the login attempt
     const device = req.headers["user-agent"] || "Unknown Device";
     user.loginHistory = user.loginHistory || [];
     user.loginHistory.unshift({
-      device: device.split("(")[0].trim(), // Simple parser for OS/Browser info
-      location: "IP Detected", // Simplified for local dev
+      device: device.split("(")[0].trim(),
+      location: "IP Detected",
       timestamp: new Date(),
       status: "Successful"
     });
 
-    // Keep only last 10 entries
     if (user.loginHistory.length > 10) {
       user.loginHistory = user.loginHistory.slice(0, 10);
     }
@@ -144,16 +139,15 @@ export const loginUser = async (req: Request, res: Response): Promise<any> => {
       },
     });
   } catch (err: any) {
-    console.error(err.message);
-    res.status(500).send("Server Error");
+    console.error(err.message)
+    res.status(500).send("Server Error")
   }
-};
+}
 
-// Refresh Token
 export const refreshToken = async (req: Request, res: Response): Promise<any> => {
   const token = req.cookies?.refreshToken;
   if (!token) {
-    return res.status(401).json({ message: "No refresh token" });
+    return res.status(401).json({ message: "No refresh token" })
   }
 
   try {
@@ -166,7 +160,6 @@ export const refreshToken = async (req: Request, res: Response): Promise<any> =>
       return res.status(403).json({ message: "Your account is suspended. Please contact support." });
     }
 
-    // CHECK MAINTENANCE MODE: Only admins can refresh tokens during maintenance
     const maintenance = await SystemConfig.findOne({ key: "maintenanceMode" });
     const isMaintenance = maintenance ? (maintenance.value === true || String(maintenance.value).toLowerCase() === "true") : false;
 
@@ -188,13 +181,11 @@ export const refreshToken = async (req: Request, res: Response): Promise<any> =>
   }
 };
 
-// Logout User
 export const logoutUser = (_req: Request, res: Response) => {
   res.clearCookie("refreshToken", { httpOnly: true, sameSite: "strict" });
   res.json({ message: "Logged out successfully" });
 };
 
-// Google Callback
 export const googleCallback = async (req: Request, res: Response) => {
   const user = req.user as any;
 

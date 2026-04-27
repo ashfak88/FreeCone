@@ -18,6 +18,6 @@ const MessageSchema: Schema = new Schema({
   metadata: { type: Schema.Types.Mixed },
   readBy: [{ type: Schema.Types.ObjectId, ref: "User" }],
   createdAt: { type: Date, default: Date.now },
-});
+})
 
 export default mongoose.models.Message || mongoose.model<IMessage>("Message", MessageSchema);

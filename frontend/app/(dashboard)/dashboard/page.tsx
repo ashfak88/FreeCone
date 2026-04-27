@@ -8,6 +8,8 @@ import DashboardHeader from "@/components/DashboardHeader";
 import { socketService } from "@/lib/socket";
 import HistoryModal from "@/components/HistoryModal";
 import ActivityItem from "@/components/ActivityItem";
+import OfferDetailsModal from "@/components/modals/OfferDetailsModal";
+import ProposalDetailsModal from "@/components/modals/ProposalDetailsModal";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
@@ -51,10 +53,13 @@ export default function DashboardPage() {
     title: "",
     type: "earnings"
   });
+  const [selectedOffer, setSelectedOffer] = useState<any | null>(null);
+  const [selectedProposalNotification, setSelectedProposalNotification] = useState<any | null>(null);
+  const [selectedProposalDetail, setSelectedProposalDetail] = useState<any | null>(null);
 
   const fetchEscrow = useCallback(async () => {
     try {
-      const token = localStorage.getItem("accessToken");
+      const token = localStorage.getItem("accessToken")
       if (!token) return;
       const res = await fetch(`${API_URL}/offers/escrow-summary`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -64,9 +69,8 @@ export default function DashboardPage() {
         setEscrow(data);
       }
     } catch (e) {
-      // non-blocking
     } finally {
-      setLoadingEscrow(false);
+      setLoadingEscrow(false)
     }
   }, []);
 
@@ -80,23 +84,20 @@ export default function DashboardPage() {
     fetchNotifications('received');
     fetchNotifications('sent');
 
-    // Socket.io Real-time Listeners
     const socket = socketService.getSocket();
     if (socket) {
-      // Use local updates for immediate smoothness
       const handleNewNotification = (notif: any) => {
         addNotificationLocally(notif);
       };
 
       const handleNotificationUpdate = (notif: any) => {
-        // Sync both directions if a notification status changed
         fetchNotifications('received');
         fetchNotifications('sent');
       };
 
       const handleOfferUpdate = (offer: any) => {
         updateOfferLocally(offer);
-        fetchEscrow(); // Sync financial stats which might depend on offer status
+        fetchEscrow();
       };
 
       const handleProposalUpdate = (proposal: any) => {
@@ -133,7 +134,6 @@ export default function DashboardPage() {
     return offers.filter(o => o.status === 'accepted' && o.isPaid === true).length;
   }, [offers]);
 
-  // Determine escrow balance based on role
   const escrowBalance = isClientRole
     ? escrow?.escrowAsClient.total ?? 0
     : escrow?.escrowAsFreelancer.total ?? 0;
@@ -144,19 +144,16 @@ export default function DashboardPage() {
     ? (escrow?.totalSpent ?? 0)
     : (escrow?.totalEarned ?? 0);
 
-  // Combine notifications, offers, and proposals for Recent Activity
   const combinedActivity = React.useMemo(() => {
     const rawNotifications = [
       ...(Array.isArray(notifications) ? notifications : []),
       ...(Array.isArray(sentNotifications) ? sentNotifications : [])
     ];
 
-    // Track related IDs of notifications to avoid duplicates mapping
     const notifiedRelatedIds = new Set(
       rawNotifications.map(n => n.relatedId?.toString()).filter(Boolean)
     );
 
-    // Map raw Offers to activity items if they don't have a notification
     const offerActivity = (Array.isArray(offers) ? offers : [])
       .filter(o => !notifiedRelatedIds.has(o._id?.toString()))
       .map(o => ({
@@ -165,10 +162,9 @@ export default function DashboardPage() {
         title: (o.client?._id === user?.id || o.client === user?.id) ? "Offer Sent" : "New Offer Received",
         message: `Project: ${o.jobTitle} - Budget: $${o.budget}`,
         createdAt: o.createdAt,
-        isRead: true // Offers handled directly are seen in their respective pages
+        isRead: true
       }));
 
-    // Map received proposals that aren't already in notifications
     const receivedProposalActivity = (Array.isArray(receivedProposals) ? receivedProposals : [])
       .filter(p => !notifiedRelatedIds.has(p._id?.toString()))
       .map(p => ({
@@ -180,7 +176,6 @@ export default function DashboardPage() {
         isRead: true
       }));
 
-    // Map sent proposals that aren't already in notifications
     const myProposalActivity = (Array.isArray(myProposals) ? myProposals : [])
       .filter(p => !notifiedRelatedIds.has(p._id?.toString()))
       .map(p => ({
@@ -199,7 +194,6 @@ export default function DashboardPage() {
       ...myProposalActivity
     ];
 
-    // Sort by createdAt descending
     return all.sort((a: any, b: any) =>
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
@@ -209,10 +203,19 @@ export default function DashboardPage() {
     const type = activity.type;
     const relatedId = activity.relatedId || activity._id;
 
-    if (type === 'offer' || type === 'completion_request' || type === 'payment') {
+    if (type === 'offer') {
+      const offer = offers.find(o => o._id === relatedId);
+      if (offer) {
+        setSelectedOffer(offer);
+      }
+    } else if (type === 'completion_request' || type === 'payment') {
       router.push(`/projects/${relatedId}`);
     } else if (type === 'proposal') {
-      router.push(`/proposals`);
+      setSelectedProposalNotification(activity);
+      const proposalDetail = [...myProposals, ...receivedProposals].find(p => p._id === relatedId);
+      if (proposalDetail) {
+        setSelectedProposalDetail(proposalDetail);
+      }
     } else if (type === 'message') {
       router.push('/messages');
     }
@@ -230,9 +233,7 @@ export default function DashboardPage() {
 
       <main className="max-w-[1240px] mx-auto p-6 md:p-8 space-y-10">
 
-        {/* Stats Row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-
           <button
             onClick={() => setHistoryModal({ isOpen: true, title: isClientRole ? "Spending History" : "Total Earnings", type: isClientRole ? "spending" : "earnings" })}
             className="bg-white hover:bg-slate-50 transition-all cursor-pointer rounded-xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between text-left group"
@@ -412,7 +413,16 @@ export default function DashboardPage() {
                     {myProposals.slice(0, 3).map((proposal: any) => (
                       <div
                         key={proposal._id}
-                        onClick={() => router.push(`/jobs/${proposal.job?._id || proposal.job}`)}
+                        onClick={() => {
+                          setSelectedProposalNotification({
+                            _id: proposal._id,
+                            relatedId: proposal._id,
+                            title: "Proposal Details",
+                            message: `Applied for: ${proposal.job?.title || 'Project'} @ $${proposal.proposedRate}`,
+                            createdAt: proposal.createdAt,
+                          });
+                          setSelectedProposalDetail(proposal);
+                        }}
                         className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:border-primary transition-all cursor-pointer"
                       >
                         <div className="flex justify-between items-start">
@@ -567,6 +577,25 @@ export default function DashboardPage() {
             ? transactions.filter(t => t.status === 'Escrow')
             : transactions.filter(t => t.status === 'Success')
         }
+      />
+
+      <OfferDetailsModal
+        offer={selectedOffer}
+        onClose={() => setSelectedOffer(null)}
+      />
+
+      <ProposalDetailsModal
+        proposalNotification={selectedProposalNotification}
+        proposalDetail={selectedProposalDetail}
+        onClose={() => {
+          setSelectedProposalNotification(null);
+          setSelectedProposalDetail(null);
+        }}
+        onManageProposals={() => {
+          setSelectedProposalNotification(null);
+          setSelectedProposalDetail(null);
+          router.push('/proposals');
+        }}
       />
     </div>
   );

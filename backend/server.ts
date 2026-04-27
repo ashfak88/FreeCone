@@ -51,7 +51,6 @@ const corsOptions = {
   origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
     if (!origin) return callback(null, true);
     
-    // Normalize: lowercase, remove trailing slash, and trim
     const normalizedOrigin = origin.toLowerCase().replace(/\/$/, "").trim();
     
     const isAllowed = allowedOrigins.some(allowed => 
@@ -86,7 +85,7 @@ app.use(
       maxAge: 24 * 60 * 60 * 1000,
     },
   })
-);
+)
 
 app.use(passport.initialize());
 app.use(passport.session());
@@ -108,8 +107,6 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/config", configRoutes);
 
 app.get("/api/test-admin", (req, res) => res.json({ message: "Admin space is reachable" }));
-
-
 
 
 app.use(notFoundHandler);

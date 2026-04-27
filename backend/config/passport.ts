@@ -2,12 +2,8 @@ import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import User from "../models/User";
 import dotenv from "dotenv";
-
+ 
 dotenv.config();
-console.log(
-  "Callback URL:",
-  `${process.env.BASE_URL}/api/auth/google/callback`
-);
 passport.use(
   new GoogleStrategy(
     {
@@ -18,7 +14,7 @@ passport.use(
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
-        let user = await User.findOne({ googleId: profile.id });
+        let user = await User.findOne({ googleId: profile.id })
 
         if (user) {
           if (user.status === "blocked") {

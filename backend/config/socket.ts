@@ -29,7 +29,7 @@ export const initSocket = (server: HttpServer) => {
       credentials: true,
       allowedHeaders: ["Content-Type", "Authorization"]
     },
-    allowEIO3: true, // Compatibility for some clients
+    allowEIO3: true,
     pingTimeout: 60000,
     pingInterval: 25000,
     connectTimeout: 45000,
@@ -62,8 +62,7 @@ export const getIO = () => {
 };
 
 /**
- * Emit a notification to a specific user
- * @param userId - MongoDB User ID
+ * @param userId 
  * @param event - Event name (e.g., 'newNotification', 'notificationUpdate')
  * @param data - Notification payload
  */
