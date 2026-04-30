@@ -52,12 +52,12 @@ export default function ProfilePage() {
         cardHolderName: prev.cardHolderName || user.paymentAccount?.cardDetails?.holderName || "",
         cardLast4: prev.cardLast4 || user.paymentAccount?.cardDetails?.last4 || "",
         cardExpiry: prev.cardExpiry || user.paymentAccount?.cardDetails?.expiry || "",
-        // Sync visibility from store
-        showAsFreelancer: user.showAsFreelancer ?? false
+        // Sync visibility from store explicitly
+        showAsFreelancer: user.showAsFreelancer || false
       }));
       setSkills((prev) => prev.length === 0 ? (user.skills || []) : prev);
     }
-  }, [user?.id, user?.showAsFreelancer]); // Re-run if user ID or visibility setting changes in store
+  }, [user]); // Run when user object updates
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value, type } = e.target;
